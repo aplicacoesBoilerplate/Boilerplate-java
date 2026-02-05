@@ -1,3 +1,35 @@
 spring:
-    application:
-        name: boilerplate
+  application:
+    name: boilerplate
+  main:
+    web-application-type: servlet
+  web:
+    resources:
+      add-mappings: false
+  autoconfigure:
+    time-zone: America/Sao_Paulo
+  datasource:
+    driver-class-name: org.mysql.Driver
+    name: ${DB_NAME}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+
+server:
+  port: ${API_PORT}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.jdbc.core: DEBUG        # Loga as queries SQL feitas pelo JdbcTemplate
+    org.springframework.jdbc.datasource: DEBUG  # Loga operações com o DataSource
+
+tokens:
+  secret: ${JWT_SECRET}
+  payGetway: ${TOKEN_INFINITE_PAY}
+  host: ${HOST}
+  uploadDir: ${UPLOAD_DIR}
