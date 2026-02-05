@@ -16,7 +16,7 @@ public class CorsConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // aplica em todos os endpoints
-                .allowedOrigins("http://localhost:9000", props.getRedeHost()) // Hosts que estão permitidos fazer requisição
+                .allowedOrigins("http://localhost:9000", props.getHost()) // Hosts que estão permitidos fazer requisição
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // métodos permitidos
                 .allowedHeaders("*") // cabeçalhos permitidos
                 .allowCredentials(true); // permite envio de cookies/autenticação

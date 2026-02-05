@@ -9,9 +9,9 @@ spring:
   autoconfigure:
     time-zone: America/Sao_Paulo
   datasource:
-    driver-class-name: org.mysql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     name: ${DB_NAME}
-    url: ${DB_URL}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
