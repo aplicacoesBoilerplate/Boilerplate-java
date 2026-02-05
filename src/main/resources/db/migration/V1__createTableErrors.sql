@@ -1,31 +1,27 @@
-CREATE TABLE log_erros (
-    id_error INT NOT NULL COMMENT 'Identificador único do erro (0 = registro sentinela)',
-    erro VARCHAR(255) NOT NULL COMMENT 'Descrição resumida do erro',
-    arquivo_error VARCHAR(150) COMMENT 'Arquivo onde o erro ocorreu',
-    classe_error VARCHAR(150) COMMENT 'Classe Java onde o erro ocorreu',
-    metodo_error VARCHAR(150) COMMENT 'Método Java onde o erro ocorreu',
-    linha_error INT COMMENT 'Linha do código onde o erro ocorreu',
-    hora_error DATETIME NOT NULL COMMENT 'Data e hora do erro',
-    status_code_error INT COMMENT 'Status HTTP relacionado ao erro',
+CREATE TABLE log_errors (
+    id_error INT NOT NULL AUTO_INCREMENT COMMENT 'Unique error identifier (1 = sentinel record)',
+    error_message VARCHAR(255) NOT NULL COMMENT 'Brief description of the error',
+    error_file VARCHAR(150) COMMENT 'File where the error occurred',
+    error_class VARCHAR(150) COMMENT 'Java class where the error occurred',
+    error_method VARCHAR(150) COMMENT 'Java method where the error occurred',
+    error_line INT COMMENT 'Line of code where the error occurred',
+    error_date_time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL  COMMENT 'Date and time of the error',
+    error_status_code INT NOT NULL COMMENT 'HTTP status related to the error',
     CONSTRAINT pk_log_erros PRIMARY KEY (id_error)
-) COMMENT='Tabela de persistência de erros da aplicação';
+) COMMENT='Application error persistence table';
 
-INSERT INTO log_erros (
-    id_error,
-    erro,
-    arquivo_error,
-    classe_error,
-    metodo_error,
-    linha_error,
-    hora_error,
-    status_code_error
+INSERT INTO log_errors (
+    error_message,
+    error_file,
+    error_class,
+    error_method,
+    error_line,
+    error_status_code
 ) VALUES (
-    0,
-    'REGISTRO INICIAL',
-    'N/A',
-    'N/A',
-    'N/A',
+    'UNDETERMINED',
     NULL,
-    NOW(),
-    NULL
+    NULL,
+    NULL,
+    NULL,
+    500
 );
