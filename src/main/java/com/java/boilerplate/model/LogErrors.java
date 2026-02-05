@@ -35,9 +35,9 @@ public class LogErrors {
     private Integer errorLine;
 
     @CreationTimestamp
-    @Column(name = "error_date_time", updatable = false)
+    @Column(name = "error_date_time", nullable = false, updatable = false)
     private LocalDateTime errorDateTime;
 
-    @Column(name = "error_status_code")
+    @Column(name = "error_status_code", nullable = false)
     private Integer errorStatusCode;
 }
