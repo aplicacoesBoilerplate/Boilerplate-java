@@ -1,7 +1,8 @@
 package com.java.boilerplate.repository;
 
-import com.java.boilerplate.model.ErrorsPersistidos;
+import com.java.boilerplate.model.LogErrors;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface ErrorRepository {
-    void persistirError(ErrorsPersistidos error);
-}
+@Repository
+public interface ErrorRepository extends JpaRepository<LogErrors, Long> {}
