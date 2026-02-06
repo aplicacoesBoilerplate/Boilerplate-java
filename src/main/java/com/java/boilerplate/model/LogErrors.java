@@ -1,5 +1,6 @@
 package com.java.boilerplate.model;
 
+import com.java.boilerplate.modelQueryJPA.LogErrorsQueriesJPA;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,13 +14,13 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Table(name = "log_errors")
-public class LogErrors {
+public class LogErrors extends LogErrorsQueriesJPA {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_error")
     private Long idError;
 
-    @Column(length = 255, nullable = false)
+    @Column(name = "error_message", nullable = false)
     private String errorMessage;
 
     @Column(name = "error_file", length = 150)

@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-public record DTOErrorResponse(
+public record DTOError(
         String errorMessage,
         Map<String, Object> trace,
 

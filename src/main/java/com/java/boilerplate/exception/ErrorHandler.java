@@ -1,7 +1,6 @@
-package com.java.boilerplate.adpter;
+package com.java.boilerplate.exception;
 
-import com.java.boilerplate.dto.DTOErrorResponse;
-import com.java.boilerplate.exception.IErrors;
+import com.java.boilerplate.dto.DTOError;
 import com.java.boilerplate.model.LogErrors;
 import com.java.boilerplate.repository.ErrorRepository;
 import org.springframework.http.HttpStatus;
@@ -23,7 +22,7 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<DTOErrorResponse> handlerException(Exception e) {
+    public ResponseEntity<DTOError> handlerException(Exception e) {
         LocalDateTime errorDateTime = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
 
         LogErrors logError = new LogErrors();
@@ -51,7 +50,7 @@ public class ErrorHandler {
 
             HttpStatus castStatusCode = HttpStatus.valueOf(errors.getStatusCode());
 
-            DTOErrorResponse errorResponse = new DTOErrorResponse(
+            DTOError errorResponse = new DTOError(
                     errors.getErro(),
                     traceInfo,
                     errors.getHoraErro(),
@@ -62,7 +61,7 @@ public class ErrorHandler {
         }
 
         // Tratamento genérico caso não seja tratável
-        DTOErrorResponse defaultError = new DTOErrorResponse(
+        DTOError defaultError = new DTOError(
                 "Unhandled internal error",
                 traceInfo,
                 errorDateTime,
