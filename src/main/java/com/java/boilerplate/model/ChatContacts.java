@@ -16,7 +16,7 @@ public class ChatContacts extends ChatContactsQueriesJPA {
     private Long idChatContact;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "id_user", nullable = false)
     private Users user;
 
     @ManyToOne(fetch = FetchType.LAZY)

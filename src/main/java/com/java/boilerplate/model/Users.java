@@ -1,7 +1,6 @@
 package com.java.boilerplate.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.modelQueryJPA.UsersQueriesJPA;
@@ -51,7 +50,6 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Column(name = "user_email", nullable = false, length = 150)
     private String email;
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "user_password", nullable = false)
     private String password;
 
@@ -76,6 +74,7 @@ public class Users extends UsersQueriesJPA implements UserDetails {
         else return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
+    @Override
     public String getUsername() { return email; }
     @Override
     public boolean isAccountNonExpired() { return true; }

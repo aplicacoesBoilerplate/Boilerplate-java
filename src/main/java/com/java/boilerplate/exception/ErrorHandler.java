@@ -60,9 +60,8 @@ public class ErrorHandler {
             return new ResponseEntity<>(errorResponse, castStatusCode);
         }
 
-        // Tratamento genérico caso não seja tratável
         DTOError defaultError = new DTOError(
-                "Unhandled internal error",
+                e.getMessage(),
                 traceInfo,
                 errorDateTime,
                 HttpStatus.INTERNAL_SERVER_ERROR

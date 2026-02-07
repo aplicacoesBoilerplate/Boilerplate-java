@@ -23,56 +23,45 @@ public class UsersController {
     @GetMapping("/{idUser}")
     @JsonView(UserViews.Public.class)
     public ResponseEntity<DTOUser> findById(
-            @PathVariable Long idUser,
-            @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.findById(idUser, authorization); }
+            @PathVariable Long idUser
+    ) { return usersHandler.findById(idUser); }
 
     @PostMapping
     @JsonView(UserViews.Registration.class)
     public ResponseEntity<DTOUser> saveUser(
-            @RequestBody @Valid @JsonView(UserViews.Registration.class) DTOUser newUser,
-            @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.saveUser(newUser, authorization); }
+            @RequestBody @Valid @JsonView(UserViews.Registration.class) DTOUser newUser
+    ) { return usersHandler.saveUser(newUser); }
 
-    @PutMapping("/{idUser}")
+    @PutMapping
     @JsonView(UserViews.Internal.class)
     public ResponseEntity<DTOUser> updateUser(
-            @RequestBody @Valid @JsonView(UserViews.Internal.class) DTOUser updateUser,
-            @PathVariable Long idUser,
-            @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.updateUser(updateUser, idUser, authorization); }
+            @RequestBody @Valid @JsonView(UserViews.Internal.class) DTOUser updateUser
+    ) { return usersHandler.updateUser(updateUser); }
 
-    @DeleteMapping("/{idUser}")
-    public ResponseEntity<String> deleteUser(
-             @PathVariable Long idUser,
-             @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.deleteUser(idUser, authorization); }
+    @DeleteMapping
+    public ResponseEntity<String> deleteUser() { return usersHandler.deleteUser(); }
 
     @PostMapping("/pagination")
     @JsonView(UserViews.Public.class)
     public ResponseEntity<DTOPagination<DTOUser>> findPaginationItens(
-            @RequestBody RequestPagination request,
-            @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.findPaginationItens(request, authorization); }
+            @RequestBody RequestPagination request
+    ) { return usersHandler.findPaginationItens(request); }
 
     @PostMapping("/withinRadius")
     @JsonView(UserViews.Public.class)
     public ResponseEntity<DTOPagination<DTOUser>> findWithinRadius(
-            @RequestBody DTORequestWithinRadius request,
-            @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.findWithinRadius(request, authorization); }
+            @RequestBody DTORequestWithinRadius request
+    ) { return usersHandler.findWithinRadius(request); }
 
     @GetMapping("/find/{usernameOrEmail}")
     @JsonView(UserViews.Internal.class)
     public ResponseEntity<DTOUser> findByUsernameOrEmail(
-            @PathVariable String usernameOrEmail,
-            @RequestHeader("Authorization") String authorization
-    ) { return  usersHandler.findByUsernameOrEmail(usernameOrEmail, authorization); }
+            @PathVariable String usernameOrEmail
+    ) { return  usersHandler.findByUsernameOrEmail(usernameOrEmail); }
 
     @PutMapping("/location")
     @JsonView(UserViews.Internal.class)
     public ResponseEntity<DTOUser> insertNewUserLocation(
-            @RequestBody DTOInsertLocationUser locationUser,
-            @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.insertNewUserLocation(locationUser, authorization); }
+            @RequestBody DTOInsertLocationUser locationUser
+    ) { return usersHandler.insertNewUserLocation(locationUser); }
 }

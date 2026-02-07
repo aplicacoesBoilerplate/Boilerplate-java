@@ -20,7 +20,7 @@ import java.util.List;
 public interface IBaseRepository<T> extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
 
     default DTOPagination<T> findPaginationItens(RequestPagination request, String offsetField) {
-        Specification<T> spec = Specification.where((Specification<T>) null);
+        Specification<T> spec = (root, query, cb) -> cb.conjunction();
 
         if (request.getFilters() != null) {
             for (RequestFilters filter : request.getFilters()) {
@@ -28,16 +28,17 @@ public interface IBaseRepository<T> extends JpaRepository<T, Long>, JpaSpecifica
             }
         }
 
-        if (request.getNextEntry() > 0) {
+        if (request.getNextEntry() != null && request.getNextEntry() > 0) {
             spec = spec.and(new OffsetSpecification<>(offsetField, request.getNextEntry()));
         }
 
-        PageRequest pageRequest = PageRequest.of(0, request.getLimit(), Sort.by(Sort.Direction.ASC, offsetField));
+        int limit = (request.getLimit() != null && request.getLimit() > 0) ? request.getLimit() : 20;
 
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by(Sort.Direction.ASC, offsetField));
         Page<T> page = findAll(spec, pageRequest);
 
         return new DTOPagination<>(
-                request.getLimit(),
+                limit,
                 request.getNextEntry(),
                 (int) page.getTotalElements(),
                 page.hasNext(),

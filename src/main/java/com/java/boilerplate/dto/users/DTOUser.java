@@ -44,8 +44,6 @@ public record DTOUser(
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         String email,
 
-        @NotBlank(message = "The password field is required")
-        @Size(min = 8, max = 20, message = "The password field must be between 8 and 20 characters long")
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         String password,
 

@@ -19,6 +19,6 @@ public class Gallery extends GalleryQueriesJPA {
     private String photoUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JoinColumn(name = "id_user", insertable = false, updatable = false)
     private Users user;
 }

@@ -38,11 +38,12 @@ public class TokenService {
 
     public String validateToken(String token) {
         try {
+            String cleanToken = token.replace("Bearer ", "");
             Algorithm algorithm = Algorithm.HMAC256(tokens.getSecret());
             return JWT.require(algorithm)
                     .withIssuer("boilerplate-api")
                     .build()
-                    .verify(token)
+                    .verify(cleanToken)
                     .getSubject();
         } catch (JWTVerificationException exception) {
             return "";

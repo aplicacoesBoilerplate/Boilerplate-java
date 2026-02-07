@@ -1,13 +1,15 @@
 package com.java.boilerplate.repository;
 
-import com.java.boilerplate.dto.DTOPagination;
+import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.model.Users;
 import org.locationtech.jts.geom.Point;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface IUsersRepository extends IBaseRepository<Users> {
-    DTOPagination<Users> findWithinRadius(@Param("point") Point point, @Param("radius") Long radius);
+    List<Users> findWithinRadius(@Param("point") Point point, @Param("radius") Long radius, @Param("gender")GenderUser gender);
     Users findByUsernameOrEmail(@Param("usernameOrEmail") String usernameOrEmail);
 }

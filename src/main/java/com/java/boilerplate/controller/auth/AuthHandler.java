@@ -27,9 +27,4 @@ public class AuthHandler {
         Users newUser = authService.register(user);
         return this.login(new DTOAuth(newUser.getEmail(), data.password()));
     }
-
-    public ResponseEntity<DTOUser> getMe(String token) {
-        Users user = authService.getMe(token);
-        return ResponseEntity.ok(DTOUser.fromEntity(user));
-    }
 }

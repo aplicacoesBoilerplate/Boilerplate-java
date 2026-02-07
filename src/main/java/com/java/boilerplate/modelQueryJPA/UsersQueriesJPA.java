@@ -14,6 +14,7 @@ public class UsersQueriesJPA {
             u.location,
             :point
         ) <= :radius
+        AND u.userGender != :gender
         """;
 
     static final String sqlFindByUsernameOrEmail = """

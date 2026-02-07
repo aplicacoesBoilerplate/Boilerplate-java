@@ -6,27 +6,55 @@ import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUsersRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthService {
+public class AuthService implements UserDetailsService {
     private final AuthenticationManager manager;
     private final PasswordEncoder encoder;
     private final TokenService tokenService;
     private final IUsersRepository usersRepository;
 
-    public AuthService(AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, IUsersRepository usersRepository) {
+    public AuthService(@Lazy AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, IUsersRepository usersRepository) {
         this.manager = manager;
         this.encoder = encoder;
         this.tokenService = tokenService;
         this.usersRepository = usersRepository;
     }
 
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Users user = usersRepository.findByUsernameOrEmail(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return user;
+    }
+
     public String login(DTOAuth data) {
+        if (data.password() == null || data.password().isBlank()) {
+            throw new ExceptionsSystem(
+                    "The password field is required",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (data.password().length() < 8 || data.password().length() > 20) {
+            throw new ExceptionsSystem(
+                    "The password field must be between 8 and 20 characters long",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
         var authToken = new UsernamePasswordAuthenticationToken(data.usernameOrEmail(), data.password());
         var authentication = manager.authenticate(authToken);
         Users user = (Users) authentication.getPrincipal();
@@ -50,13 +78,14 @@ public class AuthService {
         return usersRepository.save(newUser);
     }
 
-    public Users getMe(String token) {
-        var subject = tokenService.validateToken(token);
-        Users user = usersRepository.findByUsernameOrEmail(subject);
-        if (user == null) throw new ExceptionsSystem(
-                "User not found",
-                HttpStatus.NOT_FOUND
-        );
-        return user;
+    public Users getMe() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof Users user) {
+             return usersRepository.findById(user.getIdUser())
+                 .orElseThrow(() -> new ExceptionsSystem("User not found", HttpStatus.NOT_FOUND));
+        }
+
+        throw new ExceptionsSystem("User not authenticated", HttpStatus.UNAUTHORIZED);
     }
 }
