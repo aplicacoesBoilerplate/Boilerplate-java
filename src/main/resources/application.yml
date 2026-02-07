@@ -18,6 +18,14 @@ spring:
       minimum-idle: 5
       maximum-pool-size: 20
       connection-timeout: 30000
+  jpa:
+    open-in-view: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+    mapper:
+      default-view-inclusion: true
 
 server:
   port: ${API_PORT}
@@ -39,6 +47,6 @@ logging:
 
 tokens:
   secret: ${JWT_SECRET}
-  payGetway: ${TOKEN_INFINITE_PAY}
+  payGateway: ${TOKEN_INFINITE_PAY}
   host: ${HOST}
   uploadDir: ${UPLOAD_DIR}

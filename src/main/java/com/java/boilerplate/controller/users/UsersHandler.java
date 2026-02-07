@@ -26,12 +26,12 @@ public class UsersHandler {
     }
 
     public ResponseEntity<DTOUser> saveUser(DTOUser newUser, String authorization) {
-        Users user = usersService.saveUser(DTOUser.toEntity(newUser), authorization);
+        Users user = usersService.saveUser(newUser.toEntity(), authorization);
         return ResponseEntity.ok(DTOUser.fromEntity(user));
     }
 
-    public ResponseEntity<DTOUser> updateUser(Users updateUser, Long idUser, String authorization) {
-        Users user = usersService.updateUser(updateUser, idUser, authorization);
+    public ResponseEntity<DTOUser> updateUser(DTOUser updateUser, Long idUser, String authorization) {
+        Users user = usersService.updateUser(updateUser.toEntity(), idUser, authorization);
         return ResponseEntity.ok(DTOUser.fromEntity(user));
     }
 

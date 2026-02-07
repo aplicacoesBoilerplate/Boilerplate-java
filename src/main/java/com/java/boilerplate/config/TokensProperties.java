@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Setter
 public class TokensProperties {
     private String secret;
-    private String payGetway;
+    private String payGateway;
     private String host;
     private String uploadDir;
 }

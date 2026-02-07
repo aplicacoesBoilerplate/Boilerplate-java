@@ -1,12 +1,14 @@
 package com.java.boilerplate.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.modelQueryJPA.UsersQueriesJPA;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.springframework.data.geo.Point;
+import org.locationtech.jts.geom.Point;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,7 +30,7 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     private String fullName;
 
     @Column(name = "user_username", nullable = false, length = 20)
-    private String username;
+    private String userUsername;
 
     @Column(name = "user_bio")
     private String bio;
@@ -49,6 +51,7 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Column(name = "user_email", nullable = false, length = 150)
     private String email;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "user_password", nullable = false)
     private String password;
 
@@ -56,12 +59,14 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Column(name = "user_role", nullable = false)
     private UserRoles role;
 
-    @Column(name = "user_location")
+    @Column(name = "user_location", columnDefinition = "POINT SRID 4326", nullable = false)
     private Point location;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChatContacts> contacts;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Gallery> galleryPhotos;
 
@@ -71,9 +76,7 @@ public class Users extends UsersQueriesJPA implements UserDetails {
         else return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
-    @Override
     public String getUsername() { return email; }
-
     @Override
     public boolean isAccountNonExpired() { return true; }
     @Override

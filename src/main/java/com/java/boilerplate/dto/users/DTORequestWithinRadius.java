@@ -1,6 +1,6 @@
 package com.java.boilerplate.dto.users;
 
-import org.springframework.data.geo.Point;
+import org.locationtech.jts.geom.Point;
 
 public record DTORequestWithinRadius(
         Point point,

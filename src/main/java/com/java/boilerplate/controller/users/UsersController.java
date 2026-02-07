@@ -6,8 +6,8 @@ import com.java.boilerplate.dto.users.DTOInsertLocationUser;
 import com.java.boilerplate.dto.users.DTORequestWithinRadius;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
-import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,24 +20,24 @@ public class UsersController {
         this.usersHandler = usersHandler;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{idUser}")
     @JsonView(UserViews.Public.class)
     public ResponseEntity<DTOUser> findById(
-            @PathVariable Long id,
+            @PathVariable Long idUser,
             @RequestHeader("Authorization") String authorization
-    ) { return usersHandler.findById(id, authorization); }
+    ) { return usersHandler.findById(idUser, authorization); }
 
     @PostMapping
     @JsonView(UserViews.Registration.class)
     public ResponseEntity<DTOUser> saveUser(
-            @RequestBody @JsonView(UserViews.Registration.class) DTOUser newUser,
+            @RequestBody @Valid @JsonView(UserViews.Registration.class) DTOUser newUser,
             @RequestHeader("Authorization") String authorization
     ) { return usersHandler.saveUser(newUser, authorization); }
 
     @PutMapping("/{idUser}")
     @JsonView(UserViews.Internal.class)
     public ResponseEntity<DTOUser> updateUser(
-            @RequestBody @JsonView(UserViews.Internal.class) Users updateUser,
+            @RequestBody @Valid @JsonView(UserViews.Internal.class) DTOUser updateUser,
             @PathVariable Long idUser,
             @RequestHeader("Authorization") String authorization
     ) { return usersHandler.updateUser(updateUser, idUser, authorization); }

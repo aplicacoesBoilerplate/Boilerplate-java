@@ -2,13 +2,14 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
+import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IUsersRepository;
-import org.springframework.data.geo.Point;
+import com.java.boilerplate.service.helpers.LocationService;
+import org.locationtech.jts.geom.Point;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +18,12 @@ public class UsersService {
 
     private final IUsersRepository usersRepository;
     private final PasswordEncoder encoder;
+    private final LocationService locationService;
 
-    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder) {
+    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService) {
         this.usersRepository = usersRepository;
         this.encoder = encoder;
+        this.locationService = locationService;
     }
 
     public Users findById(Long idUser, String authorization) {
@@ -32,22 +35,33 @@ public class UsersService {
     }
 
     public Users saveUser(Users newUser, String authorization) {
+        Users userEmail = usersRepository.findByUsernameOrEmail(newUser.getEmail());
+        Users userUsername = usersRepository.findByUsernameOrEmail(newUser.getUserUsername());
+
+        if (userEmail != null || userUsername != null) {
+            throw new ExceptionsSystem(
+                    "An account with this login information was found. Please log in to access it or recover your password!",
+                    HttpStatus.CONFLICT
+            );
+        }
+
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
+        newUser.setRole(UserRoles.ADMIN);
         return usersRepository.save(newUser);
     }
 
     public Users updateUser(Users updateUser, Long idUser, String authorization) {
         Users userExisting = this.findById(idUser, authorization);
-        Users usernameExisting = (Users) this.findByUsernameOrEmail(updateUser.getUsername(), authorization);
+        Users usernameExisting = (Users) this.findByUsernameOrEmail(updateUser.getUserUsername(), authorization);
 
         if (usernameExisting != null && !usernameExisting.getIdUser().equals(idUser)) {
             throw new ExceptionsSystem(
-                    String.format("Username %s is not available", updateUser.getUsername()),
+                    String.format("Username %s is not available", updateUser.getUserUsername()),
                     HttpStatus.CONFLICT
             );
         } else {
-            userExisting.setUsername(updateUser.getUsername());
+            userExisting.setUserUsername(updateUser.getUserUsername());
         }
 
         userExisting.setFullName(updateUser.getFullName());
@@ -71,13 +85,17 @@ public class UsersService {
         return usersRepository.findWithinRadius(point, radius);
     }
 
-    public UserDetails findByUsernameOrEmail(String usernameOrEmail, String authorization) {
+    public Users findByUsernameOrEmail(String usernameOrEmail, String authorization) {
         return usersRepository.findByUsernameOrEmail(usernameOrEmail);
     }
 
     public Users insertNewUserLocation(DTOInsertLocationUser locationUser, String authorization) {
-        String pointWKT = String.format("POINT(%f %f)", locationUser.location().getX(), locationUser.location().getY());
-        usersRepository.insertNewUserLocation(locationUser.idUser(), pointWKT);
+        Users user = this.findById(locationUser.idUser(), authorization);
+
+        Point point = locationService.createPoint(locationUser.location());
+
+        user.setLocation(point);
+        usersRepository.save(user);
         return this.findById(locationUser.idUser(), authorization);
     }
 }

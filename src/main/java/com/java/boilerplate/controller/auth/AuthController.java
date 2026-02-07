@@ -5,6 +5,7 @@ import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,15 +19,13 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @JsonView(UserViews.Internal.class)
     public ResponseEntity<DTOLoginResponse> login(
-            @RequestBody DTOAuth data
+            @RequestBody @Valid DTOAuth data
     ) { return authHandler.login(data); }
 
     @PostMapping("/register")
-    @JsonView(UserViews.Internal.class)
     public ResponseEntity<DTOLoginResponse> register(
-            @RequestBody @JsonView(UserViews.Registration.class) DTOUser data
+            @RequestBody @Valid DTOUser data
     ) { return authHandler.register(data); }
 
     @GetMapping("/me")

@@ -8,19 +8,17 @@ import org.hibernate.annotations.NamedQuery;
 @NamedQuery(name = "Users.findByUsernameOrEmail", query = UsersQueriesJPA.sqlFindByUsernameOrEmail)
 public class UsersQueriesJPA {
     static final String sqlFindWithinRadius = """
-            SELECT u FROM Users u
-            WHERE function('dwithin', u.location, :point, :radius) = true
-            """;
+        SELECT u FROM Users u
+        WHERE function(
+            'ST_Distance_Sphere',
+            u.location,
+            :point
+        ) <= :radius
+        """;
 
     static final String sqlFindByUsernameOrEmail = """
-            SELECT u FROM Users u
-            WHERE u.username = :usernameOrEmail
-            OR u.email = :usernameOrEmail
-            """;
-
-    public static final String sqlInsertNewUserLocation = """
-        INSERT INTO users_app (id_user, user_location)
-        VALUES (:idUser, ST_GeomFromText(:point, 4326))
-        ON DUPLICATE KEY UPDATE user_location = ST_GeomFromText(:point, 4326)
+        SELECT u FROM Users u
+        WHERE u.userUsername = :usernameOrEmail
+        OR u.email = :usernameOrEmail
         """;
 }

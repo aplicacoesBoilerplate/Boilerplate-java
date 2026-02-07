@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class RequestPagination {
-    private int limit;
-    private int nextEntry;
+    private Integer limit;
+    private Integer nextEntry;
     private List<RequestFilters> filters;
 }
