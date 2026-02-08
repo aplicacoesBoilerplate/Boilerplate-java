@@ -2,7 +2,6 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
-import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
@@ -14,6 +13,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -31,6 +31,7 @@ public class UsersService {
         this.authService = authService;
     }
 
+    @Transactional(readOnly = true)
     public Users findById(Long idUser) {
         return usersRepository.findById(idUser)
                 .orElseThrow(() -> new ExceptionsSystem(
@@ -74,6 +75,7 @@ public class UsersService {
         }
     }
 
+    @Transactional
     public Users saveUser(Users newUser) {
         this.dataValidModify(newUser, null);
         if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
@@ -95,6 +97,7 @@ public class UsersService {
         return usersRepository.save(newUser);
     }
 
+    @Transactional
     public Users updateUser(Users updateUser) {
         Long idUser = authService.getMe().getIdUser();
         Users userDoBanco = this.findById(idUser);
@@ -116,23 +119,28 @@ public class UsersService {
         return usersRepository.save(userDoBanco);
     }
 
+    @Transactional
     public void deleteUser() {
         usersRepository.delete(authService.getMe());
     }
 
+    @Transactional(readOnly = true)
     public DTOPagination<Users> findPaginationItens(RequestPagination request) {
         return usersRepository.findPaginationItens(request, "idUser");
     }
 
+    @Transactional(readOnly = true)
     public List<Users> findWithinRadius(Point point, Long radius) {
-        GenderUser userGender = authService.getMe().getUserGender();
-        return usersRepository.findWithinRadius(point, radius, userGender);
+        Users user = authService.getMe();
+        return usersRepository.findWithinRadius(point, radius, user.getUserGender(), user.getIdUser());
     }
 
+    @Transactional(readOnly = true)
     public Users findByUsernameOrEmail(String usernameOrEmail) {
         return usersRepository.findByUsernameOrEmail(usernameOrEmail);
     }
 
+    @Transactional
     public Users insertNewUserLocation(DTOInsertLocationUser locationUser) {
         Users user = this.findById(locationUser.idUser());
         Point point = locationService.createPoint(locationUser.location());
