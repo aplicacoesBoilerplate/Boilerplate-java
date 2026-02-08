@@ -43,7 +43,7 @@ public class UsersHandler {
 
     public ResponseEntity<String> deleteUser() {
         usersService.deleteUser();
-        return ResponseEntity.ok("User successfully removed!");
+        return ResponseEntity.ok().body("User successfully removed!");
     }
 
     public ResponseEntity<DTOPagination<DTOUser>> findPaginationItens(RequestPagination request) {

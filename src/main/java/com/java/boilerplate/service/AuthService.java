@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService implements UserDetailsService {
@@ -61,6 +62,7 @@ public class AuthService implements UserDetailsService {
         return tokenService.generateToken(user);
     }
 
+    @Transactional
     public Users register(Users newUser) {
         Users userEmail = usersRepository.findByUsernameOrEmail(newUser.getEmail());
         Users userUsername = usersRepository.findByUsernameOrEmail(newUser.getUserUsername());
@@ -78,6 +80,7 @@ public class AuthService implements UserDetailsService {
         return usersRepository.save(newUser);
     }
 
+    @Transactional(readOnly = true)
     public Users getMe() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 

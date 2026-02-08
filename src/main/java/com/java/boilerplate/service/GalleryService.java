@@ -3,10 +3,10 @@ package com.java.boilerplate.service;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Gallery;
 import com.java.boilerplate.repository.IGalleryRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -37,10 +37,12 @@ public class GalleryService {
         return galleryRepository.saveAll(galleries);
     }
 
+    @Transactional
     public void deletePhotos(List<Gallery> listPhotos) {
         galleryRepository.deleteAll(listPhotos);
     }
 
+    @Transactional(readOnly = true)
     public List<Gallery> findPhotosOfUser(String username) {
         userService.findByUsernameOrEmail(username);
         return galleryRepository.findPhotosOfUser(username);
