@@ -1,4 +1,4 @@
-package com.java.boilerplate.controller.ChatContacts;
+package com.java.boilerplate.controller.chatContacts;
 
 import com.java.boilerplate.model.ChatContacts;
 import com.java.boilerplate.service.ChatContactsService;
