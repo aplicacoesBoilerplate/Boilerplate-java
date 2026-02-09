@@ -46,7 +46,6 @@ public class AuthService implements UserDetailsService {
                 subscription.setStatus(SubscriptionStatus.OVERDUE);
                 userSubscriptionService.save(subscription);
             }
-
             throw new ExceptionsSystem(
                     "Subscription expired. Please renew your plan.",
                     HttpStatus.PAYMENT_REQUIRED
@@ -63,6 +62,7 @@ public class AuthService implements UserDetailsService {
         return user;
     }
 
+    @Transactional
     public String login(DTOAuth data) {
         var authToken = new UsernamePasswordAuthenticationToken(data.usernameOrEmail(), data.password());
         var authentication = manager.authenticate(authToken);
@@ -83,7 +83,6 @@ public class AuthService implements UserDetailsService {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && authentication.getPrincipal() instanceof Users user) {
-            this.validateSubscription(user.getIdUser());
              return usersRepository.findById(user.getIdUser())
                  .orElseThrow(() -> new ExceptionsSystem("User not found", HttpStatus.NOT_FOUND));
         }
