@@ -1,5 +1,6 @@
 package com.java.boilerplate.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.java.boilerplate.modelQueryJPA.GalleryQueriesJPA;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -18,6 +19,10 @@ public class Gallery extends GalleryQueriesJPA {
     @Column(name = "gallery_photo_url")
     private String photoUrl;
 
+    @Column(name = "id_user")
+    private Long idUser;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user", insertable = false, updatable = false)
     private Users user;

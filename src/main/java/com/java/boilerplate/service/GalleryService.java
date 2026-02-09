@@ -34,6 +34,10 @@ public class GalleryService {
             );
         }
 
+        galleries.forEach(gallery -> {
+            gallery.setIdUser(userId);
+        });
+
         return galleryRepository.saveAll(galleries);
     }
 
