@@ -14,7 +14,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 @Service
@@ -147,5 +154,28 @@ public class UsersService {
         user.setLocation(point);
         usersRepository.save(user);
         return user;
+    }
+
+    public Users updateAvatar(String username, MultipartFile file) {
+        Users user = this.findByUsernameOrEmail(username);
+
+        try {
+            String fileName = "avatar_" + username + "_" + System.currentTimeMillis() + file.getContentType();
+            Path uploadPath = Paths.get("uploads");
+
+            if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+
+            try (InputStream inputStream = file.getInputStream()) {
+                Path filePath = uploadPath.resolve(fileName);
+                Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            user.setAvatarUrl("/images/" + fileName);
+
+            return this.saveUser(user);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao salvar avatar", e);
+        }
     }
 }

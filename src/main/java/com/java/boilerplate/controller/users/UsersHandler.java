@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.Point;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -77,6 +78,11 @@ public class UsersHandler {
 
     public ResponseEntity<DTOUser> insertNewUserLocation(DTOInsertLocationUser locationUser) {
         Users user = usersService.insertNewUserLocation(locationUser);
+        return ResponseEntity.ok(DTOUser.fromEntity(user));
+    }
+
+    public ResponseEntity<DTOUser> updateAvatar(String username, MultipartFile file) {
+        Users user = usersService.updateAvatar(username, file);
         return ResponseEntity.ok(DTOUser.fromEntity(user));
     }
 }

@@ -8,8 +8,10 @@ import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/users")
@@ -64,4 +66,10 @@ public class UsersController {
     public ResponseEntity<DTOUser> insertNewUserLocation(
             @RequestBody DTOInsertLocationUser locationUser
     ) { return usersHandler.insertNewUserLocation(locationUser); }
+
+    @PatchMapping(value = "/{username}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DTOUser> updateAvatar(
+            @PathVariable String username,
+            @RequestParam("file") MultipartFile file
+    ) { return usersHandler.updateAvatar(username, file); }
 }
