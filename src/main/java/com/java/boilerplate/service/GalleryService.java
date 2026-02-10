@@ -70,6 +70,10 @@ public class GalleryService {
     @Transactional
     public void deletePhotos(List<Gallery> listPhotos) {
         for (Gallery gallery : listPhotos) {
+            if (gallery.getPhotoUrl() == null) {
+                continue;
+            }
+
             try {
                 galleryRepository.findById(gallery.getIdGallery()).orElseThrow();
                 String fileName = gallery.getPhotoUrl().substring(gallery.getPhotoUrl().lastIndexOf("/") + 1);

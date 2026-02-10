@@ -1,6 +1,6 @@
 package com.java.boilerplate.controller.chatContacts;
 
-import com.java.boilerplate.model.ChatContacts;
+import com.java.boilerplate.dto.DTOChatContactResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,14 +16,13 @@ public class ChatContactsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ChatContacts>> getChatContacts(
-            @RequestParam String username,
-            @RequestParam Long nextEntry,
+    public ResponseEntity<List<DTOChatContactResponse>> getChatContacts(
+            @RequestParam(required = false, defaultValue = "20") Long nextEntry,
             @RequestParam(required = false, defaultValue = "20") int limit
-    ) { return chatContactsHandler.getChatContacts(username, nextEntry, limit); }
+    ) { return chatContactsHandler.getChatContacts(nextEntry, limit); }
 
     @PostMapping
-    public ResponseEntity<ChatContacts> updateContactStatus(
+    public ResponseEntity<DTOChatContactResponse> updateContactStatus(
             @RequestParam Long receiverId,
             @RequestParam Long senderId,
             @RequestParam(required = false, defaultValue = "false") Boolean isBlocked

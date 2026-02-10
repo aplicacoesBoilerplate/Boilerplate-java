@@ -30,9 +30,9 @@ public class ChatMessages extends ChatMessagesQueriesJPA {
     private String content;
 
     @CreationTimestamp
-    @Column(name = "timestamp_send_message", nullable = false, updatable = false)
+    @Column(name = "message_timestamp", nullable = false, updatable = false)
     private LocalDateTime timestamp;
 
-    @Column(name = "message_read")
+    @Column(name = "message_is_read")
     private Boolean read;
 }

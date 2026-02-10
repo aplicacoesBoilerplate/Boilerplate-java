@@ -23,13 +23,15 @@ public class ChatMessagesService {
     private final UsersService usersService;
     private final ChatContactsService chatContactsService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final AuthService authService;
 
-    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate) {
+    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService) {
         this.chatMessagesRepository = chatMessagesRepository;
         this.usersRepository = usersRepository;
         this.usersService = usersService;
         this.chatContactsService = chatContactsService;
         this.messagingTemplate = messagingTemplate;
+        this.authService = authService;
     }
     
     @Transactional
@@ -72,16 +74,28 @@ public class ChatMessagesService {
         return dto;
     }
 
-    @Transactional(readOnly = true)
-    public List<ChatMessages> findConversation(Long currentUserId, Long contactId, Long nextEntry, int limit) {
+    @Transactional
+    public List<DTOChatMessages> findConversation(Long contactId, Long nextEntry, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
+        Long currentUserId = authService.getMe().getIdUser();
         List<ChatMessages> messages = chatMessagesRepository.findConversation(
                 currentUserId,
                 contactId,
                 nextEntry,
                 pageable
         );
+        return messages.stream().map(DTOChatMessages::fromEntity).toList();
+    }
 
-        return messages;
+    @Transactional
+    public void readMessage(Long idMessage) {
+        ChatMessages messageRead = chatMessagesRepository.findById(idMessage)
+                .orElseThrow(() -> new ExceptionsSystem(
+                        "Message not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        messageRead.setRead(true);
+        chatMessagesRepository.save(messageRead);
     }
 }

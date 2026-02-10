@@ -2,7 +2,6 @@ package com.java.boilerplate.controller.chatMessages;
 
 import com.java.boilerplate.dto.chatMessages.DTOChatMessages;
 import com.java.boilerplate.dto.chatMessages.DTORequestSendMessage;
-import com.java.boilerplate.model.ChatMessages;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,10 +22,14 @@ public class ChatMessagesController {
     ) { return chatMessagesHandler.sendMessage(request); }
 
     @GetMapping
-    public ResponseEntity<List<ChatMessages>> findConversation(
-            @RequestParam Long currentUserId,
+    public ResponseEntity<List<DTOChatMessages>> findConversation(
             @RequestParam Long contactId,
-            @RequestParam Long nextEntry,
+            @RequestParam(required = false, defaultValue = "20") Long nextEntry,
             @RequestParam(required = false, defaultValue = "20") int limit
-    ) { return chatMessagesHandler.findConversation(currentUserId, contactId, nextEntry, limit); }
+    ) { return chatMessagesHandler.findConversation(contactId, nextEntry, limit); }
+
+    @PatchMapping
+    public ResponseEntity<Void> readMessage(
+            @RequestParam Long idMessage
+    ) { return chatMessagesHandler.readMessage(idMessage); }
 }

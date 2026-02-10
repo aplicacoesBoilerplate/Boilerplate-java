@@ -163,11 +163,16 @@ public class UsersService {
         return user;
     }
 
+    @Transactional
     public Users updateAvatar(String username, MultipartFile file) {
         Users user = this.findByUsernameOrEmail(username);
 
         try {
-            String fileName = "avatar_" + username + "_" + System.currentTimeMillis() + file.getContentType();
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename != null && originalFilename.contains(".")
+                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                    : ".jpg";
+            String fileName = "avatar_" + username + "_" + System.currentTimeMillis() + extension;
             Path uploadPath = Paths.get("uploads");
 
             if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
@@ -178,9 +183,7 @@ public class UsersService {
             }
 
             user.setAvatarUrl("/images/" + fileName);
-
-            return this.saveUser(user);
-
+            return usersRepository.save(user);
         } catch (IOException e) {
             throw new RuntimeException(
                     String.format("Error saving avatar: %s", e.getMessage()),

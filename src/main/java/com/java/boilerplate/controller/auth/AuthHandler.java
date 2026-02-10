@@ -18,7 +18,6 @@ public class AuthHandler {
 
     public ResponseEntity<DTOLoginResponse> login(DTOAuth data) {
         String token = authService.login(data);
-        System.out.printf("Token JWT: %s%n", token);
         return ResponseEntity.ok(new DTOLoginResponse(token));
     }
 
