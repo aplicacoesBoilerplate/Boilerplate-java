@@ -73,8 +73,6 @@ public class AuthService implements UserDetailsService {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-
-        this.validateSubscription(user.getIdUser());
         return tokenService.generateToken(user);
     }
 
@@ -83,13 +81,33 @@ public class AuthService implements UserDetailsService {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && authentication.getPrincipal() instanceof Users user) {
+            this.validateSubscription(user.getIdUser());
              return usersRepository.findById(user.getIdUser())
-                 .orElseThrow(() -> new ExceptionsSystem("User not found", HttpStatus.NOT_FOUND));
+                 .orElseThrow(() -> new ExceptionsSystem(
+                         "User not found",
+                         HttpStatus.NOT_FOUND
+                 ));
         }
 
         throw new ExceptionsSystem("User not authenticated", HttpStatus.UNAUTHORIZED);
     }
 
+    @Transactional(readOnly = true)
+    public Users getMeIgnoringSubscription() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof Users user) {
+            return usersRepository.findById(user.getIdUser())
+                    .orElseThrow(() -> new ExceptionsSystem(
+                            "User not found",
+                            HttpStatus.NOT_FOUND
+                    ));
+        }
+        throw new ExceptionsSystem(
+                "User not authenticated",
+                HttpStatus.UNAUTHORIZED
+        );
+    }
 
     @Transactional
     public Users register(Users newUser) {

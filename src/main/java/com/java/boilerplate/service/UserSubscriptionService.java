@@ -1,11 +1,14 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.repository.IUserSubscriptionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class UserSubscriptionService {
@@ -21,13 +24,21 @@ public class UserSubscriptionService {
     }
 
     @Transactional
-    public UserSubscription update(UserSubscription subscription, Long idSubscription) {
-        this.findByUser_IdUser(subscription.getUser().getIdUser());
-        subscriptionRepository.findById(idSubscription).orElseThrow(() -> new ExceptionsSystem(
-                "User signature not found",
-                HttpStatus.NOT_FOUND
-        ));
-        return this.save(subscription);
+    public void renewSubscription(Long userId, String transactionId) {
+        UserSubscription subscription = this.findByUser_IdUser(userId);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (subscription.getExpireAt().isBefore(now)) {
+            subscription.setExpireAt(now.plusDays(30));
+        } else {
+            subscription.setExpireAt(subscription.getExpireAt().plusDays(30));
+        }
+
+        subscription.setLastPaymentId(transactionId);
+        subscription.setStatus(SubscriptionStatus.ACTIVE);
+
+        subscriptionRepository.save(subscription);
     }
 
     @Transactional(readOnly = true)

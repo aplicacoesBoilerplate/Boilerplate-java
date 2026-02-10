@@ -18,7 +18,7 @@ public class InfinitePayHandler {
     }
 
     public ResponseEntity<DTOInfinitePayLinkResponse> generateRenewalLink() {
-        Users user = authService.getMe();
+        Users user = authService.getMeIgnoringSubscription();
         return ResponseEntity.ok(infinitePayService.createPaymentLink(user));
     }
 }
