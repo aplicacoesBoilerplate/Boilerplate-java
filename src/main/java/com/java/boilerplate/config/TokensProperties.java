@@ -13,7 +13,8 @@ public class TokensProperties {
     private String secret;
     private String host;
     private String uploadDir;
-    private String infinitePayUrl;
-    private String infinitePayToken;
-    private Double infinitePayAmount;
+    private String infinitePayEndpoint;
+    private String infinitePayHandle;
+    private String infinitePayRedirectUrl;
+    private String infinitePayWebhookUrl;
 }

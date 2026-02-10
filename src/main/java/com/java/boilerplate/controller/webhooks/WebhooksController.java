@@ -17,7 +17,7 @@ public class WebhooksController {
     }
 
     @PostMapping("/infinitePay")
-    public ResponseEntity<Void> infinitePay(
+    public ResponseEntity<Void> infinitePayResponsePayment(
             @RequestBody DTOInfinitePayWebhook payload
-    ) { return webHooksHandler.infinitePay(payload); }
+    ) { return webHooksHandler.infinitePayResponsePayment(payload); }
 }

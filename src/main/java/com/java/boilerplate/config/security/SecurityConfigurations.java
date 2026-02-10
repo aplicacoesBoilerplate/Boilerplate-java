@@ -29,6 +29,7 @@ public class SecurityConfigurations {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/webhook/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

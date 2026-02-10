@@ -49,6 +49,7 @@ tokens:
   secret: ${JWT_SECRET}
   host: ${HOST}
   uploadDir: ${UPLOAD_DIR}
-  infinitePayUrl: ${INFINITE_PAY_URL}
-  infinitePayToken: ${INFINITE_PAY_TOKEN}
-  infinitePayAmount: ${SUBSCRIPTION_VALUE}
+  infinitePayEndpoint: ${INFINITE_PAY_ENDPOINT}
+  infinitePayHandle: ${INFINITE_PAY_HANDLE}
+  infinitePayRedirectUrl: ${INFINITE_PAY_REDIRECT_URL}
+  infinitePayWebhookUrl: ${INFINITE_PAY_WEBHOOK_URL}

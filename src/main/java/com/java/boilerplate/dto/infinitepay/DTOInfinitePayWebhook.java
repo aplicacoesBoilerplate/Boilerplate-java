@@ -1,14 +1,15 @@
 package com.java.boilerplate.dto.infinitepay;
 
-import java.util.Map;
+import java.util.List;
 
 public record DTOInfinitePayWebhook(
-        String type,
-        Data data
-) {
-    public record Data(
-            String id,
-            String status,
-            Map<String, String> metadata
-    ) {}
-}
+          String invoice_slug,
+          Integer amount,
+          Integer paid_amount,
+          Integer installments,
+          String capture_method,
+          String transaction_nsu,
+          String order_nsu,
+          String receipt_url,
+          List<DTOInfinitePayItemsLinkRequest> items
+) { }
