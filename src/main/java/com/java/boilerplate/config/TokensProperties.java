@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 @Setter
 public class TokensProperties {
     private String secret;
-    private String payGateway;
     private String host;
     private String uploadDir;
+    private String infinitePayUrl;
+    private String infinitePayToken;
+    private Double infinitePayAmount;
 }

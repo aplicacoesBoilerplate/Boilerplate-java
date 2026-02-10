@@ -47,6 +47,8 @@ logging:
 
 tokens:
   secret: ${JWT_SECRET}
-  payGateway: ${TOKEN_INFINITE_PAY}
   host: ${HOST}
   uploadDir: ${UPLOAD_DIR}
+  infinitePayUrl: ${INFINITE_PAY_URL}
+  infinitePayToken: ${INFINITE_PAY_TOKEN}
+  infinitePayAmount: ${SUBSCRIPTION_VALUE}

@@ -8,23 +8,24 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
     private final TokensProperties tokensProperties;
 
-    public WebSocketConfig(TokensProperties tokensProperties) {
+    public WebSocketConfiguration(TokensProperties tokensProperties) {
         this.tokensProperties = tokensProperties;
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/queue");
+        config.enableSimpleBroker("/topic");
         config.setUserDestinationPrefix("/user");
+        config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://127.0.0.1:9000", tokensProperties.getHost())
+                .setAllowedOrigins("http://localhost:9000", tokensProperties.getHost() + ":9000")
                 .withSockJS();
     }
 }

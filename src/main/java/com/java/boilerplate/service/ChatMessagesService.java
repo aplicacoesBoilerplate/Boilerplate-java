@@ -65,7 +65,7 @@ public class ChatMessagesService {
 
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(usernameReceiver),
-                "/queue/messages",
+                "/topic/messages",
                 dto
         );
 
