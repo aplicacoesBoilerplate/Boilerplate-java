@@ -68,12 +68,8 @@ public class UsersHandler {
     }
 
     public ResponseEntity<DTOUser> findByUsernameOrEmail(String usernameOrEmail) {
-        Object principal = usersService.findByUsernameOrEmail(usernameOrEmail);
-
-        if (principal instanceof Users user)
-            return ResponseEntity.ok(DTOUser.fromEntity(user));
-
-        throw new ExceptionsSystem("Converted identity is not a valid User", HttpStatus.INTERNAL_SERVER_ERROR);
+        Users user = usersService.findByUsernameOrEmail(usernameOrEmail);
+        return ResponseEntity.ok(DTOUser.fromEntity(user));
     }
 
     public ResponseEntity<DTOUser> insertNewUserLocation(DTOInsertLocationUser locationUser) {

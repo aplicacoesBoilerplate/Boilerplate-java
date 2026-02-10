@@ -144,7 +144,14 @@ public class UsersService {
 
     @Transactional(readOnly = true)
     public Users findByUsernameOrEmail(String usernameOrEmail) {
-        return usersRepository.findByUsernameOrEmail(usernameOrEmail);
+        Users user = usersRepository.findByUsernameOrEmail(usernameOrEmail);
+        if (user == null) {
+            throw new ExceptionsSystem(
+                    "User not found",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+        return user;
     }
 
     @Transactional
@@ -175,7 +182,10 @@ public class UsersService {
             return this.saveUser(user);
 
         } catch (IOException e) {
-            throw new RuntimeException("Erro ao salvar avatar", e);
+            throw new RuntimeException(
+                    String.format("Error saving avatar: %s", e.getMessage()),
+                    e
+            );
         }
     }
 }

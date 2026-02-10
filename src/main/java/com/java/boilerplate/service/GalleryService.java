@@ -71,12 +71,12 @@ public class GalleryService {
     public void deletePhotos(List<Gallery> listPhotos) {
         for (Gallery gallery : listPhotos) {
             try {
+                galleryRepository.findById(gallery.getIdGallery()).orElseThrow();
                 String fileName = gallery.getPhotoUrl().substring(gallery.getPhotoUrl().lastIndexOf("/") + 1);
 
                 Path fileToDelete = rootLocation.resolve(fileName);
                 Files.deleteIfExists(fileToDelete);
             } catch (IOException e) {
-                System.err.println("Error deleting physical file: " + gallery.getPhotoUrl());
                 throw new ExceptionsSystem(
                         String.format("Error deleting physical file: " + gallery.getPhotoUrl()),
                         HttpStatus.INTERNAL_SERVER_ERROR
