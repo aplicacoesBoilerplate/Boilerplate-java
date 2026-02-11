@@ -30,6 +30,6 @@ public class ChatMessagesController {
 
     @PatchMapping
     public ResponseEntity<Void> readMessage(
-            @RequestParam Long idMessage
-    ) { return chatMessagesHandler.readMessage(idMessage); }
+            @RequestBody List<Long> idMessages
+    ) { return chatMessagesHandler.readMessage(idMessages); }
 }

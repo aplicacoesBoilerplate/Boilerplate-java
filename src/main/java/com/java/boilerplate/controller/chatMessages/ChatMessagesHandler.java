@@ -24,8 +24,8 @@ public class ChatMessagesHandler {
         return ResponseEntity.ok(chatMessagesService.findConversation(contactId, nextEntry, limit));
     }
 
-    public ResponseEntity<Void> readMessage(Long idMessage) {
-        chatMessagesService.readMessage(idMessage);
+    public ResponseEntity<Void> readMessage(List<Long> idMessages) {
+        chatMessagesService.readMessage(idMessages);
         return ResponseEntity.ok().build();
     }
 }

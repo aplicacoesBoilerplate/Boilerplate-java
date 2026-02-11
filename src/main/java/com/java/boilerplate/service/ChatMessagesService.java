@@ -33,6 +33,14 @@ public class ChatMessagesService {
         this.messagingTemplate = messagingTemplate;
         this.authService = authService;
     }
+
+    private ChatMessages findById(Long idMessage) {
+        return chatMessagesRepository.findById(idMessage)
+                .orElseThrow(() -> new ExceptionsSystem(
+                        "Message not found",
+                        HttpStatus.NOT_FOUND
+                ));
+    }
     
     @Transactional
     public DTOChatMessages sendMessage(Long senderId, Long receiverId, String content) {
@@ -88,14 +96,9 @@ public class ChatMessagesService {
     }
 
     @Transactional
-    public void readMessage(Long idMessage) {
-        ChatMessages messageRead = chatMessagesRepository.findById(idMessage)
-                .orElseThrow(() -> new ExceptionsSystem(
-                        "Message not found",
-                        HttpStatus.NOT_FOUND
-                ));
-
-        messageRead.setRead(true);
-        chatMessagesRepository.save(messageRead);
+    public void readMessage(List<Long> idMessages) {
+        List<ChatMessages> messages = idMessages.stream().map(this::findById).toList();
+        messages.forEach(msg -> msg.setRead(true));
+        chatMessagesRepository.saveAll(messages);
     }
 }
