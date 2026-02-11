@@ -17,7 +17,7 @@ public class ChatContactsController {
 
     @GetMapping
     public ResponseEntity<List<DTOChatContactResponse>> getChatContacts(
-            @RequestParam(required = false, defaultValue = "0") Long nextEntry,
+            @RequestParam(required = false) Long nextEntry,
             @RequestParam(required = false, defaultValue = "20") int limit
     ) { return chatContactsHandler.getChatContacts(nextEntry, limit); }
 
