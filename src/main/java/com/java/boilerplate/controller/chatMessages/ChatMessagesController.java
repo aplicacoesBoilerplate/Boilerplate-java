@@ -24,7 +24,7 @@ public class ChatMessagesController {
     @GetMapping
     public ResponseEntity<List<DTOChatMessages>> findConversation(
             @RequestParam Long contactId,
-            @RequestParam(required = false, defaultValue = "20") Long nextEntry,
+            @RequestParam(required = false, defaultValue = "0") Long nextEntry,
             @RequestParam(required = false, defaultValue = "20") int limit
     ) { return chatMessagesHandler.findConversation(contactId, nextEntry, limit); }
 
