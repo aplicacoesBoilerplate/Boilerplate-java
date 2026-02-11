@@ -11,6 +11,7 @@ import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUserOtpRepository;
 import com.java.boilerplate.repository.IUsersRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
@@ -37,6 +38,9 @@ public class AuthService implements UserDetailsService {
     private final UserSubscriptionService userSubscriptionService;
     private final JavaMailSender mailSender;
     private final IUserOtpRepository otpRepository;
+
+    @Value("${spring.mail.username}")
+    private String emailFrom;
 
     public AuthService(@Lazy AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, IUsersRepository usersRepository, UserSubscriptionService userSubscriptionService, JavaMailSender mailSender, IUserOtpRepository otpRepository) {
         this.manager = manager;
@@ -65,6 +69,7 @@ public class AuthService implements UserDetailsService {
 
     private void sendOtpEmail(String to, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(emailFrom);
         message.setTo(to);
         message.setSubject("Recover your password - TZ");
         message.setText("Your verification code is: " + code + "\nThis code expires in 10 minutes");

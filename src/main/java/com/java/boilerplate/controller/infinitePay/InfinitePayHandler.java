@@ -1,7 +1,6 @@
 package com.java.boilerplate.controller.infinitePay;
 
 import com.java.boilerplate.dto.infinitepay.DTOInfinitePayLinkResponse;
-import com.java.boilerplate.model.Users;
 import com.java.boilerplate.service.AuthService;
 import com.java.boilerplate.service.InfinitePayService;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +16,7 @@ public class InfinitePayHandler {
         this.authService = authService;
     }
 
-    public ResponseEntity<DTOInfinitePayLinkResponse> generateRenewalLink() {
-        Users user = authService.getMeIgnoringSubscription();
-        return ResponseEntity.ok(infinitePayService.createPaymentLink(user));
+    public ResponseEntity<DTOInfinitePayLinkResponse> generateRenewalLink(String email) {
+        return ResponseEntity.ok(infinitePayService.generateRenewalLink(email));
     }
 }
