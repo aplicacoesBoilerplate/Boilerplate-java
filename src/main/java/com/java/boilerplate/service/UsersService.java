@@ -52,18 +52,18 @@ public class UsersService {
         return user.getRole().equals(UserRoles.ADMIN);
     }
 
-    private void dataValidModify(Users user, Long idUser) {
-        Boolean isAdmin = this.userIsAdmin();
+    private void dataValidModify(Users dataUser, Long idUser) {
+        Boolean authenticatedUserIsAdmin = this.userIsAdmin();
 
-        if (user.getRole().equals(UserRoles.ADMIN) && !isAdmin) {
+        if (dataUser.getRole().equals(UserRoles.ADMIN) && !authenticatedUserIsAdmin) {
             throw new ExceptionsSystem(
                     "New administrators can only be created by another administrator",
                     HttpStatus.UNAUTHORIZED
             );
         }
 
-        Users emailExisting = this.findByUsernameOrEmail(user.getEmail());
-        Users usernameExisting = this.findByUsernameOrEmail(user.getUserUsername());
+        Users emailExisting = this.findByUsernameOrEmail(dataUser.getEmail());
+        Users usernameExisting = this.findByUsernameOrEmail(dataUser.getUserUsername());
 
         if (idUser != null) {
             if (usernameExisting != null && !usernameExisting.getIdUser().equals(idUser) || emailExisting != null && !emailExisting.getIdUser().equals(idUser)) {

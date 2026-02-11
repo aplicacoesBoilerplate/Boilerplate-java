@@ -10,6 +10,8 @@ import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -19,14 +21,18 @@ import java.util.List;
 public class InfinitePayService {
     private final TokensProperties tokensProperties;
     private final UserSubscriptionService subscriptionService;
+    private final UsersService usersService;
 
-    public InfinitePayService(TokensProperties tokensProperties, UserSubscriptionService subscriptionService) {
+    public InfinitePayService(TokensProperties tokensProperties, UserSubscriptionService subscriptionService, UsersService usersService) {
         this.tokensProperties = tokensProperties;
         this.subscriptionService = subscriptionService;
+        this.usersService = usersService;
     }
 
-    public DTOInfinitePayLinkResponse createPaymentLink(Users user) {
+    @Transactional(readOnly = true)
+    public DTOInfinitePayLinkResponse generateRenewalLink(String email) {
         try {
+            Users user = usersService.findByUsernameOrEmail(email);
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
@@ -74,14 +80,15 @@ public class InfinitePayService {
                     DTOInfinitePayLinkResponse.class
             );
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody();
-            } else {
-                throw new ExceptionsSystem("Failed to create payment link at provider", HttpStatus.BAD_GATEWAY);
-            }
+            return response.getBody();
+
+        } catch (HttpClientErrorException e) {
+            String erroGateway = e.getResponseBodyAsString();
+            System.err.println("Erro vindo da InfinitePay: " + erroGateway);
+
+            throw new ExceptionsSystem("Failed to create payment link at provider: " + erroGateway, HttpStatus.BAD_GATEWAY);
 
         } catch (Exception e) {
-            e.printStackTrace();
             throw new ExceptionsSystem("Payment Gateway Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
