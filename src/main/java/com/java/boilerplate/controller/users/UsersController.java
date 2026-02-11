@@ -72,4 +72,9 @@ public class UsersController {
             @PathVariable String username,
             @RequestParam("file") MultipartFile file
     ) { return usersHandler.updateAvatar(username, file); }
+
+    @PatchMapping("/presence")
+    public ResponseEntity<Void> updatePresence(
+            @RequestParam(required = false, defaultValue = "false") Boolean online
+    ) { return usersHandler.updatePresence(online); }
 }

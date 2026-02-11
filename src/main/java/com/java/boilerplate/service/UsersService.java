@@ -191,4 +191,11 @@ public class UsersService {
             );
         }
     }
+
+    @Transactional
+    public void updatePresence(Boolean online) {
+        Users user = authService.getMe();
+        user.setOnline(online);
+        this.saveUser(user);
+    }
 }
