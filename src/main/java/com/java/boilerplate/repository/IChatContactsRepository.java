@@ -13,9 +13,5 @@ public interface IChatContactsRepository extends IBaseRepository<ChatContacts> {
     Boolean checkBlockedContact(Long receiverId, Long senderId);
     Optional<ChatContacts> findByUser_IdUserAndContact_IdUser(Long userId, Long contactId);
     void deleteByUser_IdUserAndContact_IdUser(Long userId, Long contactId);
-    List<ChatContacts> findContactsByUsername(
-            @Param("username") String username,
-            @Param("nextEntryId") Long nextEntryId,
-            Pageable pageable
-    );
+    List<Object[]> findContactsWithLastMessage(@Param("username") String username, @Param("nextEntryId") Long nextEntryId, Pageable pageable);
 }

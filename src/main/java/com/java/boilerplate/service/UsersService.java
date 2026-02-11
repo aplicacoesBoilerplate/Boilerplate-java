@@ -193,9 +193,11 @@ public class UsersService {
     }
 
     @Transactional
-    public void updatePresence(Boolean online) {
-        Users user = authService.getMe();
-        user.setOnline(online);
-        this.saveUser(user);
+    public void updatePresence(String username, boolean online) {
+        Users user = usersRepository.findByUsernameOrEmail(username);
+        if (user != null) {
+            user.setOnline(online);
+            usersRepository.save(user);
+        }
     }
 }

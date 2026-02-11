@@ -75,6 +75,7 @@ public class UsersController {
 
     @PatchMapping("/presence")
     public ResponseEntity<Void> updatePresence(
+            @RequestParam String username,
             @RequestParam(required = false, defaultValue = "false") Boolean online
-    ) { return usersHandler.updatePresence(online); }
+    ) { return usersHandler.updatePresence(username, online); }
 }

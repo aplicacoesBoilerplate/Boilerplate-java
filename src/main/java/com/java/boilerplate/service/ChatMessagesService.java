@@ -43,7 +43,8 @@ public class ChatMessagesService {
     }
     
     @Transactional
-    public DTOChatMessages sendMessage(Long senderId, Long receiverId, String content) {
+    public DTOChatMessages sendMessage(Long receiverId, String content) {
+        Long senderId = authService.getMe().getIdUser();
         boolean isBlocked = chatContactsService.checkBlockedContact(receiverId, senderId);
 
         if (isBlocked) {

@@ -19,8 +19,8 @@ public class ChatContactsHandler {
         return ResponseEntity.ok(chatContactsService.getChatContacts(nextEntry, limit));
     }
 
-    public ResponseEntity<DTOChatContactResponse> updateContactStatus(Long receiverId, Long senderId, Boolean isBlocked) {
-        return ResponseEntity.ok(chatContactsService.updateContactStatus(receiverId, senderId, isBlocked));
+    public ResponseEntity<DTOChatContactResponse> updateContactStatus(Long senderId, Boolean isBlocked) {
+        return ResponseEntity.ok(chatContactsService.updateContactStatus(senderId, isBlocked));
     }
 
     public ResponseEntity<String> removeContact(Long userId, Long contactId) {

@@ -23,10 +23,9 @@ public class ChatContactsController {
 
     @PostMapping
     public ResponseEntity<DTOChatContactResponse> updateContactStatus(
-            @RequestParam Long receiverId,
             @RequestParam Long senderId,
             @RequestParam(required = false, defaultValue = "false") Boolean isBlocked
-    ) { return chatContactsHandler.updateContactStatus(receiverId, senderId, isBlocked); }
+    ) { return chatContactsHandler.updateContactStatus(senderId, isBlocked); }
 
     @DeleteMapping
     public ResponseEntity<String> removeContact(

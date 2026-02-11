@@ -84,8 +84,8 @@ public class UsersHandler {
         return ResponseEntity.ok(DTOUser.fromEntity(user));
     }
 
-    public ResponseEntity<Void> updatePresence(Boolean online) {
-        usersService.updatePresence(online);
+    public ResponseEntity<Void> updatePresence(String username, Boolean online) {
+        usersService.updatePresence(username, online);
         return ResponseEntity.ok().build();
     }
 }
