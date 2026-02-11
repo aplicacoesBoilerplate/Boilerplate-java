@@ -2,6 +2,7 @@ package com.java.boilerplate.controller.auth;
 
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
+import com.java.boilerplate.dto.auth.DTOResetPasswordRequest;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.service.AuthService;
@@ -25,5 +26,14 @@ public class AuthHandler {
         Users user = data.toEntity();
         Users newUser = authService.register(user);
         return this.login(new DTOAuth(newUser.getEmail(), data.password()));
+    }
+
+    public ResponseEntity<Void> generatePasswordResetOtp(String email) {
+        authService.generatePasswordResetOtp(email);
+        return ResponseEntity.ok().build();
+    }
+
+    public ResponseEntity<DTOLoginResponse> resetPasswordWithOtp(DTOResetPasswordRequest request) {
+        return ResponseEntity.ok(new DTOLoginResponse(authService.resetPasswordWithOtp(request)));
     }
 }

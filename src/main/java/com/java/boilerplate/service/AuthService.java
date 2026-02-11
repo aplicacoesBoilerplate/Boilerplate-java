@@ -2,14 +2,19 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.config.security.TokenService;
 import com.java.boilerplate.dto.auth.DTOAuth;
+import com.java.boilerplate.dto.auth.DTOResetPasswordRequest;
 import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
+import com.java.boilerplate.model.UserOtp;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
+import com.java.boilerplate.repository.IUserOtpRepository;
 import com.java.boilerplate.repository.IUsersRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Random;
 
 @Service
 public class AuthService implements UserDetailsService {
@@ -29,13 +35,17 @@ public class AuthService implements UserDetailsService {
     private final TokenService tokenService;
     private final IUsersRepository usersRepository;
     private final UserSubscriptionService userSubscriptionService;
+    private final JavaMailSender mailSender;
+    private final IUserOtpRepository otpRepository;
 
-    public AuthService(@Lazy AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, IUsersRepository usersRepository, UserSubscriptionService userSubscriptionService) {
+    public AuthService(@Lazy AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, IUsersRepository usersRepository, UserSubscriptionService userSubscriptionService, JavaMailSender mailSender, IUserOtpRepository otpRepository) {
         this.manager = manager;
         this.encoder = encoder;
         this.tokenService = tokenService;
         this.usersRepository = usersRepository;
         this.userSubscriptionService = userSubscriptionService;
+        this.mailSender = mailSender;
+        this.otpRepository = otpRepository;
     }
 
     private void validateSubscription(Long userId) {
@@ -51,6 +61,14 @@ public class AuthService implements UserDetailsService {
                     HttpStatus.PAYMENT_REQUIRED
             );
         }
+    }
+
+    private void sendOtpEmail(String to, String code) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Recover your password - TZ");
+        message.setText("Your verification code is: " + code + "\nThis code expires in 10 minutes");
+        mailSender.send(message);
     }
 
     @Override
@@ -133,5 +151,63 @@ public class AuthService implements UserDetailsService {
         userSubscriptionService.save(subscription);
 
         return savedUser;
+    }
+
+    @Transactional
+    public void generatePasswordResetOtp(String email) {
+        Users user = usersRepository.findByUsernameOrEmail(email);
+        if (user == null) {
+            throw new ExceptionsSystem(
+                    "User not found",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+
+        UserOtp otpEntry = otpRepository.findById(user.getIdUser()).orElse(new UserOtp());
+
+        String code = String.format("%06d", new Random().nextInt(1000000));
+
+        otpEntry.setUser(user);
+        otpEntry.setOtpCode(code);
+        otpEntry.setExpiryDate(LocalDateTime.now().plusMinutes(10));
+
+        otpRepository.save(otpEntry);
+        sendOtpEmail(user.getEmail(), code);
+    }
+
+    @Transactional
+    public String resetPasswordWithOtp(DTOResetPasswordRequest request) {
+        Users user = usersRepository.findByUsernameOrEmail(request.email());
+        if (user == null) {
+            throw new ExceptionsSystem(
+                    "User not found",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+
+        UserOtp otp = otpRepository.findByUser_IdUser(user.getIdUser())
+                .orElseThrow(() ->
+                        new ExceptionsSystem(
+                                "OTP code not found",
+                                HttpStatus.UNAUTHORIZED
+                        ));
+
+        if (otp.getOtpCode() == null || !otp.getOtpCode().equals(request.otp())) {
+            throw new ExceptionsSystem(
+                    "Invalid OTP code",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+
+        if (otp.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new ExceptionsSystem(
+                    "OTP code expired",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+
+        user.setPassword(encoder.encode(request.newPassword()));
+        usersRepository.save(user);
+        return this.login(new DTOAuth(request.email(), request.newPassword()));
     }
 }

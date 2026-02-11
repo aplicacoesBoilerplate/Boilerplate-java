@@ -3,6 +3,7 @@ package com.java.boilerplate.controller.auth;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
+import com.java.boilerplate.dto.auth.DTOResetPasswordRequest;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
 import com.java.boilerplate.model.Users;
@@ -29,6 +30,16 @@ public class AuthController {
     public ResponseEntity<DTOLoginResponse> register(
             @RequestBody @Valid DTOUser data
     ) { return authHandler.register(data); }
+
+    @PostMapping("/forgot")
+    public ResponseEntity<Void> generatePasswordResetOtp(
+            @RequestParam String email
+    ) { return authHandler.generatePasswordResetOtp(email); }
+
+    @PostMapping("/reset")
+    public ResponseEntity<DTOLoginResponse> resetPasswordWithOtp(
+            @RequestBody DTOResetPasswordRequest request
+    ) { return authHandler.resetPasswordWithOtp(request); }
 
     @GetMapping("/me")
     @JsonView(UserViews.Internal.class)
