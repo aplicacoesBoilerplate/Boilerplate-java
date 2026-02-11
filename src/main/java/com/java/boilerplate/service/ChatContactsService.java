@@ -62,18 +62,18 @@ public class ChatContactsService {
                     return chatContactsRepository.save(existingContact);
                 })
                 .orElseGet(() -> {
+                    ChatContacts contactReceiver = new ChatContacts();
+                    contactReceiver.setUser(usersRepository.getReferenceById(senderId));
+                    contactReceiver.setContact(usersRepository.getReferenceById(receiverId));
+                    contactReceiver.setContactBlocked(false);
+                    chatContactsRepository.save(contactReceiver);
+                    
                     ChatContacts newContact = new ChatContacts();
-                    newContact.setUser(usersRepository.getReferenceById(senderId));
-                    newContact.setContact(usersRepository.getReferenceById(receiverId));
+                    newContact.setUser(usersRepository.getReferenceById(receiverId));
+                    newContact.setContact(usersRepository.getReferenceById(senderId));
                     newContact.setContactBlocked(isBlocked);
                     return chatContactsRepository.save(newContact);
                 });
-
-        ChatContacts contactReceiver = new ChatContacts();
-        contactReceiver.setUser(usersRepository.getReferenceById(receiverId));
-        contactReceiver.setContact(usersRepository.getReferenceById(senderId));
-        contactReceiver.setContactBlocked(false);
-        chatContactsRepository.save(contactReceiver);
 
         Boolean contactIsOnline = contact.getContact().getOnline();
         Long unreadCount = chatMessagesRepository.countUnreadMessages(senderId, receiverId);
