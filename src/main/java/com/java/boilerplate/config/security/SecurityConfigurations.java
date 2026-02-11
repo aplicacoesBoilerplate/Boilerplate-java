@@ -29,6 +29,7 @@ public class SecurityConfigurations {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/webhook/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

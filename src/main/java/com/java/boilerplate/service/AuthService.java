@@ -96,6 +96,7 @@ public class AuthService implements UserDetailsService {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
+        user.setOnline(true);
         return tokenService.generateToken(user);
     }
 
@@ -147,6 +148,7 @@ public class AuthService implements UserDetailsService {
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
         newUser.setRole(UserRoles.USER);
+        newUser.setOnline(true);
         Users savedUser = usersRepository.save(newUser);
 
         UserSubscription subscription = new UserSubscription();
@@ -212,6 +214,7 @@ public class AuthService implements UserDetailsService {
         }
 
         user.setPassword(encoder.encode(request.newPassword()));
+        user.setOnline(true);
         usersRepository.save(user);
         return this.login(new DTOAuth(request.email(), request.newPassword()));
     }

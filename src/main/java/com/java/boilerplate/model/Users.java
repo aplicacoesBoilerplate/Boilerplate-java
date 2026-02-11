@@ -60,6 +60,9 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Column(name = "user_location", columnDefinition = "POINT SRID 4326", nullable = false)
     private Point location;
 
+    @Column(name = "user_online")
+    private Boolean online;
+
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ChatContacts> contacts;

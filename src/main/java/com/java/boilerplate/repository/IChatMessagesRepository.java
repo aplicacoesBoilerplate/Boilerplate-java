@@ -9,10 +9,6 @@ import java.util.List;
 
 @Repository
 public interface IChatMessagesRepository extends IBaseRepository<ChatMessages> {
-    List<ChatMessages> findConversation(
-            @Param("myId") Long myId,
-            @Param("contactId") Long contactId,
-            @Param("nextEntryId") Long nextEntryId,
-            Pageable pageable
-    );
+    List<ChatMessages> findConversation(@Param("myId") Long myId, @Param("contactId") Long contactId, @Param("nextEntryId") Long nextEntryId, Pageable pageable );
+    Long countUnreadMessages(@Param("contactId") Long contactId, @Param("myId") Long myId);
 }

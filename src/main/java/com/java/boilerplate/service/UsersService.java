@@ -191,4 +191,13 @@ public class UsersService {
             );
         }
     }
+
+    @Transactional
+    public void updatePresence(String username, boolean online) {
+        Users user = usersRepository.findByUsernameOrEmail(username);
+        if (user != null) {
+            user.setOnline(online);
+            usersRepository.save(user);
+        }
+    }
 }

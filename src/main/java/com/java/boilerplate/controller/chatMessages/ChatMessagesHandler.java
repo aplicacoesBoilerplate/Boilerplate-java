@@ -17,7 +17,7 @@ public class ChatMessagesHandler {
     }
 
     public ResponseEntity<DTOChatMessages> sendMessage(DTORequestSendMessage request) {
-        return ResponseEntity.ok(chatMessagesService.sendMessage(request.senderId(), request.receiverId(), request.content()));
+        return ResponseEntity.ok(chatMessagesService.sendMessage(request.receiverId(), request.content()));
     }
 
     public ResponseEntity<List<DTOChatMessages>> findConversation(Long contactId, Long nextEntry, int limit) {

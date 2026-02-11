@@ -53,7 +53,10 @@ public record DTOUser(
 
         @NotNull(message = "The field location is required")
         @JsonView(UserViews.Public.class)
-        DTOLocation location
+        DTOLocation location,
+
+        @JsonView(UserViews.Public.class)
+        Boolean online
 ) {
     public Users toEntity() {
         Users user = new Users();
@@ -68,6 +71,7 @@ public record DTOUser(
         user.setEmail(this.email());
         user.setPassword(this.password());
         user.setRole(this.role());
+        user.setOnline(this.online);
 
         if (this.location() != null) {
             org.locationtech.jts.geom.GeometryFactory factory =
@@ -98,7 +102,8 @@ public record DTOUser(
                 user.getEmail(),
                 null,
                 user.getRole(),
-                location
+                location,
+                user.getOnline()
         );
     }
 }
