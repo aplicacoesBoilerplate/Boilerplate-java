@@ -44,6 +44,11 @@ server:
 management:
   endpoints:
     web:
+      cors:
+        allowed-origins: "http://localhost:9000"
+        allowed-methods: "GET, POST, OPTIONS"
+        allowed-headers: "*"
+        allow-credentials: true
       exposure:
         include: health
   endpoint:
