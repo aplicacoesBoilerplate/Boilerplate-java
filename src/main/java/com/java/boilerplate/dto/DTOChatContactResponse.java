@@ -11,9 +11,10 @@ public record DTOChatContactResponse(
         String avatarUrl,
         String lastMessage,
         LocalDateTime lastMessageTime,
+        Long unreadMessages,
         Boolean isOnline
 ) {
-    public DTOChatContactResponse(ChatContacts contact, String lastMessage, LocalDateTime lastMessageTime, Boolean isOnline) {
+    public DTOChatContactResponse(ChatContacts contact, String lastMessage, LocalDateTime lastMessageTime, Long unreadMessages, Boolean isOnline) {
         this(
                 contact.getIdChatContact(),
                 contact.getContact().getIdUser(),
@@ -21,6 +22,7 @@ public record DTOChatContactResponse(
                 contact.getContact().getAvatarUrl(),
                 lastMessage,
                 lastMessageTime,
+                unreadMessages,
                 isOnline
         );
     }

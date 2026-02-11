@@ -41,6 +41,7 @@ public class ChatContactsService {
             ChatContacts contact = (ChatContacts) result[0];
             String lastMessage = (String) result[1];
             LocalDateTime lastTime = (LocalDateTime) result[2];
+            Long unreadCount = (Long) result[3];
 
             Boolean contactIsOnline = usersRepository.findById(contact.getUser().getIdUser())
                     .orElseThrow(() -> new ExceptionsSystem(
@@ -48,27 +49,35 @@ public class ChatContactsService {
                             HttpStatus.NOT_FOUND
                     )).getOnline();
 
-            return new DTOChatContactResponse(contact, lastMessage, lastTime, contactIsOnline);
+            return new DTOChatContactResponse(contact, lastMessage, lastTime, unreadCount, contactIsOnline);
         }).toList();
     }
 
     @Transactional
-    public DTOChatContactResponse updateContactStatus(Long senderId, Boolean isBlocked) {
-        Long receiverId = authService.getMe().getIdUser();
-        ChatContacts contact = chatContactsRepository.findByUser_IdUserAndContact_IdUser(receiverId, senderId)
+    public DTOChatContactResponse updateContactStatus(Long receiverId, Boolean isBlocked) {
+        Long senderId = authService.getMe().getIdUser();
+        ChatContacts contact = chatContactsRepository.findByUser_IdUserAndContact_IdUser(senderId, receiverId)
                 .map(existingContact -> {
                     existingContact.setContactBlocked(isBlocked);
                     return chatContactsRepository.save(existingContact);
                 })
                 .orElseGet(() -> {
                     ChatContacts newContact = new ChatContacts();
-                    newContact.setUser(usersRepository.getReferenceById(receiverId));
-                    newContact.setContact(usersRepository.getReferenceById(senderId));
+                    newContact.setUser(usersRepository.getReferenceById(senderId));
+                    newContact.setContact(usersRepository.getReferenceById(receiverId));
                     newContact.setContactBlocked(isBlocked);
                     return chatContactsRepository.save(newContact);
                 });
 
+        ChatContacts contactReceiver = new ChatContacts();
+        contactReceiver.setUser(usersRepository.getReferenceById(receiverId));
+        contactReceiver.setContact(usersRepository.getReferenceById(senderId));
+        contactReceiver.setContactBlocked(false);
+        chatContactsRepository.save(contactReceiver);
+
         Boolean contactIsOnline = contact.getContact().getOnline();
+        Long unreadCount = chatMessagesRepository.countUnreadMessages(senderId, receiverId);
+
         List<ChatMessages> lastMessages = chatMessagesRepository.findConversation(
                 receiverId,
                 senderId,
@@ -85,7 +94,7 @@ public class ChatContactsService {
             lastTime = msg.getTimestamp();
         }
 
-        return new DTOChatContactResponse(contact, lastContent, lastTime, contactIsOnline);
+        return new DTOChatContactResponse(contact, lastContent, lastTime, unreadCount, contactIsOnline);
     }
 
     @Transactional

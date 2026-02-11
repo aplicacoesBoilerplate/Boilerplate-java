@@ -54,6 +54,8 @@ public class ChatMessagesService {
             );
         }
 
+        this.chatContactsService.updateContactStatus(receiverId, false);
+
         ChatMessages message = new ChatMessages();
         message.setSender(usersRepository.getReferenceById(senderId));
         message.setReceiver(usersRepository.getReferenceById(receiverId));
