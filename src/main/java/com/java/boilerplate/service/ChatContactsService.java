@@ -98,7 +98,8 @@ public class ChatContactsService {
     }
 
     @Transactional
-    public void removeContact(Long userId, Long contactId) {
+    public void removeContact(Long contactId) {
+        Long userId = authService.getMe().getIdUser();
         chatContactsRepository.deleteByUser_IdUserAndContact_IdUser(userId, contactId);
     }
 

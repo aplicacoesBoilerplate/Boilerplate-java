@@ -29,7 +29,6 @@ public class ChatContactsController {
 
     @DeleteMapping
     public ResponseEntity<String> removeContact(
-            @RequestParam Long userId,
             @RequestParam Long contactId
-    ) { return chatContactsHandler.removeContact(userId, contactId); }
+    ) { return chatContactsHandler.removeContact(contactId); }
 }

@@ -23,8 +23,8 @@ public class ChatContactsHandler {
         return ResponseEntity.ok(chatContactsService.updateContactStatus(receiverId, isBlocked));
     }
 
-    public ResponseEntity<String> removeContact(Long userId, Long contactId) {
-        chatContactsService.removeContact(userId, contactId);
+    public ResponseEntity<String> removeContact(Long contactId) {
+        chatContactsService.removeContact(contactId);
         return ResponseEntity.ok().body("Contact successfully removed!");
     }
 }
