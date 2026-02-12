@@ -39,7 +39,6 @@ public record DTOUser(
         @JsonView(UserViews.Public.class)
         String phoneNumber,
 
-        @NotBlank(message = "The email field is required")
         @Email(message = "The email field is invalid")
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         String email,
