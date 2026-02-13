@@ -145,6 +145,7 @@ public class AuthService implements UserDetailsService {
         newUser.setPassword(passwordEncode);
         newUser.setRole(UserRoles.USER);
         newUser.setIsOnline(true);
+        newUser.setIsActive(true);
         Users savedUser = usersRepository.save(newUser);
 
         UserSubscription subscription = new UserSubscription();

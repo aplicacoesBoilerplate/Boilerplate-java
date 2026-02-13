@@ -101,6 +101,8 @@ public class UsersService {
 
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
+        newUser.setIsOnline(true);
+        newUser.setIsActive(true);
         return usersRepository.save(newUser);
     }
 
