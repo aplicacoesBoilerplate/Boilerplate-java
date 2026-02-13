@@ -18,6 +18,7 @@ spring:
       minimum-idle: 5
       maximum-pool-size: 20
       connection-timeout: 30000
+      connection-init-sql: "SET NAMES utf8mb4"
   mail:
     host: smtp.gmail.com
     port: 587
