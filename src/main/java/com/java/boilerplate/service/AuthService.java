@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -96,24 +97,15 @@ public class AuthService implements UserDetailsService {
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
-        user.setOnline(true);
+        user.setIsOnline(true);
         return tokenService.generateToken(user);
     }
 
     @Transactional
     public Users getMe() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication != null && authentication.getPrincipal() instanceof Users user) {
-            this.validateSubscription(user.getIdUser());
-             return usersRepository.findById(user.getIdUser())
-                 .orElseThrow(() -> new ExceptionsSystem(
-                         "User not found",
-                         HttpStatus.NOT_FOUND
-                 ));
-        }
-
-        throw new ExceptionsSystem("User not authenticated", HttpStatus.UNAUTHORIZED);
+        Users user = this.getMeIgnoringSubscription();
+        this.validateSubscription(user.getIdUser());
+        return user;
     }
 
     @Transactional(readOnly = true)
@@ -121,12 +113,17 @@ public class AuthService implements UserDetailsService {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && authentication.getPrincipal() instanceof Users user) {
+            if (!user.getIsActive()) {
+                throw new DisabledException("User account is inactive");
+            }
+
             return usersRepository.findById(user.getIdUser())
                     .orElseThrow(() -> new ExceptionsSystem(
                             "User not found",
                             HttpStatus.NOT_FOUND
                     ));
         }
+
         throw new ExceptionsSystem(
                 "User not authenticated",
                 HttpStatus.UNAUTHORIZED
@@ -148,7 +145,7 @@ public class AuthService implements UserDetailsService {
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
         newUser.setRole(UserRoles.USER);
-        newUser.setOnline(true);
+        newUser.setIsOnline(true);
         Users savedUser = usersRepository.save(newUser);
 
         UserSubscription subscription = new UserSubscription();
@@ -214,7 +211,7 @@ public class AuthService implements UserDetailsService {
         }
 
         user.setPassword(encoder.encode(request.newPassword()));
-        user.setOnline(true);
+        user.setIsOnline(true);
         usersRepository.save(user);
         return this.login(new DTOAuth(request.email(), request.newPassword()));
     }

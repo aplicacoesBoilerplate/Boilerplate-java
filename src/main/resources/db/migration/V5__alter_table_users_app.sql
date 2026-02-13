@@ -1,2 +1,0 @@
-ALTER TABLE users_app
-ADD COLUMN user_online BOOLEAN DEFAULT FALSE COMMENT 'Online user';

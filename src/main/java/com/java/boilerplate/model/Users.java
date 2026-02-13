@@ -61,7 +61,10 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     private Point location;
 
     @Column(name = "user_online")
-    private Boolean online;
+    private Boolean isOnline;
+
+    @Column(name = "user_is_active", nullable = false)
+    private Boolean isActive = true;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -86,5 +89,5 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Override
     public boolean isCredentialsNonExpired() { return true; }
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { return isActive; }
 }

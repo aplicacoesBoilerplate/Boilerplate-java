@@ -1,7 +1,7 @@
 CREATE TABLE users_app (
     id_user BIGINT AUTO_INCREMENT COMMENT 'Unique user identifier',
     user_full_name VARCHAR(255) NOT NULL COMMENT "User's full name",
-    user_username VARCHAR(20) NOT NULL UNIQUE COMMENT 'Name by which users are found',
+    user_username VARCHAR(150) NOT NULL UNIQUE COMMENT 'Name by which users are found',
     user_bio TEXT COMMENT 'User biography, optional',
     user_gender VARCHAR(10) NOT NULL COMMENT "User's gender",
     user_avatar_url VARCHAR(255) COMMENT 'User profile photo url, optional',
@@ -11,6 +11,8 @@ CREATE TABLE users_app (
     user_password VARCHAR(255) NOT NULL COMMENT "User's password",
     user_role VARCHAR(10) NOT NULL COMMENT "user's permission",
     user_location POINT SRID 4326 NOT NULL COMMENT "Stores the user's most recent location",
+    user_online BOOLEAN DEFAULT FALSE COMMENT 'Online user',
+    user_is_active BOOLEAN DEFAULT TRUE NOT NULL COMMENT 'Active user',
 
     CONSTRAINT pk_users PRIMARY KEY (id_user),
     CONSTRAINT check_user_gender CHECK (user_gender IN ('MALE', 'FEMALE')),

@@ -14,6 +14,7 @@ public class UsersQueriesJPA {
         SELECT u FROM Users u
         WHERE function('ST_Distance_Sphere', u.location, :point) <= :radius
         AND u.userGender != :gender
+        AND u.isActive = true
         AND NOT EXISTS (
             SELECT c
             FROM ChatContacts c

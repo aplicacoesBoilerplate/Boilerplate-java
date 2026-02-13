@@ -128,7 +128,20 @@ public class UsersService {
 
     @Transactional
     public void deleteUser() {
-        usersRepository.delete(authService.getMe());
+        Users user = authService.getMe();
+
+        String deletedTag = "deleted_" + System.currentTimeMillis() + user.getUserUsername();
+
+        user.setFullName(String.format("Usuário %s excluído", user.getUserUsername()));
+        user.setUserUsername(deletedTag);
+        user.setEmail(deletedTag + "@deleted.com");
+        user.setBio(null);
+        user.setAvatarUrl(null);
+        user.setShowWppNumber(false);
+        user.setPhoneNumber(null);
+        user.setIsOnline(false);
+        user.setIsActive(false);
+        usersRepository.save(user);
     }
 
     @Transactional(readOnly = true)
@@ -196,7 +209,7 @@ public class UsersService {
     public void updatePresence(String username, boolean online) {
         Users user = usersRepository.findByUsernameOrEmail(username);
         if (user != null) {
-            user.setOnline(online);
+            user.setIsOnline(online);
             usersRepository.save(user);
         }
     }

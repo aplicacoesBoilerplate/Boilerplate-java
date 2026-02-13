@@ -8,7 +8,6 @@ import com.java.boilerplate.model.Users;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.locationtech.jts.geom.Point;
 
 public record DTOUser(
@@ -55,7 +54,10 @@ public record DTOUser(
         DTOLocation location,
 
         @JsonView(UserViews.Public.class)
-        Boolean online
+        Boolean isOnline,
+
+        @JsonView(UserViews.Public.class)
+        Boolean isActive
 ) {
     public Users toEntity() {
         Users user = new Users();
@@ -70,7 +72,8 @@ public record DTOUser(
         user.setEmail(this.email());
         user.setPassword(this.password());
         user.setRole(this.role());
-        user.setOnline(this.online);
+        user.setIsOnline(this.isOnline);
+        user.setIsActive(this.isActive);
 
         if (this.location() != null) {
             org.locationtech.jts.geom.GeometryFactory factory =
@@ -102,7 +105,8 @@ public record DTOUser(
                 null,
                 user.getRole(),
                 location,
-                user.getOnline()
+                user.getIsOnline(),
+                user.getIsActive()
         );
     }
 }

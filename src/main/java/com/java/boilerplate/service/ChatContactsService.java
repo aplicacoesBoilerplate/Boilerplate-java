@@ -47,7 +47,7 @@ public class ChatContactsService {
                     .orElseThrow(() -> new ExceptionsSystem(
                             "User not found",
                             HttpStatus.NOT_FOUND
-                    )).getOnline();
+                    )).getIsOnline();
 
             return new DTOChatContactResponse(contact, lastMessage, lastTime, unreadCount, contactIsOnline);
         }).toList();
@@ -75,7 +75,7 @@ public class ChatContactsService {
                     return chatContactsRepository.save(newContact);
                 });
 
-        Boolean contactIsOnline = contact.getContact().getOnline();
+        Boolean contactIsOnline = contact.getContact().getIsOnline();
         Long unreadCount = chatMessagesRepository.countUnreadMessages(senderId, receiverId);
 
         List<ChatMessages> lastMessages = chatMessagesRepository.findConversation(
