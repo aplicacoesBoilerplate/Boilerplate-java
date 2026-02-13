@@ -112,16 +112,15 @@ public class AuthService implements UserDetailsService {
     public Users getMeIgnoringSubscription() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication != null && authentication.getPrincipal() instanceof Users user) {
-            if (!user.getIsActive()) {
+        if (authentication != null && authentication.getPrincipal() instanceof Users principalUser) {
+            Users freshUser = usersRepository.findById(principalUser.getIdUser())
+                    .orElseThrow(() -> new ExceptionsSystem("User not found", HttpStatus.NOT_FOUND));
+
+            if (!freshUser.getIsActive()) {
                 throw new DisabledException("User account is inactive");
             }
 
-            return usersRepository.findById(user.getIdUser())
-                    .orElseThrow(() -> new ExceptionsSystem(
-                            "User not found",
-                            HttpStatus.NOT_FOUND
-                    ));
+            return freshUser;
         }
 
         throw new ExceptionsSystem(
