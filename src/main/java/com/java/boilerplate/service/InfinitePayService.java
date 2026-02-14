@@ -66,8 +66,7 @@ public class InfinitePayService {
                     order_nsu,
                     tokensProperties.getInfinitePayRedirectUrl(),
                     tokensProperties.getInfinitePayWebhookUrl(),
-                    customer
-
+                    user.getPhoneNumber().isEmpty() ? null : customer
             );
 
             HttpEntity<DTOInfinitePayLinkRequest> entity = new HttpEntity<>(requestBody, headers);

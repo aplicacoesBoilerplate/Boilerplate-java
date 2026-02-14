@@ -25,14 +25,16 @@ public class ChatMessagesService {
     private final ChatContactsService chatContactsService;
     private final SimpMessagingTemplate messagingTemplate;
     private final AuthService authService;
+    private final SocketService socketService;
 
-    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService) {
+    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService, SocketService socketService) {
         this.chatMessagesRepository = chatMessagesRepository;
         this.usersRepository = usersRepository;
         this.usersService = usersService;
         this.chatContactsService = chatContactsService;
         this.messagingTemplate = messagingTemplate;
         this.authService = authService;
+        this.socketService = socketService;
     }
 
     private ChatMessages findById(Long idMessage) {
@@ -66,7 +68,7 @@ public class ChatMessagesService {
 
         ChatMessages savedMessage = chatMessagesRepository.save(message);
 
-        DTOChatMessages dto = new DTOChatMessages(
+        DTOChatMessages dtoMessage = new DTOChatMessages(
                 savedMessage.getIdMessage(),
                 senderId,
                 receiverId,
@@ -76,14 +78,8 @@ public class ChatMessagesService {
         );
 
         String usernameReceiver = usersService.findById(receiverId).getUsername();
-
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(usernameReceiver),
-                "/topic/messages",
-                dto
-        );
-
-        return dto;
+        socketService.notifyNewMessage(usernameReceiver, dtoMessage);
+        return dtoMessage;
     }
 
     @Transactional

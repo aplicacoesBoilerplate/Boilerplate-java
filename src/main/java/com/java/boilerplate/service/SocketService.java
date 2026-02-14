@@ -1,5 +1,6 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.dto.chatMessages.DTOChatMessages;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,5 +15,13 @@ public class SocketService {
     public void notifyPaymentSuccess(Long userId) {
         String destination = "/topic/payment/" + userId;
         template.convertAndSend(destination, "PAYMENT_APPROVED");
+    }
+
+    public void notifyNewMessage(String usernameReceiver, DTOChatMessages messagePayload) {
+        template.convertAndSendToUser(
+                usernameReceiver,
+                "/topic/messages",
+                messagePayload
+        );
     }
 }
