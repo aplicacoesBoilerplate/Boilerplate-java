@@ -20,7 +20,7 @@ public class CorsConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:9000", "http://" + props.getHost() + ":9000"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:9000", "http://" + props.getHost() + ":" + props.getPortFront()));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

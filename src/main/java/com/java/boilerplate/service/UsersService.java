@@ -183,12 +183,19 @@ public class UsersService {
         Users user = this.findByUsernameOrEmail(username);
 
         try {
+            Path uploadPath = Paths.get("uploads");
+
+            if (user.getAvatarUrl() != null) {
+                String oldFileName = user.getAvatarUrl().substring(user.getAvatarUrl().lastIndexOf("/") + 1);
+                Path oldFilePath = uploadPath.resolve(oldFileName);
+                Files.deleteIfExists(oldFilePath);
+            }
+
             String originalFilename = file.getOriginalFilename();
             String extension = originalFilename != null && originalFilename.contains(".")
                     ? originalFilename.substring(originalFilename.lastIndexOf("."))
                     : ".jpg";
             String fileName = "avatar_" + username + "_" + System.currentTimeMillis() + extension;
-            Path uploadPath = Paths.get("uploads");
 
             if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
 

@@ -66,6 +66,7 @@ tokens:
   secret: ${JWT_SECRET}
   host: ${HOST}
   uploadDir: ${UPLOAD_DIR}
+  portFront: ${PORT_FRONT}
   infinitePayEndpoint: ${INFINITE_PAY_ENDPOINT}
   infinitePayHandle: ${INFINITE_PAY_HANDLE}
   infinitePayRedirectUrl: ${INFINITE_PAY_REDIRECT_URL}

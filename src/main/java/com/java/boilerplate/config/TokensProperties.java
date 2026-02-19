@@ -13,6 +13,7 @@ public class TokensProperties {
     private String secret;
     private String host;
     private String uploadDir;
+    private String portFront;
     private String infinitePayEndpoint;
     private String infinitePayHandle;
     private String infinitePayRedirectUrl;
