@@ -183,7 +183,7 @@ public class UsersService {
         Users user = this.findByUsernameOrEmail(username);
 
         try {
-            Path uploadPath = Paths.get("uploads");
+            Path uploadPath = Paths.get("/app/uploads");
 
             if (user.getAvatarUrl() != null) {
                 String oldFileName = user.getAvatarUrl().substring(user.getAvatarUrl().lastIndexOf("/") + 1);
