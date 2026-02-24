@@ -1,5 +1,6 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
 import com.java.boilerplate.enums.UserRoles;
@@ -30,12 +31,14 @@ public class UsersService {
     private final PasswordEncoder encoder;
     private final LocationService locationService;
     private final AuthService authService;
+    private final TokensProperties properties;
 
-    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService, @Lazy AuthService authService) {
+    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService, @Lazy AuthService authService, TokensProperties properties) {
         this.usersRepository = usersRepository;
         this.encoder = encoder;
         this.locationService = locationService;
         this.authService = authService;
+        this.properties = properties;
     }
 
     @Transactional(readOnly = true)
@@ -183,7 +186,7 @@ public class UsersService {
         Users user = this.findByUsernameOrEmail(username);
 
         try {
-            Path uploadPath = Paths.get("/app/uploads");
+            Path uploadPath = Paths.get("/app/" + properties.getUploadDir());
 
             if (user.getAvatarUrl() != null) {
                 String oldFileName = user.getAvatarUrl().substring(user.getAvatarUrl().lastIndexOf("/") + 1);
