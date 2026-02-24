@@ -188,10 +188,12 @@ public class UsersService {
         try {
             Path uploadPath = Paths.get("/app/" + properties.getUploadDir());
 
-            if (user.getAvatarUrl() != null) {
+            if (user.getAvatarUrl() != null && user.getAvatarUrl().length() > 10) {
                 String oldFileName = user.getAvatarUrl().substring(user.getAvatarUrl().lastIndexOf("/") + 1);
-                Path oldFilePath = uploadPath.resolve(oldFileName);
-                Files.deleteIfExists(oldFilePath);
+                if (!oldFileName.isEmpty()) {
+                    Path oldFilePath = uploadPath.resolve(oldFileName);
+                    Files.deleteIfExists(oldFilePath);
+                }
             }
 
             String originalFilename = file.getOriginalFilename();
