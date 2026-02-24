@@ -66,9 +66,9 @@ public class AuthService implements UserDetailsService {
     private Users findByUsernameOrEmail(String email) {
         Users user = usersRepository.findByUsernameOrEmail(email);
         if (user == null) {
-            new ExceptionsSystem(
-                "User not found",
-                HttpStatus.NOT_FOUND
+            throw new ExceptionsSystem(
+                    "User not found",
+                    HttpStatus.NOT_FOUND
             );
         }
         return user;
