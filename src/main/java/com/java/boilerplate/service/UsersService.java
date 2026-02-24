@@ -112,23 +112,23 @@ public class UsersService {
     @Transactional
     public Users updateUser(Users updateUser) {
         Long idUser = authService.getMe().getIdUser();
-        Users userDoBanco = this.findById(idUser);
+        Users userInDB = this.findById(idUser);
 
-        userDoBanco.setFullName(updateUser.getFullName());
-        userDoBanco.setUserUsername(updateUser.getUserUsername());
-        userDoBanco.setBio(updateUser.getBio());
-        userDoBanco.setUserGender(updateUser.getUserGender());
-        userDoBanco.setAvatarUrl(updateUser.getAvatarUrl());
-        userDoBanco.setShowWppNumber(updateUser.getShowWppNumber());
-        userDoBanco.setPhoneNumber(updateUser.getPhoneNumber());
-        userDoBanco.setRole(updateUser.getRole());
+        userInDB.setFullName(updateUser.getFullName());
+        userInDB.setUserUsername(updateUser.getUserUsername());
+        userInDB.setBio(updateUser.getBio());
+        userInDB.setUserGender(updateUser.getUserGender());
+        userInDB.setAvatarUrl(updateUser.getAvatarUrl());
+        userInDB.setShowWppNumber(updateUser.getShowWppNumber());
+        userInDB.setPhoneNumber(updateUser.getPhoneNumber());
+        userInDB.setRole(updateUser.getRole());
 
         if (updateUser.getEmail() != null) {
-            userDoBanco.setEmail(updateUser.getEmail());
+            userInDB.setEmail(updateUser.getEmail());
         }
 
-        this.dataValidModify(userDoBanco, idUser);
-        return usersRepository.save(userDoBanco);
+        this.dataValidModify(userInDB, idUser);
+        return usersRepository.save(userInDB);
     }
 
     @Transactional
@@ -186,7 +186,7 @@ public class UsersService {
         Users user = this.findByUsernameOrEmail(username);
 
         try {
-            Path uploadPath = Paths.get("/app/" + properties.getUploadDir());
+            Path uploadPath = Paths.get(properties.getUploadDir());
 
             if (user.getAvatarUrl() != null && user.getAvatarUrl().length() > 10) {
                 String oldFileName = user.getAvatarUrl().substring(user.getAvatarUrl().lastIndexOf("/") + 1);

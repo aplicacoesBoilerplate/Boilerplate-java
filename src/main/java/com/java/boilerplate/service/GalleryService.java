@@ -27,7 +27,7 @@ public class GalleryService {
     public GalleryService(IGalleryRepository galleryRepository, UsersService userService, TokensProperties tokensProperties) {
         this.galleryRepository = galleryRepository;
         this.userService = userService;
-        String dir = tokensProperties.getUploadDir() != null ? tokensProperties.getUploadDir() : "/app/uploads";
+        String dir = tokensProperties.getUploadDir() != null ? tokensProperties.getUploadDir() : "/uploads";
         this.rootLocation = Paths.get(dir);
     }
 
