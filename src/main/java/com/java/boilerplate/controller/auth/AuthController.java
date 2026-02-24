@@ -3,7 +3,7 @@ package com.java.boilerplate.controller.auth;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
-import com.java.boilerplate.dto.auth.DTOResetPasswordRequest;
+import com.java.boilerplate.dto.auth.DTOOtp;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
 import com.java.boilerplate.model.Users;
@@ -27,18 +27,24 @@ public class AuthController {
     ) { return authHandler.login(data); }
 
     @PostMapping("/register")
-    public ResponseEntity<DTOLoginResponse> register(
-            @RequestBody @Valid DTOUser data
-    ) { return authHandler.register(data); }
+    @JsonView(UserViews.Internal.class)
+    public ResponseEntity<DTOUser> register(
+            @RequestBody @Valid DTOUser request
+    ) { return authHandler.register(request); }
 
-    @PostMapping("/forgot")
-    public ResponseEntity<Void> generatePasswordResetOtp(
+    @PutMapping("/verify")
+    public ResponseEntity<DTOLoginResponse> verifyAccount(
+            @RequestBody @Valid DTOOtp request
+    ) { return authHandler.verifyAccount(request); }
+
+    @PostMapping("/code")
+    public ResponseEntity<Void> generateOtpCode(
             @RequestParam String email
-    ) { return authHandler.generatePasswordResetOtp(email); }
+    ) { return authHandler.generateOtpCode(email); }
 
     @PostMapping("/reset")
     public ResponseEntity<DTOLoginResponse> resetPasswordWithOtp(
-            @RequestBody DTOResetPasswordRequest request
+            @RequestBody DTOOtp request
     ) { return authHandler.resetPasswordWithOtp(request); }
 
     @GetMapping("/me")

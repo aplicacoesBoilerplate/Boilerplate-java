@@ -2,7 +2,7 @@ package com.java.boilerplate.controller.auth;
 
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
-import com.java.boilerplate.dto.auth.DTOResetPasswordRequest;
+import com.java.boilerplate.dto.auth.DTOOtp;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.service.AuthService;
@@ -22,18 +22,22 @@ public class AuthHandler {
         return ResponseEntity.ok(new DTOLoginResponse(token));
     }
 
-    public ResponseEntity<DTOLoginResponse> register(DTOUser data) {
-        Users user = data.toEntity();
-        Users newUser = authService.register(user);
-        return this.login(new DTOAuth(newUser.getEmail(), data.password()));
+    public ResponseEntity<DTOUser> register(DTOUser request) {
+        Users newUser = authService.register(request.toEntity());
+        return ResponseEntity.ok(DTOUser.fromEntity(newUser));
     }
 
-    public ResponseEntity<Void> generatePasswordResetOtp(String email) {
-        authService.generatePasswordResetOtp(email);
+    public ResponseEntity<DTOLoginResponse> verifyAccount(DTOOtp request) {
+        Users newUser = authService.verifyAccount(request);
+        return this.login(new DTOAuth(newUser.getEmail(), request.password()));
+    }
+
+    public ResponseEntity<Void> generateOtpCode(String email) {
+        authService.generateOtpCode(email);
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity<DTOLoginResponse> resetPasswordWithOtp(DTOResetPasswordRequest request) {
+    public ResponseEntity<DTOLoginResponse> resetPasswordWithOtp(DTOOtp request) {
         return ResponseEntity.ok(new DTOLoginResponse(authService.resetPasswordWithOtp(request)));
     }
 }
