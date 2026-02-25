@@ -12,6 +12,8 @@ import com.java.boilerplate.service.helpers.LocationService;
 import org.locationtech.jts.geom.Point;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class UsersService {
@@ -51,22 +54,31 @@ public class UsersService {
     }
 
     private Boolean userIsAdmin() {
-        Users user = authService.getMe();
-        return user.getRole().equals(UserRoles.ADMIN);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || Objects.equals(auth.getPrincipal(), "anonymousUser")) {
+            return false;
+        }
+
+        try {
+            Users user = authService.getMe();
+            return user.getRole().equals(UserRoles.ADMIN);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    private void dataValidModify(Users dataUser, Long idUser) {
+    private void dataValidModify(Users dataUserTransaction, Long idUser) {
         Boolean authenticatedUserIsAdmin = this.userIsAdmin();
 
-        if (dataUser.getRole().equals(UserRoles.ADMIN) && !authenticatedUserIsAdmin) {
+        if (dataUserTransaction.getRole().equals(UserRoles.ADMIN) && !authenticatedUserIsAdmin) {
             throw new ExceptionsSystem(
                     "New administrators can only be created by another administrator",
                     HttpStatus.UNAUTHORIZED
             );
         }
 
-        Users emailExisting = this.findByUsernameOrEmail(dataUser.getEmail());
-        Users usernameExisting = this.findByUsernameOrEmail(dataUser.getUserUsername());
+        Users emailExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getEmail());
+        Users usernameExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getUserUsername());
 
         if (idUser != null) {
             if (usernameExisting != null && !usernameExisting.getIdUser().equals(idUser) || emailExisting != null && !emailExisting.getIdUser().equals(idUser)) {
@@ -88,6 +100,7 @@ public class UsersService {
     @Transactional
     public Users saveUser(Users newUser) {
         this.dataValidModify(newUser, null);
+
         if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
             throw new ExceptionsSystem(
                     "The password field is required",
@@ -105,7 +118,11 @@ public class UsersService {
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
         newUser.setIsOnline(true);
-        newUser.setIsActive(true);
+
+        if (newUser.getIsActive() == null) {
+            newUser.setIsActive(true);
+        }
+
         return usersRepository.save(newUser);
     }
 
@@ -146,6 +163,7 @@ public class UsersService {
         user.setPhoneNumber(null);
         user.setIsOnline(false);
         user.setIsActive(false);
+
         usersRepository.save(user);
     }
 
@@ -184,7 +202,6 @@ public class UsersService {
     @Transactional
     public Users updateAvatar(String username, MultipartFile file) {
         Users user = this.findByUsernameOrEmail(username);
-
         try {
             Path uploadPath = Paths.get(properties.getUploadDir());
 

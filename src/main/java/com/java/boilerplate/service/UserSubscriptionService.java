@@ -26,7 +26,6 @@ public class UserSubscriptionService {
     @Transactional
     public void renewSubscription(Long userId, String transactionId) {
         UserSubscription subscription = this.findByUser_IdUser(userId);
-
         LocalDateTime now = LocalDateTime.now();
 
         if (subscription.getExpireAt().isBefore(now)) {
@@ -48,5 +47,21 @@ public class UserSubscriptionService {
                     "Subscription not found for user",
                     HttpStatus.INTERNAL_SERVER_ERROR
             ));
+    }
+
+    @Transactional
+    public void validateSubscription(Long userId) {
+        UserSubscription subscription = this.findByUser_IdUser(userId);
+
+        if (!subscription.isValid()) {
+            if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
+                subscription.setStatus(SubscriptionStatus.OVERDUE);
+                this.save(subscription);
+            }
+            throw new ExceptionsSystem(
+                    "Subscription expired. Please renew your plan.",
+                    HttpStatus.PAYMENT_REQUIRED
+            );
+        }
     }
 }
