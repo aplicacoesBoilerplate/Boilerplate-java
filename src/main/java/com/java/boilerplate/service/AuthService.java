@@ -202,8 +202,8 @@ public class AuthService implements UserDetailsService {
 
     @Transactional
     public Users register(Users newUser) {
-        Users userEmail = this.findByUsernameOrEmail(newUser.getEmail());
-        Users userUsername = this.findByUsernameOrEmail(newUser.getUserUsername());
+        Users userEmail = usersRepository.findByUsernameOrEmail(newUser.getEmail());
+        Users userUsername = usersRepository.findByUsernameOrEmail(newUser.getUserUsername());
 
         if (userEmail != null || userUsername != null) {
             throw new ExceptionsSystem(
