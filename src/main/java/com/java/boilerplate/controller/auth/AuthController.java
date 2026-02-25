@@ -32,7 +32,7 @@ public class AuthController {
             @RequestBody @Valid DTOUser request
     ) { return authHandler.register(request); }
 
-    @PutMapping("/verify")
+        @PutMapping("/verify")
     public ResponseEntity<DTOLoginResponse> verifyAccount(
             @RequestBody @Valid DTOOtp request
     ) { return authHandler.verifyAccount(request); }

@@ -167,6 +167,11 @@ public class UsersService {
         usersRepository.save(user);
     }
 
+    @Transactional
+    public Users saveEntity(Users user) {
+        return usersRepository.save(user);
+    }
+
     @Transactional(readOnly = true)
     public DTOPagination<Users> findPaginationItens(RequestPagination request) {
         return usersRepository.findPaginationItens(request, "idUser");
@@ -218,7 +223,6 @@ public class UsersService {
                     ? originalFilename.substring(originalFilename.lastIndexOf("."))
                     : ".jpg";
             String fileName = "avatar_" + username + "_" + System.currentTimeMillis() + extension;
-
             if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
 
             try (InputStream inputStream = file.getInputStream()) {

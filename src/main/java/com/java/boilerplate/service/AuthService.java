@@ -6,7 +6,6 @@ import com.java.boilerplate.dto.auth.DTOOtp;
 import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
-import com.java.boilerplate.model.UserOtp;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.service.helpers.OtpService;
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Random;
 import java.util.function.Function;
 
 @Service
@@ -127,8 +125,9 @@ public class AuthService implements UserDetailsService {
     @Transactional
     public Users verifyAccount(DTOOtp request) {
         return executeWithValidOtp(request, (user) -> {
+            user.setIsOnline(true);
             user.setIsActive(true);
-            return usersService.saveUser(user);
+            return usersService.saveEntity(user);
         });
     }
 
@@ -137,7 +136,8 @@ public class AuthService implements UserDetailsService {
         return executeWithValidOtp(request, (user) -> {
             user.setPassword(encoder.encode(request.password()));
             user.setIsOnline(true);
-            usersService.saveUser(user);
+            user.setIsActive(true);
+            usersService.saveEntity(user);
             return this.login(new DTOAuth(request.email(), request.password()));
         });
     }
