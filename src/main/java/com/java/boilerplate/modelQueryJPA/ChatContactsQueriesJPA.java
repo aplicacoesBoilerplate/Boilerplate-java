@@ -28,12 +28,13 @@ public class ChatContactsQueriesJPA {
                 (m.sender = c.contact AND m.receiver = c.user)
             )
             WHERE c.user.userUsername = :username
+            AND c.contactBlocked = false
             AND (:nextEntryId IS NULL OR c.idChatContact < :nextEntryId)
             AND (m IS NULL OR m.idMessage = (
                 SELECT MAX(m2.idMessage)
-            FROM ChatMessages m2
-            WHERE (m2.sender = c.user AND m2.receiver = c.contact)
-            OR (m2.sender = c.contact AND m2.receiver = c.user)
+                FROM ChatMessages m2
+                WHERE (m2.sender = c.user AND m2.receiver = c.contact)
+                OR (m2.sender = c.contact AND m2.receiver = c.user)
             )
         )
         ORDER BY c.idChatContact DESC
