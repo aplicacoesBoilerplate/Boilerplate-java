@@ -3,6 +3,7 @@ package com.java.boilerplate.service;
 import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
+import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
@@ -116,6 +117,13 @@ public class UsersService {
             );
         }
 
+        if (newUser.getAvatarUrl() == null || newUser.getAvatarUrl().isBlank()) {
+            String defaultAvatar = newUser.getUserGender() == GenderUser.MALE
+                    ? "/default-avatar-male.png"
+                    : "/default-avatar-female.png";
+            newUser.setAvatarUrl(defaultAvatar);
+        }
+
         if (newUser.getEmail() != null && newUser.getEmailHash() == null) {
             newUser.setEmailHash(HashUtil.generateSha256(newUser.getEmail()));
         }
@@ -169,6 +177,13 @@ public class UsersService {
         user.setAvatarUrl(null);
         user.setIsOnline(false);
         user.setIsActive(false);
+
+        if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
+            String defaultAvatar = user.getUserGender() == GenderUser.MALE
+                    ? "/default-avatar-male.png"
+                    : "/default-avatar-female.png";
+            user.setAvatarUrl(defaultAvatar);
+        }
 
         usersRepository.save(user);
     }

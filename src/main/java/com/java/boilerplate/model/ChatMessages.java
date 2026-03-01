@@ -29,6 +29,9 @@ public class ChatMessages extends ChatMessagesQueriesJPA {
     @Column(name = "message_content")
     private String content;
 
+    @Column(name = "file_url")
+    private String fileUrl;
+
     @CreationTimestamp
     @Column(name = "message_timestamp", nullable = false, updatable = false)
     private LocalDateTime timestamp;
