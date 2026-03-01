@@ -8,6 +8,7 @@ import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IUsersRepository;
+import com.java.boilerplate.service.helpers.HashUtil;
 import com.java.boilerplate.service.helpers.LocationService;
 import org.locationtech.jts.geom.Point;
 import org.springframework.context.annotation.Lazy;
@@ -115,6 +116,10 @@ public class UsersService {
             );
         }
 
+        if (newUser.getEmail() != null && newUser.getEmailHash() == null) {
+            newUser.setEmailHash(HashUtil.generateSha256(newUser.getEmail()));
+        }
+
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
         newUser.setIsOnline(true);
@@ -152,15 +157,16 @@ public class UsersService {
     public void deleteUser() {
         Users user = authService.getMe();
 
-        String deletedTag = "deleted_" + System.currentTimeMillis() + user.getUserUsername();
+        String deletedTag = "deleted_" + System.currentTimeMillis();
 
-        user.setFullName(String.format("Usuário %s excluído", user.getUserUsername()));
+        user.setFullName("User Deleted");
         user.setUserUsername(deletedTag);
         user.setEmail(deletedTag + "@deleted.com");
-        user.setBio(null);
-        user.setAvatarUrl(null);
+
         user.setShowWppNumber(false);
         user.setPhoneNumber(null);
+        user.setBio(null);
+        user.setAvatarUrl(null);
         user.setIsOnline(false);
         user.setIsActive(false);
 

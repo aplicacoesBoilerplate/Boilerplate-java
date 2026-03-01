@@ -2,7 +2,9 @@ package com.java.boilerplate.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.java.boilerplate.enums.SubscriptionStatus;
+import com.java.boilerplate.modelQueryJPA.UserSubscriptionQueriesJPA;
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,7 +14,8 @@ import java.time.LocalDateTime;
 @Table(name = "user_subscriptions")
 @Getter
 @Setter
-public class UserSubscription {
+@EqualsAndHashCode(callSuper = true)
+public class UserSubscription extends UserSubscriptionQueriesJPA {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

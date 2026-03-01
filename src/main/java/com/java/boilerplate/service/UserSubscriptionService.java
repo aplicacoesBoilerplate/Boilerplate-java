@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class UserSubscriptionService {
@@ -63,5 +64,11 @@ public class UserSubscriptionService {
                     HttpStatus.PAYMENT_REQUIRED
             );
         }
+    }
+
+
+    @Transactional
+    public Optional<LocalDateTime> findByEmailHash(String emailHash) {
+        return subscriptionRepository.findLatestExpirationByEmailHash(emailHash);
     }
 }

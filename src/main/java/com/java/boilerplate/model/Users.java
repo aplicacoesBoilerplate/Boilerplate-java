@@ -50,6 +50,9 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Column(name = "user_email", nullable = false, length = 150)
     private String email;
 
+    @Column(name = "email_hash", length = 64)
+    private String emailHash;
+
     @Column(name = "user_password", nullable = false)
     private String password;
 
