@@ -29,7 +29,9 @@ public class CorsConfiguration {
             origins.add(props.getHost());
             if (!props.getHost().startsWith("http")) {
                 origins.add("https://" + props.getHost());
+                origins.add("https://www." + props.getHost());
                 origins.add("http://" + props.getHost());
+                origins.add("http://www." + props.getHost());
             }
         }
 
