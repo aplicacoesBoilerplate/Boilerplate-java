@@ -8,6 +8,7 @@ import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
+import com.java.boilerplate.service.helpers.HashUtil;
 import com.java.boilerplate.service.helpers.OtpService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -102,17 +104,33 @@ public class AuthService implements UserDetailsService {
 
     @Transactional
     public Users register(Users newUser) {
+        String currentEmailHash = HashUtil.generateSha256(newUser.getEmail());
+        Optional<LocalDateTime> latestExpirationOpt = userSubscriptionService.findByEmailHash(currentEmailHash);
+
         newUser.setIsActive(false);
-        newUser.setRole(UserRoles.USER);
+        newUser.setRole(newUser.getRole() != null ? newUser.getRole() : UserRoles.USER);
         Users savedUser = usersService.saveUser(newUser);
 
         UserSubscription subscription = new UserSubscription();
         subscription.setUser(savedUser);
-        subscription.setExpireAt(LocalDateTime.now().plusDays(60));
-        subscription.setStatus(SubscriptionStatus.ACTIVE);
-        userSubscriptionService.save(subscription);
 
+        if (latestExpirationOpt.isPresent()) {
+            LocalDateTime latestExpiration = latestExpirationOpt.get();
+            subscription.setExpireAt(latestExpiration);
+
+            if (latestExpiration.isAfter(LocalDateTime.now())) {
+                subscription.setStatus(SubscriptionStatus.ACTIVE);
+            } else {
+                subscription.setStatus(SubscriptionStatus.OVERDUE);
+            }
+        } else {
+            subscription.setExpireAt(LocalDateTime.now().plusDays(60));
+            subscription.setStatus(SubscriptionStatus.ACTIVE);
+        }
+
+        userSubscriptionService.save(subscription);
         otpService.generateOtpCode(savedUser);
+
         return savedUser;
     }
 

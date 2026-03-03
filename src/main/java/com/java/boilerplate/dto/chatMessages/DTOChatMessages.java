@@ -9,6 +9,7 @@ public record DTOChatMessages(
         Long senderId,
         Long receiverId,
         String content,
+        String fileUrl,
         LocalDateTime timestamp,
         Boolean read
 ) {
@@ -18,6 +19,7 @@ public record DTOChatMessages(
                 chatMessages.getSender().getIdUser(),
                 chatMessages.getReceiver().getIdUser(),
                 chatMessages.getContent(),
+                chatMessages.getFileUrl(),
                 chatMessages.getTimestamp(),
                 chatMessages.getRead()
         );

@@ -3,11 +3,13 @@ package com.java.boilerplate.service;
 import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
+import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IUsersRepository;
+import com.java.boilerplate.service.helpers.HashUtil;
 import com.java.boilerplate.service.helpers.LocationService;
 import org.locationtech.jts.geom.Point;
 import org.springframework.context.annotation.Lazy;
@@ -115,6 +117,17 @@ public class UsersService {
             );
         }
 
+        if (newUser.getAvatarUrl() == null || newUser.getAvatarUrl().isBlank()) {
+            String defaultAvatar = newUser.getUserGender() == GenderUser.MALE
+                    ? "/default-avatar-male.png"
+                    : "/default-avatar-female.png";
+            newUser.setAvatarUrl(defaultAvatar);
+        }
+
+        if (newUser.getEmail() != null && newUser.getEmailHash() == null) {
+            newUser.setEmailHash(HashUtil.generateSha256(newUser.getEmail()));
+        }
+
         String passwordEncode = encoder.encode(newUser.getPassword());
         newUser.setPassword(passwordEncode);
         newUser.setIsOnline(true);
@@ -152,17 +165,25 @@ public class UsersService {
     public void deleteUser() {
         Users user = authService.getMe();
 
-        String deletedTag = "deleted_" + System.currentTimeMillis() + user.getUserUsername();
+        String deletedTag = "deleted_" + System.currentTimeMillis();
 
-        user.setFullName(String.format("Usuário %s excluído", user.getUserUsername()));
+        user.setFullName("User Deleted");
         user.setUserUsername(deletedTag);
         user.setEmail(deletedTag + "@deleted.com");
-        user.setBio(null);
-        user.setAvatarUrl(null);
+
         user.setShowWppNumber(false);
         user.setPhoneNumber(null);
+        user.setBio(null);
+        user.setAvatarUrl(null);
         user.setIsOnline(false);
         user.setIsActive(false);
+
+        if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
+            String defaultAvatar = user.getUserGender() == GenderUser.MALE
+                    ? "/default-avatar-male.png"
+                    : "/default-avatar-female.png";
+            user.setAvatarUrl(defaultAvatar);
+        }
 
         usersRepository.save(user);
     }
