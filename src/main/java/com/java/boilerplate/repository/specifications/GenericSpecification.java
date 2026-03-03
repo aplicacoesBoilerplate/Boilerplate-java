@@ -37,8 +37,32 @@ public class GenericSpecification<T> implements Specification<T> {
             case endsIn -> cb.like(cb.lower(path.as(String.class)), "%" + filter.getValue().toLowerCase());
 
             // Operadores Lógicos/Numéricos
-            case equals -> cb.equal(path, filter.getValue());
-            case notEquals -> cb.notEqual(path, filter.getValue());
+            case equals -> {
+                Class<?> type = path.getJavaType();
+                Object castedValue = filter.getValue();
+
+                if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+                    castedValue = Boolean.valueOf(filter.getValue().toString());
+                }
+
+                else if (type.equals(Long.class) || type.equals(long.class)) {
+                    castedValue = Long.valueOf(filter.getValue().toString());
+                }
+
+                yield cb.equal(path, castedValue);
+            }
+
+            case notEquals -> {
+                Class<?> type = path.getJavaType();
+                Object castedValue = filter.getValue();
+
+                if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+                    castedValue = Boolean.valueOf(filter.getValue().toString());
+                }
+
+                yield cb.notEqual(path, castedValue);
+            }
+
             case greaterThan -> cb.greaterThan(path.as(Comparable.class), (Comparable) filter.getValue());
             case greaterEqual -> cb.greaterThanOrEqualTo(path.as(Comparable.class), (Comparable) filter.getValue());
             case lessThan -> cb.lessThan(path.as(Comparable.class), (Comparable) filter.getValue());

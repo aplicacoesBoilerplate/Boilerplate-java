@@ -36,29 +36,6 @@ public class ChatContactsService {
     }
 
     @Transactional(readOnly = true)
-    public List<DTOChatContactResponse> findChatContacts(Long nextEntry, int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
-        String username = authService.getMe().getUserUsername();
-
-        List<Object[]> results = chatContactsRepository.findContactsWithLastMessage(username, nextEntry, pageable);
-
-        return results.stream().map(result -> {
-            ChatContacts contact = (ChatContacts) result[0];
-            String lastMessage = (String) result[1];
-            LocalDateTime lastTime = (LocalDateTime) result[2];
-            Long unreadCount = (Long) result[3];
-
-            Boolean contactIsOnline = usersRepository.findById(contact.getUser().getIdUser())
-                    .orElseThrow(() -> new ExceptionsSystem(
-                            "User not found",
-                            HttpStatus.NOT_FOUND
-                    )).getIsOnline();
-
-            return new DTOChatContactResponse(contact, lastMessage, lastTime, unreadCount, contactIsOnline);
-        }).toList();
-    }
-
-    @Transactional(readOnly = true)
     public DTOPagination<DTOChatContactResponse> findChatContacts(RequestPagination request) {
         Users me = authService.getMe();
 
