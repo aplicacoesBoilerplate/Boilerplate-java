@@ -17,7 +17,17 @@ public class GenericSpecification<T> implements Specification<T> {
 
     @Override
     public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        Path<?> path = root.get(filter.getField());
+        Path<?> path;
+        String field = filter.getField();
+
+        if (field.contains(".")) {
+            String[] parts = field.split("\\.");
+            Join<Object, Object> join = root.join(parts[0]);
+            path = join.get(parts[1]);
+        } else {
+            path = root.get(field);
+        }
+
         FilterOperator operator = FilterOperator.valueOf(filter.getCondition());
 
         return switch (operator) {

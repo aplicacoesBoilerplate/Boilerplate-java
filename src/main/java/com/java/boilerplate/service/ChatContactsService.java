@@ -1,9 +1,13 @@
 package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.DTOChatContactResponse;
+import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.ChatContacts;
 import com.java.boilerplate.model.ChatMessages;
+import com.java.boilerplate.model.Users;
+import com.java.boilerplate.model.pagination.RequestFilters;
+import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IChatContactsRepository;
 import com.java.boilerplate.repository.IChatMessagesRepository;
 import com.java.boilerplate.repository.IUsersRepository;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,7 +36,7 @@ public class ChatContactsService {
     }
 
     @Transactional(readOnly = true)
-    public List<DTOChatContactResponse> getChatContacts(Long nextEntry, int limit) {
+    public List<DTOChatContactResponse> findChatContacts(Long nextEntry, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         String username = authService.getMe().getUserUsername();
 
@@ -51,6 +56,45 @@ public class ChatContactsService {
 
             return new DTOChatContactResponse(contact, lastMessage, lastTime, unreadCount, contactIsOnline);
         }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DTOPagination<DTOChatContactResponse> findChatContacts(RequestPagination request) {
+        Users me = authService.getMe();
+
+        RequestFilters myContactsFilter = new RequestFilters();
+        myContactsFilter.setField("user.idUser");
+        myContactsFilter.setCondition("equals");
+        myContactsFilter.setValue(me.getIdUser().toString());
+
+        if (request.getFilters() == null) {
+            request.setFilters(new ArrayList<>());
+        }
+        request.getFilters().add(myContactsFilter);
+
+        DTOPagination<ChatContacts> pagination = chatContactsRepository.findPaginationItens(request, "idChatContact");
+
+        return pagination.map(contact -> {
+            List<ChatMessages> lastMessageExchange = chatMessagesRepository.findLastMessageExchange(
+                    contact.getUser(),
+                    contact.getContact(),
+                    PageRequest.of(0, 1)
+            );
+
+            ChatMessages lastMsg = lastMessageExchange.isEmpty() ? null : lastMessageExchange.get(0);
+            Long unread = chatMessagesRepository.countUnreadMessages(
+                    contact.getContact().getIdUser(),
+                    me.getIdUser()
+            );
+
+            return new DTOChatContactResponse(
+                    contact,
+                    lastMsg != null ? lastMsg.getContent() : null,
+                    lastMsg != null ? lastMsg.getTimestamp() : null,
+                    unread,
+                    contact.getContact().getIsOnline()
+            );
+        });
     }
 
     @Transactional

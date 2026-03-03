@@ -6,8 +6,9 @@ import org.hibernate.annotations.NamedQuery;
 
 @MappedSuperclass
 @NamedQueries({
-        @NamedQuery(name = "ChatMessages.findConversation", query = ChatMessagesQueriesJPA.sqlFindConversation),
-        @NamedQuery(name = "ChatMessages.countUnreadMessages", query = ChatMessagesQueriesJPA.sqlCountUnreadMessages)
+    @NamedQuery(name = "ChatMessages.findConversation", query = ChatMessagesQueriesJPA.sqlFindConversation),
+    @NamedQuery(name = "ChatMessages.findLastMessageExchange", query = ChatMessagesQueriesJPA.sqlFindLastMessageExchange),
+    @NamedQuery(name = "ChatMessages.countUnreadMessages", query = ChatMessagesQueriesJPA.sqlCountUnreadMessages),
 })
 public class ChatMessagesQueriesJPA {
     static final String sqlFindConversation = """
@@ -19,6 +20,13 @@ public class ChatMessagesQueriesJPA {
         )
         AND (:nextEntryId IS NULL OR m.idMessage < :nextEntryId)
         ORDER BY m.idMessage DESC
+        """;
+
+    static final String sqlFindLastMessageExchange = """
+        SELECT m FROM ChatMessages m
+        WHERE (m.sender = :user AND m.receiver = :contact)
+        OR (m.sender = :contact AND m.receiver = :user)
+        ORDER BY m.timestamp DESC
         """;
 
     static final String sqlCountUnreadMessages = """
