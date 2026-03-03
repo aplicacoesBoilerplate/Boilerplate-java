@@ -73,6 +73,7 @@ public class ChatMessagesService {
                 senderId,
                 receiverId,
                 savedMessage.getContent(),
+                null,
                 savedMessage.getTimestamp(),
                 savedMessage.getRead()
         );

@@ -1,10 +1,10 @@
 package com.java.boilerplate.controller.chatContacts;
 
 import com.java.boilerplate.dto.DTOChatContactResponse;
+import com.java.boilerplate.dto.DTOPagination;
+import com.java.boilerplate.model.pagination.RequestPagination;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/contacts")
@@ -15,13 +15,12 @@ public class ChatContactsController {
         this.chatContactsHandler = chatContactsHandler;
     }
 
-    @GetMapping
-    public ResponseEntity<List<DTOChatContactResponse>> getChatContacts(
-            @RequestParam(required = false) Long nextEntry,
-            @RequestParam(required = false, defaultValue = "20") int limit
-    ) { return chatContactsHandler.getChatContacts(nextEntry, limit); }
-
     @PostMapping
+    public ResponseEntity<DTOPagination<DTOChatContactResponse>> findChatContacts(
+            @RequestBody RequestPagination request
+    ) { return chatContactsHandler.findChatContacts(request); }
+
+    @PutMapping
     public ResponseEntity<DTOChatContactResponse> updateContactStatus(
             @RequestParam Long receiverId,
             @RequestParam(required = false, defaultValue = "false") Boolean isBlocked
