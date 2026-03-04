@@ -1,8 +1,10 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.chatMessages.DTOChatMessages;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.ChatMessages;
+import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IChatMessagesRepository;
 import com.java.boilerplate.repository.IFileStorageService;
 import com.java.boilerplate.repository.IUsersRepository;
@@ -86,18 +88,39 @@ public class ChatMessagesService {
         return dtoMessage;
     }
 
-    @Transactional
-    public List<DTOChatMessages> findConversation(Long contactId, Long nextEntry, int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
+    @Transactional(readOnly = true)
+    public DTOPagination<DTOChatMessages> findConversation(Long contactId, RequestPagination request) {
         Long currentUserId = authService.getMe().getIdUser();
+
+        int limit = (request.getLimit() != null && request.getLimit() > 0) ? request.getLimit() : 20;
+        Integer nextEntry = (request.getNextEntry() != null && request.getNextEntry() > 0)
+                ? request.getNextEntry()
+                : null;
+
+        Pageable pageable = PageRequest.of(0, limit);
         List<ChatMessages> messages = chatMessagesRepository.findConversation(
                 currentUserId,
                 contactId,
                 nextEntry,
                 pageable
         );
-        Collections.reverse(messages);
-        return messages.stream().map(DTOChatMessages::fromEntity).toList();
+
+        Integer newNextEntry = messages.isEmpty() ? null : messages.get(0).getIdMessage().intValue();
+
+        if (!messages.isEmpty()) {
+            Collections.reverse(messages);
+        }
+
+        List<DTOChatMessages> dtoMessages = messages.stream().map(DTOChatMessages::fromEntity).toList();
+        Boolean hasMore = messages.size() == limit;
+
+        return new DTOPagination<>(
+                limit,
+                newNextEntry,
+                0,
+                hasMore,
+                dtoMessages
+        );
     }
 
     @Transactional
