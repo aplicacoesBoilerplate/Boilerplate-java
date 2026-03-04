@@ -1,6 +1,5 @@
 package com.java.boilerplate.service;
 
-import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
 import com.java.boilerplate.enums.GenderUser;
@@ -8,6 +7,7 @@ import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
+import com.java.boilerplate.repository.IFileStorageService;
 import com.java.boilerplate.repository.IUsersRepository;
 import com.java.boilerplate.service.helpers.HashUtil;
 import com.java.boilerplate.service.helpers.LocationService;
@@ -21,12 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,23 +30,14 @@ public class UsersService {
     private final PasswordEncoder encoder;
     private final LocationService locationService;
     private final AuthService authService;
-    private final TokensProperties properties;
+    private final IFileStorageService fileStorageService;
 
-    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService, @Lazy AuthService authService, TokensProperties properties) {
+    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService, @Lazy AuthService authService, IFileStorageService fileStorageService) {
         this.usersRepository = usersRepository;
         this.encoder = encoder;
         this.locationService = locationService;
         this.authService = authService;
-        this.properties = properties;
-    }
-
-    @Transactional(readOnly = true)
-    public Users findById(Long idUser) {
-        return usersRepository.findById(idUser)
-                .orElseThrow(() -> new ExceptionsSystem(
-                String.format("User not found for ID: %d", idUser),
-                HttpStatus.NOT_FOUND
-        ));
+        this.fileStorageService = fileStorageService;
     }
 
     private Boolean userIsAdmin() {
@@ -97,6 +82,15 @@ public class UsersService {
                 );
             }
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Users findById(Long idUser) {
+        return usersRepository.findById(idUser)
+                .orElseThrow(() -> new ExceptionsSystem(
+                        String.format("User not found for ID: %d", idUser),
+                        HttpStatus.NOT_FOUND
+                ));
     }
 
     @Transactional
@@ -228,37 +222,14 @@ public class UsersService {
     @Transactional
     public Users updateAvatar(String username, MultipartFile file) {
         Users user = this.findByUsernameOrEmail(username);
-        try {
-            Path uploadPath = Paths.get(properties.getUploadDir());
 
-            if (user.getAvatarUrl() != null && user.getAvatarUrl().length() > 10) {
-                String oldFileName = user.getAvatarUrl().substring(user.getAvatarUrl().lastIndexOf("/") + 1);
-                if (!oldFileName.isEmpty()) {
-                    Path oldFilePath = uploadPath.resolve(oldFileName);
-                    Files.deleteIfExists(oldFilePath);
-                }
-            }
-
-            String originalFilename = file.getOriginalFilename();
-            String extension = originalFilename != null && originalFilename.contains(".")
-                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                    : ".jpg";
-            String fileName = "avatar_" + username + "_" + System.currentTimeMillis() + extension;
-            if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
-
-            try (InputStream inputStream = file.getInputStream()) {
-                Path filePath = uploadPath.resolve(fileName);
-                Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            user.setAvatarUrl("/images/" + fileName);
-            return usersRepository.save(user);
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    String.format("Error saving avatar: %s", e.getMessage()),
-                    e
-            );
+        if (file != null && !file.isEmpty()) {
+            fileStorageService.deleteFile(user.getAvatarUrl());
+            String fileUrl = fileStorageService.storeFile(file, "avatar_" + username);
+            user.setAvatarUrl(fileUrl);
         }
+
+        return usersRepository.save(user);
     }
 
     @Transactional
