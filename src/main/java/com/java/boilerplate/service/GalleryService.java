@@ -36,7 +36,7 @@ public class GalleryService {
 
                 Gallery gallery = new Gallery();
                 gallery.setIdUser(idUser);
-                gallery.setPhotoUrl("/images/" + fileUrl);
+                gallery.setPhotoUrl(fileUrl);
 
                 savedGalleries.add(gallery);
             }
