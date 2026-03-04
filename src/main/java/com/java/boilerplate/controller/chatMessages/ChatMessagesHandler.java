@@ -1,10 +1,12 @@
 package com.java.boilerplate.controller.chatMessages;
 
+import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.chatMessages.DTOChatMessages;
-import com.java.boilerplate.dto.chatMessages.DTORequestSendMessage;
+import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.service.ChatMessagesService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,12 +18,12 @@ public class ChatMessagesHandler {
         this.chatMessagesService = chatMessagesService;
     }
 
-    public ResponseEntity<DTOChatMessages> sendMessage(DTORequestSendMessage request) {
-        return ResponseEntity.ok(chatMessagesService.sendMessage(request.receiverId(), request.content()));
+    public ResponseEntity<DTOChatMessages> sendMessage(Long receiverId, String content, MultipartFile file) {
+        return ResponseEntity.ok(chatMessagesService.sendMessage(receiverId, content, file));
     }
 
-    public ResponseEntity<List<DTOChatMessages>> findConversation(Long contactId, Long nextEntry, int limit) {
-        return ResponseEntity.ok(chatMessagesService.findConversation(contactId, nextEntry, limit));
+    public ResponseEntity<DTOPagination<DTOChatMessages>> findConversation(Long contactId, RequestPagination request) {
+        return ResponseEntity.ok(chatMessagesService.findConversation(contactId, request));
     }
 
     public ResponseEntity<Void> readMessage(List<Long> idMessages) {

@@ -1,19 +1,14 @@
 package com.java.boilerplate.service;
 
-import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Gallery;
+import com.java.boilerplate.repository.IFileStorageService;
 import com.java.boilerplate.repository.IGalleryRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,43 +17,29 @@ import java.util.UUID;
 public class GalleryService {
     private final IGalleryRepository galleryRepository;
     private final UsersService userService;
-    private final Path rootLocation;
+    private final IFileStorageService fileStorageService;
 
-    public GalleryService(IGalleryRepository galleryRepository, UsersService userService, TokensProperties tokensProperties) {
+    public GalleryService(IGalleryRepository galleryRepository, UsersService userService, IFileStorageService fileStorageService) {
         this.galleryRepository = galleryRepository;
         this.userService = userService;
-        String dir = tokensProperties.getUploadDir() != null ? tokensProperties.getUploadDir() : "/uploads";
-        this.rootLocation = Paths.get(dir);
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional
-    public List<Gallery> saveAll(List<MultipartFile> files, Long idUser) throws IOException {
-
-        if (!Files.exists(rootLocation)) {
-            Files.createDirectories(rootLocation);
-        }
-
+    public List<Gallery> saveAll(List<MultipartFile> files, Long idUser) {
         List<Gallery> savedGalleries = new ArrayList<>();
 
         for (MultipartFile file : files) {
-            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            if (file != null && !file.isEmpty()) {
+                String prefix = String.format("gallery_%s", UUID.randomUUID());
+                String fileUrl = fileStorageService.storeFile(file, prefix);
 
-            Path destinationFile = rootLocation.resolve(Paths.get(filename))
-                    .normalize().toAbsolutePath();
+                Gallery gallery = new Gallery();
+                gallery.setIdUser(idUser);
+                gallery.setPhotoUrl("/images/" + fileUrl);
 
-            if (!destinationFile.getParent().equals(rootLocation.toAbsolutePath())) {
-                throw new ExceptionsSystem("It is not possible to store a file outside of the current directory", HttpStatus.BAD_REQUEST);
+                savedGalleries.add(gallery);
             }
-
-            try (var inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            Gallery gallery = new Gallery();
-            gallery.setIdUser(idUser);
-            gallery.setPhotoUrl("/images/" + filename);
-
-            savedGalleries.add(gallery);
         }
 
         return galleryRepository.saveAll(savedGalleries);
@@ -67,26 +48,14 @@ public class GalleryService {
     @Transactional
     public void deletePhotos(List<Gallery> listPhotos) {
         for (Gallery gallery : listPhotos) {
-            if (gallery.getPhotoUrl() == null) {
-                continue;
-            }
+            galleryRepository.findById(gallery.getIdGallery())
+                .orElseThrow(() -> new ExceptionsSystem(
+                        "Photo not found",
+                        HttpStatus.NOT_FOUND
+                ));
 
-            try {
-                galleryRepository.findById(gallery.getIdGallery()).orElseThrow();
-
-                if (gallery.getPhotoUrl().length() > 10) {
-                    String oldFileName = gallery.getPhotoUrl().substring(gallery.getPhotoUrl().lastIndexOf("/") + 1);
-                    if (!oldFileName.isEmpty()) {
-                        Path oldFilePath = rootLocation.resolve(oldFileName);
-                        Files.deleteIfExists(oldFilePath);
-                    }
-                }
-
-            } catch (IOException e) {
-                throw new ExceptionsSystem(
-                        String.format("Error deleting physical file: " + gallery.getPhotoUrl()),
-                        HttpStatus.INTERNAL_SERVER_ERROR
-                );
+            if (gallery.getPhotoUrl() != null) {
+                fileStorageService.deleteFile(gallery.getPhotoUrl());
             }
         }
 
