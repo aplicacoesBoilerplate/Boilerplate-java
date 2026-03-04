@@ -113,8 +113,8 @@ public class UsersService {
 
         if (newUser.getAvatarUrl() == null || newUser.getAvatarUrl().isBlank()) {
             String defaultAvatar = newUser.getUserGender() == GenderUser.MALE
-                    ? "/default-avatar-male.png"
-                    : "/default-avatar-female.png";
+                    ? "images/default-avatar-male.png"
+                    : "images/default-avatar-female.png";
             newUser.setAvatarUrl(defaultAvatar);
         }
 
@@ -174,8 +174,8 @@ public class UsersService {
 
         if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
             String defaultAvatar = user.getUserGender() == GenderUser.MALE
-                    ? "/default-avatar-male.png"
-                    : "/default-avatar-female.png";
+                    ? "images/default-avatar-male.png"
+                    : "images/default-avatar-female.png";
             user.setAvatarUrl(defaultAvatar);
         }
 
