@@ -64,6 +64,14 @@ public class UsersService {
             );
         }
 
+        Boolean phoneNumberExisting = usersRepository.existsByPhoneNumber(dataUserTransaction.getPhoneNumber());
+        if (phoneNumberExisting) {
+            throw new ExceptionsSystem(
+                    "Phone number already registered!",
+                    HttpStatus.CONFLICT
+            );
+        }
+
         Users emailExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getEmail());
         Users usernameExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getUserUsername());
 

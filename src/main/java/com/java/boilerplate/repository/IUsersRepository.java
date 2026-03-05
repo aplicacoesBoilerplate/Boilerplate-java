@@ -12,4 +12,5 @@ import java.util.List;
 public interface IUsersRepository extends IBaseRepository<Users> {
     List<Users> findWithinRadius(@Param("point") Point point, @Param("radius") Long radius, @Param("gender")GenderUser gender, @Param("requesterId") Long requesterId);
     Users findByUsernameOrEmail(@Param("usernameOrEmail") String usernameOrEmail);
+    Boolean existsByPhoneNumber(String phoneNumber);
 }
