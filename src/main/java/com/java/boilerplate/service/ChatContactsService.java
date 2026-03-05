@@ -2,7 +2,6 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.DTOChatContactResponse;
 import com.java.boilerplate.dto.DTOPagination;
-import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.ChatContacts;
 import com.java.boilerplate.model.ChatMessages;
 import com.java.boilerplate.model.Users;
@@ -12,14 +11,13 @@ import com.java.boilerplate.repository.IChatContactsRepository;
 import com.java.boilerplate.repository.IChatMessagesRepository;
 import com.java.boilerplate.repository.IUsersRepository;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ChatContactsService {
@@ -83,17 +81,21 @@ public class ChatContactsService {
                     return chatContactsRepository.save(existingContact);
                 })
                 .orElseGet(() -> {
-                    ChatContacts contactReceiver = new ChatContacts();
-                    contactReceiver.setUser(usersRepository.getReferenceById(senderId));
-                    contactReceiver.setContact(usersRepository.getReferenceById(receiverId));
-                    contactReceiver.setContactBlocked(false);
-                    chatContactsRepository.save(contactReceiver);
-                    
-                    ChatContacts newContact = new ChatContacts();
-                    newContact.setUser(usersRepository.getReferenceById(receiverId));
-                    newContact.setContact(usersRepository.getReferenceById(senderId));
-                    newContact.setContactBlocked(isBlocked);
-                    return chatContactsRepository.save(newContact);
+                    ChatContacts contactSender = new ChatContacts();
+                    contactSender.setUser(usersRepository.getReferenceById(senderId));
+                    contactSender.setContact(usersRepository.getReferenceById(receiverId));
+                    contactSender.setContactBlocked(false);
+
+                    Boolean receiveExist = chatContactsRepository.existsByUser_IdUserAndContact_IdUser(receiverId, senderId);
+                    if (!receiveExist) {
+                        ChatContacts contactReceiver = new ChatContacts();
+                        contactReceiver.setUser(usersRepository.getReferenceById(receiverId));
+                        contactReceiver.setContact(usersRepository.getReferenceById(senderId));
+                        contactReceiver.setContactBlocked(false);
+                        chatContactsRepository.save(contactReceiver);
+                    }
+
+                    return chatContactsRepository.save(contactSender);
                 });
 
         Boolean contactIsOnline = contact.getContact().getIsOnline();
@@ -121,7 +123,7 @@ public class ChatContactsService {
     @Transactional
     public void removeContact(Long contactId) {
         Long userId = authService.getMe().getIdUser();
-        chatContactsRepository.deleteByUser_IdUserAndContact_IdUser(userId, contactId);
+        chatContactsRepository.deleteContactRelation(userId, contactId);
     }
 
     @Transactional(readOnly = true)
