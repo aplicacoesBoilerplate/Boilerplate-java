@@ -30,4 +30,9 @@ public class ChatMessagesHandler {
         chatMessagesService.readMessage(idMessages);
         return ResponseEntity.ok().build();
     }
+
+    public ResponseEntity<Void> clearChatHistory(Long contactId) {
+        chatMessagesService.clearChatHistory(contactId);
+        return ResponseEntity.ok().build();
+    }
 }

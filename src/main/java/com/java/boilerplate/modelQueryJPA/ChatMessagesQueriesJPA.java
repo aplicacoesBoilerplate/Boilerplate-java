@@ -9,14 +9,16 @@ import org.hibernate.annotations.NamedQuery;
     @NamedQuery(name = "ChatMessages.findConversation", query = ChatMessagesQueriesJPA.sqlFindConversation),
     @NamedQuery(name = "ChatMessages.findLastMessageExchange", query = ChatMessagesQueriesJPA.sqlFindLastMessageExchange),
     @NamedQuery(name = "ChatMessages.countUnreadMessages", query = ChatMessagesQueriesJPA.sqlCountUnreadMessages),
+    @NamedQuery(name = "ChatMessages.findMessagesWithFiles", query = ChatMessagesQueriesJPA.sqlFindMessagesWithFiles),
+    @NamedQuery(name = "ChatMessages.deleteConversation", query = ChatMessagesQueriesJPA.sqlDeleteConversation),
 })
 public class ChatMessagesQueriesJPA {
     static final String sqlFindConversation = """
         SELECT m FROM ChatMessages m
         WHERE (
-            (m.sender.idUser = :myId AND m.receiver.idUser = :contactId)
+            (m.sender.idUser = :userId AND m.receiver.idUser = :contactId)
             OR
-            (m.sender.idUser = :contactId AND m.receiver.idUser = :myId)
+            (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)
         )
         AND (:nextEntryId IS NULL OR m.idMessage < :nextEntryId)
         ORDER BY m.idMessage DESC
@@ -32,7 +34,20 @@ public class ChatMessagesQueriesJPA {
     static final String sqlCountUnreadMessages = """
         SELECT COUNT(m) FROM ChatMessages m
         WHERE m.sender.idUser = :contactId
-        AND m.receiver.idUser = :myId
+        AND m.receiver.idUser = :userId
         AND m.read = false
+        """;
+
+    static final String sqlFindMessagesWithFiles = """
+        SELECT m FROM ChatMessages m WHERE
+        ((m.sender.idUser = :userId AND m.receiver.idUser = :contactId) OR
+        (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)) AND
+        m.fileUrl IS NOT NULL
+        """;
+
+    static final String sqlDeleteConversation = """
+        DELETE FROM ChatMessages m WHERE
+        (m.sender.idUser = :userId AND m.receiver.idUser = :contactId) OR
+        (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)
         """;
 }

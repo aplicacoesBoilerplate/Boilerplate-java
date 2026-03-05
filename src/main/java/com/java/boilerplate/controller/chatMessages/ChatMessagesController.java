@@ -37,4 +37,9 @@ public class ChatMessagesController {
     public ResponseEntity<Void> readMessage(
             @RequestBody List<Long> idMessages
     ) { return chatMessagesHandler.readMessage(idMessages); }
+
+    @DeleteMapping
+    public ResponseEntity<Void> clearChatHistory(
+            @RequestParam Long contactId
+    ) { return chatMessagesHandler.clearChatHistory(contactId); }
 }

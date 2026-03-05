@@ -129,4 +129,17 @@ public class ChatMessagesService {
         messages.forEach(msg -> msg.setRead(true));
         chatMessagesRepository.saveAll(messages);
     }
+
+    @Transactional
+    public void clearChatHistory(Long contactId) {
+        Long userId = authService.getMe().getIdUser();
+        List<ChatMessages> messagesWithFiles = chatMessagesRepository.findMessagesWithFiles(userId, contactId);
+        messagesWithFiles.forEach(msg -> {
+            if (msg.getFileUrl() != null) {
+                fileStorageService.deleteFile(msg.getFileUrl());
+            }
+        });
+
+        chatMessagesRepository.deleteConversation(userId, contactId);
+    }
 }
