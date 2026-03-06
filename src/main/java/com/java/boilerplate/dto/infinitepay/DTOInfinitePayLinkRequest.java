@@ -8,5 +8,6 @@ public record DTOInfinitePayLinkRequest(
         String order_nsu,
         String redirect_url,
         String webhook_url,
-        DTOInfinitePayCustomerLinkRequest customer
+        DTOInfinitePayCustomerLinkRequest customer,
+        DTOInfinitePayAddressLinkRequest address
 ) { }
