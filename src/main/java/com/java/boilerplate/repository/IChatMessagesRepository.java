@@ -3,6 +3,7 @@ package com.java.boilerplate.repository;
 import com.java.boilerplate.model.ChatMessages;
 import com.java.boilerplate.model.Users;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -14,5 +15,7 @@ public interface IChatMessagesRepository extends IBaseRepository<ChatMessages> {
     List<ChatMessages> findLastMessageExchange(@Param("user") Users user, @Param("contact") Users contact, Pageable pageable);
     Long countUnreadMessages(@Param("contactId") Long contactId, @Param("userId") Long userId);
     List<ChatMessages> findMessagesWithFiles(@Param("userId") Long userId, @Param("contactId") Long contactId);
+
+    @Modifying
     void deleteConversation(@Param("userId") Long userId, @Param("contactId") Long contactId);
 }
