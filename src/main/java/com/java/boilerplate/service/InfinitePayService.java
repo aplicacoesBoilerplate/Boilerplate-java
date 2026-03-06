@@ -94,7 +94,6 @@ public class InfinitePayService {
         } catch (HttpClientErrorException e) {
             String erroGateway = e.getResponseBodyAsString();
             System.err.println("Erro vindo da InfinitePay: " + erroGateway);
-
             throw new ExceptionsSystem("Failed to create payment link at provider: " + erroGateway, HttpStatus.BAD_GATEWAY);
 
         } catch (Exception e) {

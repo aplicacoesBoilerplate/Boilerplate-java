@@ -55,8 +55,6 @@ public class UsersService {
     }
 
     private void dataValidModify(Users dataUserTransaction, Long idUser) {
-        Long idFindUser = idUser != null ? idUser : dataUserTransaction.getIdUser() != null ? dataUserTransaction.getIdUser() : 0;
-        Users userDoBanco = this.findById(idFindUser);
         Boolean authenticatedUserIsAdmin = this.userIsAdmin();
 
         if (dataUserTransaction.getRole().equals(UserRoles.ADMIN) && !authenticatedUserIsAdmin) {
@@ -71,6 +69,7 @@ public class UsersService {
         Users usernameExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getUserUsername());
 
         if (idUser != null) {
+            Users userDoBanco = this.findById(idUser);
             if (phoneNumberExisting && !userDoBanco.getPhoneNumber().equals(dataUserTransaction.getPhoneNumber())) {
                 throw new ExceptionsSystem(
                         "Phone number already registered!",
