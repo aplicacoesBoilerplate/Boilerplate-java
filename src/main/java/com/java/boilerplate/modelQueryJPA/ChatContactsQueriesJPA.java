@@ -20,6 +20,6 @@ public class ChatContactsQueriesJPA {
         """;
 
     static final String sqlDeleteContactRelation = """
-        DELETE FROM ChatContact c WHERE c.user.idUser = :userId AND c.contact.idUser = :contactId
+        DELETE FROM ChatContacts c WHERE c.user.idUser = :userId AND c.contact.idUser = :contactId
         """;
 }
