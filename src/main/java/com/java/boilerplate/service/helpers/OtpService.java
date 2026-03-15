@@ -1,51 +1,30 @@
 package com.java.boilerplate.service.helpers;
 
+import com.java.boilerplate.dto.DTOParamsSendingEmail;
 import com.java.boilerplate.dto.auth.DTOOtp;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserOtp;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUserOtpRepository;
 import com.java.boilerplate.service.UsersService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Random;
 
 @Service
 public class OtpService {
     private final IUserOtpRepository otpRepository;
     private final UsersService usersService;
-    private final JavaMailSender mailSender;
+    private final SendEmailService emailService;
 
-    @Value("${spring.mail.username}")
-    private String emailFrom;
-
-    public OtpService(IUserOtpRepository otpRepository, UsersService usersService, JavaMailSender mailSender) {
+    public OtpService(IUserOtpRepository otpRepository, UsersService usersService, SendEmailService emailService) {
         this.otpRepository = otpRepository;
         this.usersService = usersService;
-        this.mailSender = mailSender;
-    }
-
-    private void sendOtpEmail(String to, String code) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(emailFrom);
-        message.setTo(to);
-        message.setSubject("TZ Enconstros - Verify code");
-        message.setText(
-                String.format("""
-                Use the code below to complete the verification process.
-                
-                Your verification code is: %s
-                -> This code expires in 10 minutes
-                """, code
-                )
-        );
-        mailSender.send(message);
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -96,8 +75,15 @@ public class OtpService {
         otpEntry.setOtpCode(code);
         otpEntry.setExpiryDate(LocalDateTime.now().plusMinutes(10));
         otpEntry.setUsed(false);
-
         this.saveOtp(otpEntry);
-        this.sendOtpEmail(user.getEmail(), code);
+
+        DTOParamsSendingEmail emailRequest = new DTOParamsSendingEmail(
+                user.getEmail(),
+                "TZ Encontros - Verify Your Account",
+                "otp-email",
+                Map.of("code", code, "username", user.getUserUsername())
+        );
+
+        emailService.sendEmail(emailRequest);
     }
 }
