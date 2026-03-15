@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
+import com.java.boilerplate.dto.googleOAuth.DTOGoogleAuthResponse;
+import com.java.boilerplate.dto.googleOAuth.DTOGoogleComplete;
+import com.java.boilerplate.dto.googleOAuth.DTOGoogleToken;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
 import com.java.boilerplate.model.Users;
@@ -60,4 +63,14 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() { return authHandler.logout(); }
+
+    @PostMapping("/google")
+    public ResponseEntity<DTOGoogleAuthResponse> googleAuth(
+            @RequestBody DTOGoogleToken data)
+    { return authHandler.googleAuth(data); }
+
+    @PostMapping("/google/complete")
+    public ResponseEntity<DTOLoginResponse> googleComplete(
+            @RequestBody @Valid DTOGoogleComplete data
+    ) { return authHandler.googleComplete(data); }
 }

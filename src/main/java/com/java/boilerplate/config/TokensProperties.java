@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 public class TokensProperties {
     private String secret;
     private String googleApiKey;
+    private String googleClientId;
+    private String googleClientSecret;
     private String host;
     private String uploadDir;
     private String portFront;

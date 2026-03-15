@@ -3,18 +3,24 @@ package com.java.boilerplate.controller.auth;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
+import com.java.boilerplate.dto.googleOAuth.DTOGoogleAuthResponse;
+import com.java.boilerplate.dto.googleOAuth.DTOGoogleComplete;
+import com.java.boilerplate.dto.googleOAuth.DTOGoogleToken;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.service.AuthService;
+import com.java.boilerplate.service.GoogleOAuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AuthHandler {
     private final AuthService authService;
+    private final GoogleOAuthService googleOAuthService;
 
-    public AuthHandler(AuthService authService) {
+    public AuthHandler(AuthService authService, GoogleOAuthService googleOAuthService) {
         this.authService = authService;
+        this.googleOAuthService = googleOAuthService;
     }
 
     public ResponseEntity<DTOLoginResponse> login(DTOAuth data) {
@@ -47,5 +53,13 @@ public class AuthHandler {
     public ResponseEntity<Void> logout() {
         authService.logout();
         return ResponseEntity.noContent().build();
+    }
+
+    public ResponseEntity<DTOGoogleAuthResponse> googleAuth(DTOGoogleToken data) {
+        return ResponseEntity.ok(googleOAuthService.processGoogleToken(data.credential()));
+    }
+
+    public ResponseEntity<DTOLoginResponse> googleComplete(DTOGoogleComplete data) {
+        return ResponseEntity.ok(googleOAuthService.completeRegistration(data));
     }
 }
