@@ -65,17 +65,18 @@ public class UsersService {
         }
 
         Boolean phoneNumberExisting = usersRepository.existsByPhoneNumber(dataUserTransaction.getPhoneNumber());
-        if (phoneNumberExisting) {
-            throw new ExceptionsSystem(
-                    "Phone number already registered!",
-                    HttpStatus.CONFLICT
-            );
-        }
-
         Users emailExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getEmail());
         Users usernameExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getUserUsername());
 
         if (idUser != null) {
+            Users userDoBanco = this.findById(idUser);
+            if (phoneNumberExisting && !userDoBanco.getPhoneNumber().equals(dataUserTransaction.getPhoneNumber())) {
+                throw new ExceptionsSystem(
+                        "Phone number already registered!",
+                        HttpStatus.CONFLICT
+                );
+            }
+
             if (usernameExisting != null && !usernameExisting.getIdUser().equals(idUser) || emailExisting != null && !emailExisting.getIdUser().equals(idUser)) {
                 throw new ExceptionsSystem(
                         "An account with this login information was found. Please log in to access it or recover your password!",
@@ -86,6 +87,13 @@ public class UsersService {
             if (usernameExisting != null || emailExisting != null) {
                 throw new ExceptionsSystem(
                         "An account with this login information was found. Please log in to access it or recover your password!",
+                        HttpStatus.CONFLICT
+                );
+            }
+
+            if (phoneNumberExisting) {
+                throw new ExceptionsSystem(
+                        "Phone number already registered!",
                         HttpStatus.CONFLICT
                 );
             }

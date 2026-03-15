@@ -29,6 +29,8 @@ public class UserSubscriptionService {
         UserSubscription subscription = this.findByUser_IdUser(userId);
         LocalDateTime now = LocalDateTime.now();
 
+        if (transactionId != null && transactionId.equals(subscription.getLastPaymentId())) return;
+
         if (subscription.getExpireAt().isBefore(now)) {
             subscription.setExpireAt(now.plusDays(30));
         } else {
