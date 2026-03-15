@@ -2,10 +2,12 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.config.security.TokenService;
 import com.java.boilerplate.dto.auth.DTOAuth;
+import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
 import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
+import com.java.boilerplate.model.RefreshToken;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.service.helpers.HashUtil;
@@ -32,14 +34,16 @@ public class AuthService implements UserDetailsService {
     private final AuthenticationManager manager;
     private final PasswordEncoder encoder;
     private final TokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
     private final UsersService usersService;
     private final UserSubscriptionService userSubscriptionService;
     private final OtpService otpService;
 
-    public AuthService(@Lazy AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, @Lazy UsersService usersService, UserSubscriptionService userSubscriptionService, OtpService otpService) {
+    public AuthService(@Lazy AuthenticationManager manager, PasswordEncoder encoder, TokenService tokenService, RefreshTokenService refreshTokenService, @Lazy UsersService usersService, UserSubscriptionService userSubscriptionService, OtpService otpService) {
         this.manager = manager;
         this.encoder = encoder;
         this.tokenService = tokenService;
+        this.refreshTokenService = refreshTokenService;
         this.usersService = usersService;
         this.userSubscriptionService = userSubscriptionService;
         this.otpService = otpService;
@@ -61,18 +65,25 @@ public class AuthService implements UserDetailsService {
     }
 
     @Transactional
-    public String login(DTOAuth data) {
+    public DTOLoginResponse login(DTOAuth data) {
         var authToken = new UsernamePasswordAuthenticationToken(data.usernameOrEmail(), data.password());
         var authentication = manager.authenticate(authToken);
         Users user = (Users) authentication.getPrincipal();
+
         if (user == null) {
             throw new ExceptionsSystem(
                     "Error logging in, user not found!",
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
+
         user.setIsOnline(true);
-        return tokenService.generateToken(user);
+        usersService.saveEntity(user);
+
+        String jwt = tokenService.generateToken(user);
+        refreshTokenService.createRefreshToken(user);
+
+        return new DTOLoginResponse(jwt);
     }
 
     @Transactional
@@ -150,7 +161,7 @@ public class AuthService implements UserDetailsService {
     }
 
     @Transactional
-    public String resetPasswordWithOtp(DTOOtp request) {
+    public DTOLoginResponse resetPasswordWithOtp(DTOOtp request) {
         return executeWithValidOtp(request, (user) -> {
             user.setPassword(encoder.encode(request.password()));
             user.setIsOnline(true);
@@ -158,5 +169,27 @@ public class AuthService implements UserDetailsService {
             usersService.saveEntity(user);
             return this.login(new DTOAuth(request.email(), request.password()));
         });
+    }
+
+    @Transactional
+    public DTOLoginResponse refreshToken(String usernameOrEmail) {
+        Users user = usersService.findByUsernameOrEmail(usernameOrEmail);
+
+        RefreshToken refreshTokenByUser = refreshTokenService.findById(user.getIdUser());
+        refreshTokenService.verifyExpiration(refreshTokenByUser);
+
+        user.setIsOnline(true);
+        usersService.saveEntity(user);
+
+        String newJwt = tokenService.generateToken(user);
+        return new DTOLoginResponse(newJwt);
+    }
+
+    @Transactional
+    public void logout() {
+        Users user = this.getMe();
+        refreshTokenService.deleteByToken(user.getIdUser());
+        user.setIsOnline(false);
+        usersService.saveEntity(user);
     }
 }

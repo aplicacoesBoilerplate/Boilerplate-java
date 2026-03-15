@@ -65,6 +65,8 @@ logging:
 tokens:
   secret: ${JWT_SECRET}
   googleApiKey: ${GOOGLE_API_KEY}
+  googleClientId: ${GOOGLE_CLIENT_ID}
+  googleSecretKey: ${GOOGLE_SECRET_KEY}
   host: ${HOST}
   uploadDir: ${UPLOAD_DIR}
   portFront: ${PORT_FRONT}

@@ -18,8 +18,7 @@ public class AuthHandler {
     }
 
     public ResponseEntity<DTOLoginResponse> login(DTOAuth data) {
-        String token = authService.login(data);
-        return ResponseEntity.ok(new DTOLoginResponse(token));
+        return ResponseEntity.ok(authService.login(data));
     }
 
     public ResponseEntity<DTOUser> register(DTOUser request) {
@@ -38,6 +37,15 @@ public class AuthHandler {
     }
 
     public ResponseEntity<DTOLoginResponse> resetPasswordWithOtp(DTOOtp request) {
-        return ResponseEntity.ok(new DTOLoginResponse(authService.resetPasswordWithOtp(request)));
+        return ResponseEntity.ok(authService.resetPasswordWithOtp(request));
+    }
+
+    public ResponseEntity<DTOLoginResponse> refreshToken(String usernameOrEmail) {
+        return ResponseEntity.ok(authService.refreshToken(usernameOrEmail));
+    }
+
+    public ResponseEntity<Void> logout() {
+        authService.logout();
+        return ResponseEntity.noContent().build();
     }
 }

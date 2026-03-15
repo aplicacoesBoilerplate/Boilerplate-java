@@ -52,4 +52,12 @@ public class AuthController {
     public ResponseEntity<DTOUser> getMe(
             @AuthenticationPrincipal Users user
     ) { return ResponseEntity.ok(DTOUser.fromEntity(user)); }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<DTOLoginResponse> refreshToken(
+            @RequestParam(name = "usernameOrEmail") String request
+    ) { return authHandler.refreshToken(request); }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() { return authHandler.logout(); }
 }
