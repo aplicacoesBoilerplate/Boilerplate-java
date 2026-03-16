@@ -3,7 +3,9 @@ package com.java.boilerplate.service;
 import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserSubscription;
+import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUserSubscriptionRepository;
+import com.java.boilerplate.service.helpers.HashUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,31 @@ public class UserSubscriptionService {
     @Transactional
     public UserSubscription save(UserSubscription subscription) {
         return subscriptionRepository.save(subscription);
+    }
+
+    @Transactional
+    public UserSubscription generateOrRecoverySubscription(Users user) {
+        String currentEmailHash = HashUtil.generateSha256(user.getEmail());
+        Optional<LocalDateTime> latestExpirationSubscription = this.findByEmailHash(currentEmailHash);
+
+        UserSubscription subscription = new UserSubscription();
+        subscription.setUser(user);
+
+        if (latestExpirationSubscription.isPresent()) {
+            LocalDateTime latestExpiration = latestExpirationSubscription.get();
+            subscription.setExpireAt(latestExpiration);
+
+            if (latestExpiration.isAfter(LocalDateTime.now())) {
+                subscription.setStatus(SubscriptionStatus.ACTIVE);
+            } else {
+                subscription.setStatus(SubscriptionStatus.OVERDUE);
+            }
+        } else {
+            subscription.setExpireAt(LocalDateTime.now().plusDays(60));
+            subscription.setStatus(SubscriptionStatus.ACTIVE);
+        }
+
+        return this.save(subscription);
     }
 
     @Transactional
