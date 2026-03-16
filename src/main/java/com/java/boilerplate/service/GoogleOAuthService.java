@@ -30,13 +30,15 @@ public class GoogleOAuthService {
     private final RefreshTokenService refreshTokenService;
     private final UsersService usersService;
     private final TokensProperties properties;
+    private final UserSubscriptionService userSubscriptionService;
 
-    public GoogleOAuthService(IUsersRepository usersRepository, TokenService tokenService, RefreshTokenService refreshTokenService, UsersService usersService, TokensProperties properties) {
+    public GoogleOAuthService(IUsersRepository usersRepository, TokenService tokenService, RefreshTokenService refreshTokenService, UsersService usersService, TokensProperties properties, UserSubscriptionService userSubscriptionService) {
         this.usersRepository = usersRepository;
         this.tokenService = tokenService;
         this.refreshTokenService = refreshTokenService;
         this.usersService = usersService;
         this.properties = properties;
+        this.userSubscriptionService = userSubscriptionService;
     }
 
     @Transactional
@@ -88,7 +90,7 @@ public class GoogleOAuthService {
         newUser.setPassword(data.password());
         newUser.setPhoneNumber(data.phoneNumber());
         newUser.setUserGender(data.userGender());
-        newUser.setAvatarUrl(data.pictureUrl());
+        newUser.setAvatarUrl(null);
         newUser.setRole(UserRoles.USER);
         newUser.setIsActive(true);
         newUser.setIsOnline(true);
@@ -102,6 +104,10 @@ public class GoogleOAuthService {
         newUser.setLocation(defaultLocation);
 
         Users savedUser = usersService.saveUser(newUser);
+
+        if (!savedUser.getRole().equals(UserRoles.ADMIN)) {
+            userSubscriptionService.generateOrRecoverySubscription(savedUser);
+        }
 
         String jwt = tokenService.generateToken(savedUser);
         String refreshToken = refreshTokenService.createRefreshToken(savedUser);
