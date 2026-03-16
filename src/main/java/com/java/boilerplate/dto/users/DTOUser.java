@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.Coordinate;
 
 public record DTOUser(
         @JsonView(UserViews.Internal.class)
@@ -76,11 +79,11 @@ public record DTOUser(
         user.setIsActive(this.isActive);
 
         if (this.location() != null) {
-            org.locationtech.jts.geom.GeometryFactory factory =
-                    new org.locationtech.jts.geom.GeometryFactory(new org.locationtech.jts.geom.PrecisionModel(), 4326);
+            GeometryFactory factory =
+                    new GeometryFactory(new PrecisionModel(), 4326);
 
-            org.locationtech.jts.geom.Point point = factory.createPoint(
-                    new org.locationtech.jts.geom.Coordinate(this.location().longitude(), this.location().latitude())
+            Point point = factory.createPoint(
+                    new Coordinate(this.location().longitude(), this.location().latitude())
             );
             user.setLocation(point);
         }
