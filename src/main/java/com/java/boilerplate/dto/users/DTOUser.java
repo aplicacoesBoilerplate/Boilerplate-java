@@ -25,7 +25,7 @@ public record DTOUser(
         @JsonView(UserViews.Public.class)
         String bio,
 
-        @NotNull(message = "The gender field is required")
+        @NotNull(message = "The userGender field is required")
         @JsonView(UserViews.Internal.class)
         GenderUser userGender,
 

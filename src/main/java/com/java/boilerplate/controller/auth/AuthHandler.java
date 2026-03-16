@@ -3,6 +3,7 @@ package com.java.boilerplate.controller.auth;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
+import com.java.boilerplate.dto.auth.DTORefreshTokenRequest;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleAuthResponse;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleComplete;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleToken;
@@ -46,12 +47,13 @@ public class AuthHandler {
         return ResponseEntity.ok(authService.resetPasswordWithOtp(request));
     }
 
-    public ResponseEntity<DTOLoginResponse> refreshToken(String usernameOrEmail) {
-        return ResponseEntity.ok(authService.refreshToken(usernameOrEmail));
+    public ResponseEntity<DTOLoginResponse> refreshToken(DTORefreshTokenRequest request) {
+        DTOLoginResponse response = authService.refreshToken(request);
+        return ResponseEntity.ok(response);
     }
 
-    public ResponseEntity<Void> logout() {
-        authService.logout();
+    public ResponseEntity<Void> logout(DTORefreshTokenRequest request) {
+        authService.logout(request);
         return ResponseEntity.noContent().build();
     }
 

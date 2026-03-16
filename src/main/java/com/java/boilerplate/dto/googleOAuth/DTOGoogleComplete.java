@@ -8,8 +8,8 @@ public record DTOGoogleComplete(
         @NotBlank String tempToken,
         @NotBlank String username,
         @NotBlank String password,
-        @NotBlank String phone,
-        @NotNull GenderUser gender,
+        @NotBlank String phoneNumber,
+        @NotNull GenderUser userGender,
         @NotBlank String name,
         String pictureUrl
 ) {}

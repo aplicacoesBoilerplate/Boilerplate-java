@@ -6,12 +6,12 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.config.security.TokenService;
+import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleAuthResponse;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleComplete;
-import com.java.boilerplate.dto.auth.DTOLoginResponse;
+import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
-import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.repository.IUsersRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -85,8 +85,8 @@ public class GoogleOAuthService {
         newUser.setFullName(data.name());
         newUser.setUserUsername(data.username());
         newUser.setPassword(encoder.encode(data.password()));
-        newUser.setPhoneNumber(data.phone());
-        newUser.setUserGender(data.gender());
+        newUser.setPhoneNumber(data.phoneNumber());
+        newUser.setUserGender(data.userGender());
         newUser.setAvatarUrl(data.pictureUrl());
         newUser.setRole(UserRoles.USER);
 
@@ -96,8 +96,8 @@ public class GoogleOAuthService {
         Users savedUser = usersService.saveUser(newUser);
 
         String jwt = tokenService.generateToken(savedUser);
-        refreshTokenService.createRefreshToken(savedUser);
+        String refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
-        return new DTOLoginResponse(jwt);
+        return new DTOLoginResponse(jwt, refreshToken);
     }
 }

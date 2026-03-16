@@ -2,7 +2,7 @@ package com.java.boilerplate.dto.googleOAuth;
 
 public record DTOGoogleAuthResponse(
         Boolean isNewUser,
-        String accessToken,
+        String token,
         String refreshToken,
         String name,
         String email,

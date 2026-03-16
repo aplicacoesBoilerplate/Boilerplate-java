@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
+import com.java.boilerplate.dto.auth.DTORefreshTokenRequest;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleAuthResponse;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleComplete;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleToken;
@@ -58,11 +59,13 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<DTOLoginResponse> refreshToken(
-            @RequestParam(name = "usernameOrEmail") String request
+            @RequestBody @Valid DTORefreshTokenRequest request
     ) { return authHandler.refreshToken(request); }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() { return authHandler.logout(); }
+    public ResponseEntity<Void> logout(
+            @RequestBody @Valid DTORefreshTokenRequest request
+    ) { return authHandler.logout(request); }
 
     @PostMapping("/google")
     public ResponseEntity<DTOGoogleAuthResponse> googleAuth(

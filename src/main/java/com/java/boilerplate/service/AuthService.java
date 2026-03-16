@@ -4,6 +4,7 @@ import com.java.boilerplate.config.security.TokenService;
 import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
+import com.java.boilerplate.dto.auth.DTORefreshTokenRequest;
 import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
@@ -81,9 +82,9 @@ public class AuthService implements UserDetailsService {
         usersService.saveEntity(user);
 
         String jwt = tokenService.generateToken(user);
-        refreshTokenService.createRefreshToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return new DTOLoginResponse(jwt);
+        return new DTOLoginResponse(jwt, refreshToken);
     }
 
     @Transactional
@@ -172,23 +173,22 @@ public class AuthService implements UserDetailsService {
     }
 
     @Transactional
-    public DTOLoginResponse refreshToken(String usernameOrEmail) {
-        Users user = usersService.findByUsernameOrEmail(usernameOrEmail);
+    public DTOLoginResponse refreshToken(DTORefreshTokenRequest request) {
+        RefreshToken tokenValidado = refreshTokenService.findByToken(request.refreshToken());
+        refreshTokenService.verifyExpiration(tokenValidado);
 
-        RefreshToken refreshTokenByUser = refreshTokenService.findById(user.getIdUser());
-        refreshTokenService.verifyExpiration(refreshTokenByUser);
-
+        Users user = tokenValidado.getUser();
         user.setIsOnline(true);
         usersService.saveEntity(user);
 
         String newJwt = tokenService.generateToken(user);
-        return new DTOLoginResponse(newJwt);
+        return new DTOLoginResponse(newJwt, request.refreshToken());
     }
 
     @Transactional
-    public void logout() {
+    public void logout(DTORefreshTokenRequest request) {
         Users user = this.getMe();
-        refreshTokenService.deleteByToken(user.getIdUser());
+        refreshTokenService.deleteByToken(request.refreshToken());
         user.setIsOnline(false);
         usersService.saveEntity(user);
     }
