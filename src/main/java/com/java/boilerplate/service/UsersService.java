@@ -127,13 +127,6 @@ public class UsersService {
             );
         }
 
-        if (newUser.getAvatarUrl() == null || newUser.getAvatarUrl().isBlank()) {
-            String defaultAvatar = newUser.getUserGender() == GenderUser.MALE
-                    ? "images/default-avatar-male.png"
-                    : "images/default-avatar-female.png";
-            newUser.setAvatarUrl(defaultAvatar);
-        }
-
         if (newUser.getEmail() != null && newUser.getEmailHash() == null) {
             newUser.setEmailHash(HashUtil.generateSha256(newUser.getEmail()));
         }
@@ -187,13 +180,6 @@ public class UsersService {
         user.setAvatarUrl(null);
         user.setIsOnline(false);
         user.setIsActive(false);
-
-        if (user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) {
-            String defaultAvatar = user.getUserGender() == GenderUser.MALE
-                    ? "images/default-avatar-male.png"
-                    : "images/default-avatar-female.png";
-            user.setAvatarUrl(defaultAvatar);
-        }
 
         usersRepository.save(user);
     }

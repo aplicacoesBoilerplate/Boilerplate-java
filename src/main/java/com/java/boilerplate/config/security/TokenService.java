@@ -53,4 +53,30 @@ public class TokenService {
     private Instant genExpirationDate() {
         return LocalDateTime.now().plusHours(12).toInstant(ZoneOffset.of("-03:00"));
     }
+
+    public String generateTempRegistrationToken(String email) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(tokens.getSecret());
+            return JWT.create()
+                    .withIssuer("boilerplate-api-temp")
+                    .withSubject(email)
+                    .withExpiresAt(LocalDateTime.now().plusMinutes(15).toInstant(ZoneOffset.of("-03:00")))
+                    .sign(algorithm);
+        } catch (JWTCreationException exception) {
+            throw new RuntimeException("Error generating temp token", exception);
+        }
+    }
+
+    public String validateTempRegistrationToken(String token) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(tokens.getSecret());
+            return JWT.require(algorithm)
+                    .withIssuer("boilerplate-api-temp")
+                    .build()
+                    .verify(token)
+                    .getSubject();
+        } catch (JWTVerificationException exception) {
+            return null;
+        }
+    }
 }

@@ -1,3 +1,3 @@
 package com.java.boilerplate.dto.auth;
 
-public record DTOLoginResponse(String token) {}
+public record DTOLoginResponse(String token, String refreshToken) {}

@@ -46,14 +46,15 @@ public class RefreshTokenService {
     }
 
     @Transactional(readOnly = true)
-    public RefreshToken findById(Long idUser) {
-        return refreshTokenRepository.findById(idUser)
-                .orElseThrow(() -> new ExceptionsSystem("Refresh token not found or invalid.", HttpStatus.UNAUTHORIZED));
+    public RefreshToken findByToken(String plainToken) {
+        String hashToken = HashUtil.generateSha256(plainToken);
+        return refreshTokenRepository.findByTokenHash(hashToken)
+                .orElseThrow(() -> new ExceptionsSystem("Refresh token não encontrado ou inválido.", HttpStatus.UNAUTHORIZED));
     }
 
     @Transactional
-    public void deleteByToken(Long idUser) {
-        RefreshToken hashToken = this.findById(idUser);
-        refreshTokenRepository.deleteByTokenHash(hashToken.getTokenHash());
+    public void deleteByToken(String plainToken) {
+        String hashToken = HashUtil.generateSha256(plainToken);
+        refreshTokenRepository.deleteByTokenHash(hashToken);
     }
 }
