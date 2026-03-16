@@ -1,11 +1,13 @@
 package com.java.boilerplate.service;
 
 import com.java.boilerplate.enums.SubscriptionStatus;
+import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUserSubscriptionRepository;
 import com.java.boilerplate.service.helpers.HashUtil;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +18,11 @@ import java.util.Optional;
 @Service
 public class UserSubscriptionService {
     private final IUserSubscriptionRepository subscriptionRepository;
+    private final UsersService usersService;
 
-    public UserSubscriptionService(IUserSubscriptionRepository subscriptionRepository) {
+    public UserSubscriptionService(IUserSubscriptionRepository subscriptionRepository, @Lazy UsersService usersService) {
         this.subscriptionRepository = subscriptionRepository;
+        this.usersService = usersService;
     }
 
     @Transactional
@@ -81,20 +85,22 @@ public class UserSubscriptionService {
 
     @Transactional
     public void validateSubscription(Long userId) {
-        UserSubscription subscription = this.findByUser_IdUser(userId);
+        Users user = usersService.findById(userId);
+        if (!user.getRole().equals(UserRoles.ADMIN)) {
+            UserSubscription subscription = this.findByUser_IdUser(userId);
 
-        if (!subscription.isValid()) {
-            if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
-                subscription.setStatus(SubscriptionStatus.OVERDUE);
-                this.save(subscription);
+            if (!subscription.isValid()) {
+                if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
+                    subscription.setStatus(SubscriptionStatus.OVERDUE);
+                    this.save(subscription);
+                }
+                throw new ExceptionsSystem(
+                        "Subscription expired. Please renew your plan.",
+                        HttpStatus.PAYMENT_REQUIRED
+                );
             }
-            throw new ExceptionsSystem(
-                    "Subscription expired. Please renew your plan.",
-                    HttpStatus.PAYMENT_REQUIRED
-            );
         }
     }
-
 
     @Transactional
     public Optional<LocalDateTime> findByEmailHash(String emailHash) {
