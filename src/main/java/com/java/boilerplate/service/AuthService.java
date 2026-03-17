@@ -116,33 +116,15 @@ public class AuthService implements UserDetailsService {
 
     @Transactional
     public Users register(Users newUser) {
-        String currentEmailHash = HashUtil.generateSha256(newUser.getEmail());
-        Optional<LocalDateTime> latestExpirationOpt = userSubscriptionService.findByEmailHash(currentEmailHash);
-
         newUser.setIsActive(false);
         newUser.setRole(newUser.getRole() != null ? newUser.getRole() : UserRoles.USER);
         Users savedUser = usersService.saveUser(newUser);
 
-        UserSubscription subscription = new UserSubscription();
-        subscription.setUser(savedUser);
-
-        if (latestExpirationOpt.isPresent()) {
-            LocalDateTime latestExpiration = latestExpirationOpt.get();
-            subscription.setExpireAt(latestExpiration);
-
-            if (latestExpiration.isAfter(LocalDateTime.now())) {
-                subscription.setStatus(SubscriptionStatus.ACTIVE);
-            } else {
-                subscription.setStatus(SubscriptionStatus.OVERDUE);
-            }
-        } else {
-            subscription.setExpireAt(LocalDateTime.now().plusDays(60));
-            subscription.setStatus(SubscriptionStatus.ACTIVE);
+        if (!savedUser.getRole().equals(UserRoles.ADMIN)) {
+            userSubscriptionService.generateOrRecoverySubscription(savedUser);
         }
 
-        userSubscriptionService.save(subscription);
         otpService.generateOtpCode(savedUser);
-
         return savedUser;
     }
 

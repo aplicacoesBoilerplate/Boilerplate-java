@@ -13,8 +13,11 @@ import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUsersRepository;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.Coordinate;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +28,17 @@ public class GoogleOAuthService {
     private final IUsersRepository usersRepository;
     private final TokenService tokenService;
     private final RefreshTokenService refreshTokenService;
-    private final PasswordEncoder encoder;
     private final UsersService usersService;
     private final TokensProperties properties;
+    private final UserSubscriptionService userSubscriptionService;
 
-    public GoogleOAuthService(IUsersRepository usersRepository, TokenService tokenService, RefreshTokenService refreshTokenService, PasswordEncoder encoder, UsersService usersService, TokensProperties properties) {
+    public GoogleOAuthService(IUsersRepository usersRepository, TokenService tokenService, RefreshTokenService refreshTokenService, UsersService usersService, TokensProperties properties, UserSubscriptionService userSubscriptionService) {
         this.usersRepository = usersRepository;
         this.tokenService = tokenService;
         this.refreshTokenService = refreshTokenService;
-        this.encoder = encoder;
         this.usersService = usersService;
         this.properties = properties;
+        this.userSubscriptionService = userSubscriptionService;
     }
 
     @Transactional
@@ -84,16 +87,27 @@ public class GoogleOAuthService {
         newUser.setEmail(email);
         newUser.setFullName(data.name());
         newUser.setUserUsername(data.username());
-        newUser.setPassword(encoder.encode(data.password()));
+        newUser.setPassword(data.password());
         newUser.setPhoneNumber(data.phoneNumber());
         newUser.setUserGender(data.userGender());
-        newUser.setAvatarUrl(data.pictureUrl());
+        newUser.setAvatarUrl(null);
         newUser.setRole(UserRoles.USER);
-
         newUser.setIsActive(true);
         newUser.setIsOnline(true);
 
+        double defaultLng = -42.9408;
+        double defaultLat = -21.1214;
+
+        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
+        Point defaultLocation = factory.createPoint(new Coordinate(defaultLng, defaultLat));
+
+        newUser.setLocation(defaultLocation);
+
         Users savedUser = usersService.saveUser(newUser);
+
+        if (!savedUser.getRole().equals(UserRoles.ADMIN)) {
+            userSubscriptionService.generateOrRecoverySubscription(savedUser);
+        }
 
         String jwt = tokenService.generateToken(savedUser);
         String refreshToken = refreshTokenService.createRefreshToken(savedUser);

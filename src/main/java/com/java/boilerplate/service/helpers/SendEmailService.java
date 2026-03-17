@@ -4,6 +4,7 @@ import com.java.boilerplate.dto.DTOParamsSendingEmail;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,9 @@ public class SendEmailService {
             helper.setTo(request.to());
             helper.setSubject(request.subject());
             helper.setText(htmlContent, true);
+
+            ClassPathResource logo = new ClassPathResource("mail/TZ_LogoApp.jpg");
+            helper.addInline("appLogo", logo);
 
             mailSender.send(message);
         } catch (MessagingException e) {

@@ -81,7 +81,7 @@ public class OtpService {
                 user.getEmail(),
                 "TZ Encontros - Verify Your Account",
                 "otp-email",
-                Map.of("code", code, "username", user.getUserUsername())
+                Map.of("username", user.getUserUsername(), "code", code)
         );
 
         emailService.sendEmail(emailRequest);
