@@ -41,7 +41,7 @@ public class RefreshTokenService {
     public void verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
             refreshTokenRepository.delete(token);
-            throw new ExceptionsSystem("Refresh expired token. Log in again.", HttpStatus.UNAUTHORIZED);
+            throw new ExceptionsSystem("Refresh token expirado, faça login novamente para continua.", HttpStatus.UNAUTHORIZED);
         }
     }
 

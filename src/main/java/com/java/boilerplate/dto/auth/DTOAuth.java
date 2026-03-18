@@ -4,10 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record DTOAuth(
-        @NotBlank(message = "The email or username field is required")
+        @NotBlank(message = "O campo de e-mail ou nome de usuário é obrigatório")
         String usernameOrEmail,
 
-        @NotBlank(message = "The password field is required")
-        @Size(min = 8, max = 20, message = "The password field must be between 8 and 20 characters long")
+        @NotBlank(message = "O campo de senha é obrigatório")
+        @Size(min = 8, max = 20, message = "A senha deve conter entre 8 a 20 caracteres")
         String password
 ) {}

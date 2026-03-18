@@ -45,7 +45,7 @@ public class InfinitePayService {
             subscriptionItem.add(new DTOInfinitePayItemsLinkRequest(
                     1,
                     1000,
-                    "Subscription Renewal - " + user.getUserUsername()
+                    "Contribuição - " + user.getUserUsername()
             ));
 
             DTOInfinitePayCustomerLinkRequest customer = new DTOInfinitePayCustomerLinkRequest(
@@ -94,10 +94,10 @@ public class InfinitePayService {
         } catch (HttpClientErrorException e) {
             String erroGateway = e.getResponseBodyAsString();
             System.err.println("Erro vindo da InfinitePay: " + erroGateway);
-            throw new ExceptionsSystem("Failed to create payment link at provider: " + erroGateway, HttpStatus.BAD_GATEWAY);
+            throw new ExceptionsSystem("Erro no provedor ao criar link de pagamento: " + erroGateway, HttpStatus.BAD_GATEWAY);
 
         } catch (Exception e) {
-            throw new ExceptionsSystem("Payment Gateway Error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new ExceptionsSystem("Erro ao gerar link de pagamento: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

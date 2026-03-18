@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record DTOGoogleComplete(
-        @NotBlank String tempToken,
-        @NotBlank String username,
-        @NotBlank String password,
-        @NotBlank String phoneNumber,
-        @NotNull GenderUser userGender,
-        @NotBlank String name,
+        @NotBlank(message = "Token temporário é obrigatório") String tempToken,
+        @NotBlank(message = "O campo do username é obrigatório") String username,
+        @NotBlank(message = "O campo da senha é obrigatório") String password,
+        @NotBlank(message = "O campo de telefone é obrigatório") String phoneNumber,
+        @NotNull(message = "O campo de sexo é obrigatório") GenderUser userGender,
+        @NotBlank(message = "O campo de nome é obrigatório") String name,
         String pictureUrl
 ) {}

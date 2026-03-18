@@ -3,9 +3,9 @@ package com.java.boilerplate.dto.users;
 import jakarta.validation.constraints.NotNull;
 
 public record DTORequestWithinRadius(
-        @NotNull(message = "The location field is required")
+        @NotNull(message = "A informação da localização é obrigatória")
         DTOLocation location,
 
-        @NotNull(message = "The radius field is required")
+        @NotNull(message = "A informação do raio de busca é obrigatória")
         Long radius
 ) { }

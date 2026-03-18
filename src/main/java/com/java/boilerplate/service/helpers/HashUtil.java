@@ -18,7 +18,7 @@ public class HashUtil {
             }
             return hexString.toString();
         } catch (Exception e) {
-            throw new RuntimeException("Error generating hash", e);
+            throw new RuntimeException("Erro ao gerar o hash", e);
         }
     }
 }

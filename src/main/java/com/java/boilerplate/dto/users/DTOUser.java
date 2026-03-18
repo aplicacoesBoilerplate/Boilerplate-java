@@ -17,18 +17,18 @@ public record DTOUser(
         @JsonView(UserViews.Internal.class)
         Long idUser,
 
-        @NotBlank(message = "The full name field is required")
+        @NotBlank(message = "O campo nome é obrigatório")
         @JsonView(UserViews.Public.class)
         String fullName,
 
-        @NotBlank(message = "The username field is required")
+        @NotBlank(message = "O campo nome de usuário é obrigatório")
         @JsonView(UserViews.Public.class)
         String username,
 
         @JsonView(UserViews.Public.class)
         String bio,
 
-        @NotNull(message = "The userGender field is required")
+        @NotNull(message = "O campo do sexo é obrigatório")
         @JsonView(UserViews.Internal.class)
         GenderUser userGender,
 
@@ -41,18 +41,18 @@ public record DTOUser(
         @JsonView(UserViews.Public.class)
         String phoneNumber,
 
-        @Email(message = "The email field is invalid")
+        @Email(message = "Formato de e-mail inválido")
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         String email,
 
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         String password,
 
-        @NotNull(message = "The user's role was not specified")
+        @NotNull(message = "O nível de permissão não foi específicado")
         @JsonView(UserViews.Internal.class)
         UserRoles role,
 
-        @NotNull(message = "The field location is required")
+        @NotNull(message = "A informação da localização é obrigatória")
         @JsonView(UserViews.Public.class)
         DTOLocation location,
 

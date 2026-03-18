@@ -60,7 +60,7 @@ public class AuthService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Users user = usersService.findByUsernameOrEmail(username);
         if (user == null) {
-            throw new UsernameNotFoundException("User not found");
+            throw new UsernameNotFoundException("Usuário não encontrado");
         }
         return user;
     }
@@ -73,7 +73,7 @@ public class AuthService implements UserDetailsService {
 
         if (user == null) {
             throw new ExceptionsSystem(
-                    "Error logging in, user not found!",
+                    "Erro no login, usuário não encontrado",
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
@@ -102,14 +102,14 @@ public class AuthService implements UserDetailsService {
             Users freshUser = usersService.findById(principalUser.getIdUser());
 
             if (!freshUser.getIsActive()) {
-                throw new DisabledException("User account is inactive");
+                throw new DisabledException("Usuário possuí a conta inativa");
             }
 
             return freshUser;
         }
 
         throw new ExceptionsSystem(
-                "User not authenticated",
+                "Usuário não autenticado, faça login e tente novamente",
                 HttpStatus.UNAUTHORIZED
         );
     }

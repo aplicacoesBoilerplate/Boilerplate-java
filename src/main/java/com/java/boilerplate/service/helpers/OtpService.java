@@ -37,7 +37,7 @@ public class OtpService {
         return otpRepository.findByUser_IdUser(idUser)
                 .orElseThrow(() ->
                         new ExceptionsSystem(
-                                "OTP code not found",
+                                "O código informado não foi encontrado para o usuário atual, código inválido",
                                 HttpStatus.UNAUTHORIZED
                         ));
     }
@@ -49,14 +49,14 @@ public class OtpService {
 
         if (otp.getOtpCode() == null || !otp.getOtpCode().equals(request.code())) {
             throw new ExceptionsSystem(
-                    "Invalid OTP code",
+                    "Código de verificação inválido",
                     HttpStatus.UNAUTHORIZED
             );
         }
 
         if (otp.getExpiryDate().isBefore(LocalDateTime.now()) || otp.getUsed().equals(Boolean.TRUE)) {
             throw new ExceptionsSystem(
-                    "OTP code expired",
+                    "Código de verificação expirado",
                     HttpStatus.UNAUTHORIZED
             );
         }
@@ -79,7 +79,7 @@ public class OtpService {
 
         DTOParamsSendingEmail emailRequest = new DTOParamsSendingEmail(
                 user.getEmail(),
-                "TZ Encontros - Verify Your Account",
+                "TZ Encontros - Verifique a sua conta",
                 "otp-email",
                 Map.of("username", user.getUserUsername(), "code", code)
         );

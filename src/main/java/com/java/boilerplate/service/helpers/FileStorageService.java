@@ -44,7 +44,7 @@ public class FileStorageService implements IFileStorageService {
 
             if (!destinationFile.getParent().equals(rootLocation.toAbsolutePath())) {
                 throw new ExceptionsSystem(
-                "It is not possible to store a file outside the current directory.",
+                "Não é possível armazenar um arquivo fora do diretório atual. Verifique o destino",
                     HttpStatus.BAD_REQUEST
                 );
             }
@@ -56,7 +56,7 @@ public class FileStorageService implements IFileStorageService {
             return "/images/" + fileName;
 
         } catch (IOException e) {
-            throw new ExceptionsSystem("Error saving file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new ExceptionsSystem("Erro ao salvar o arquivo: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -73,7 +73,7 @@ public class FileStorageService implements IFileStorageService {
                 Files.deleteIfExists(filePath);
             }
         } catch (IOException e) {
-            throw new ExceptionsSystem("Error deleting physical file: " + fileUrl, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new ExceptionsSystem("Erro ao excluir o arquivo físico: " + fileUrl, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

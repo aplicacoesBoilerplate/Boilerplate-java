@@ -78,7 +78,7 @@ public class UserSubscriptionService {
     public UserSubscription findByUser_IdUser(Long idUser) {
         return subscriptionRepository.findByUser_IdUser(idUser)
             .orElseThrow(() -> new ExceptionsSystem(
-                    "Subscription not found for user",
+                    "Registro de contribuição não encontrado",
                     HttpStatus.INTERNAL_SERVER_ERROR
             ));
     }
@@ -95,7 +95,7 @@ public class UserSubscriptionService {
                     this.save(subscription);
                 }
                 throw new ExceptionsSystem(
-                        "Subscription expired. Please renew your plan.",
+                        "Solicitamos a sua contribuição para mantermos o app",
                         HttpStatus.PAYMENT_REQUIRED
                 );
             }

@@ -59,12 +59,12 @@ public class ChatMessagesService {
         boolean hasFile = file != null && !file.isEmpty();
 
         if (!hasContent && !hasFile) {
-            throw new ExceptionsSystem("You cannot send an empty message", HttpStatus.BAD_REQUEST);
+            throw new ExceptionsSystem("Você não pode enviar uma mensagem vazia", HttpStatus.BAD_REQUEST);
         }
 
         boolean isBlocked = chatContactsService.checkBlockedContact(receiverId, senderId);
         if (isBlocked) {
-            throw new ExceptionsSystem("You cannot send messages to this user", HttpStatus.UNAUTHORIZED);
+            throw new ExceptionsSystem("O envio de mensagens foi bloqueada para esse usuário", HttpStatus.UNAUTHORIZED);
         }
 
         this.chatContactsService.updateContactStatus(receiverId, false);

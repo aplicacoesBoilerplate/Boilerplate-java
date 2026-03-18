@@ -59,7 +59,7 @@ public class UsersService {
 
         if (dataUserTransaction.getRole().equals(UserRoles.ADMIN) && !authenticatedUserIsAdmin) {
             throw new ExceptionsSystem(
-                    "New administrators can only be created by another administrator",
+                    "Você não tem a permissão necessária para esta operação, é necessário um administrador!",
                     HttpStatus.UNAUTHORIZED
             );
         }
@@ -72,28 +72,28 @@ public class UsersService {
             Users userDoBanco = this.findById(idUser);
             if (phoneNumberExisting && !userDoBanco.getPhoneNumber().equals(dataUserTransaction.getPhoneNumber())) {
                 throw new ExceptionsSystem(
-                        "Phone number already registered!",
+                        "O número de celular informado já foi cadastrado!",
                         HttpStatus.CONFLICT
                 );
             }
 
             if (usernameExisting != null && !usernameExisting.getIdUser().equals(idUser) || emailExisting != null && !emailExisting.getIdUser().equals(idUser)) {
                 throw new ExceptionsSystem(
-                        "An account with this login information was found. Please log in to access it or recover your password!",
+                        "Encontramos uma conta com essas informações, faça login ou recupere a sua senha!",
                         HttpStatus.CONFLICT
                 );
             }
         } else {
             if (usernameExisting != null || emailExisting != null) {
                 throw new ExceptionsSystem(
-                        "An account with this login information was found. Please log in to access it or recover your password!",
+                        "Encontramos uma conta com essas informações, faça login ou recupere a sua senha!",
                         HttpStatus.CONFLICT
                 );
             }
 
             if (phoneNumberExisting) {
                 throw new ExceptionsSystem(
-                        "Phone number already registered!",
+                        "O número de celular informado já foi cadastrado!",
                         HttpStatus.CONFLICT
                 );
             }
@@ -104,7 +104,7 @@ public class UsersService {
     public Users findById(Long idUser) {
         return usersRepository.findById(idUser)
                 .orElseThrow(() -> new ExceptionsSystem(
-                        String.format("User not found for ID: %d", idUser),
+                        String.format("Usuário não encontrado para o ID: %d", idUser),
                         HttpStatus.NOT_FOUND
                 ));
     }
@@ -115,14 +115,14 @@ public class UsersService {
 
         if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
             throw new ExceptionsSystem(
-                    "The password field is required",
+                    "O campo de senha é obrigatório",
                     HttpStatus.BAD_REQUEST
             );
         }
 
         if (newUser.getPassword().length() < 8 || newUser.getPassword().length() > 20) {
             throw new ExceptionsSystem(
-                    "The password field must be between 8 and 20 characters long",
+                    "O campo da senha deve ter entre 8 e 20 caracteres",
                     HttpStatus.BAD_REQUEST
             );
         }
@@ -205,7 +205,7 @@ public class UsersService {
         Users user = usersRepository.findByUsernameOrEmail(usernameOrEmail);
         if (user == null) {
             throw new ExceptionsSystem(
-                    "User not found",
+                    "Usuário não encontrado",
                     HttpStatus.NOT_FOUND
             );
         }
