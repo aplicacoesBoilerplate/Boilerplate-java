@@ -1,5 +1,6 @@
 package com.java.boilerplate.dto;
 
+import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.model.ChatContacts;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ public record DTOChatContactResponse(
         Long idContact,
         String username,
         String avatarUrl,
+        GenderUser userGender,
         Boolean contactBlocked,
         String lastMessage,
         LocalDateTime lastMessageTime,
@@ -21,6 +23,7 @@ public record DTOChatContactResponse(
                 contact.getContact().getIdUser(),
                 contact.getContact().getUserUsername(),
                 contact.getContact().getAvatarUrl(),
+                contact.getContact().getUserGender(),
                 contact.getContactBlocked(),
                 lastMessage,
                 lastMessageTime,

@@ -24,6 +24,7 @@ public class CorsConfiguration {
         List<String> origins = new ArrayList<>();
         origins.add("http://localhost:9000");
         origins.add("http://localhost:5173");
+        origins.add("http://localhost");
 
         if (props.getHost() != null) {
             origins.add(props.getHost());
