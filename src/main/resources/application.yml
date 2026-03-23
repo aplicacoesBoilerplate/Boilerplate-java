@@ -62,7 +62,14 @@ logging:
     org.springframework.jdbc.core: DEBUG        # Loga as queries SQL feitas pelo JdbcTemplate
     org.springframework.jdbc.datasource: DEBUG  # Loga operações com o DataSource
 
+springdoc:
+  swagger-ui:
+    path: /doc
+  api-docs:
+    path: /doc/api
+
 tokens:
+  docPassword: ${DOC_PASSWORD}
   secret: ${JWT_SECRET}
   googleApiKey: ${GOOGLE_API_KEY}
   googleClientId: ${GOOGLE_CLIENT_ID}

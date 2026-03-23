@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public class TokensProperties {
+    private String docPassword;
     private String secret;
     private String googleApiKey;
     private String googleClientId;
