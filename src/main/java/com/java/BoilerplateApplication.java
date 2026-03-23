@@ -7,9 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @EnableAsync
 public class BoilerplateApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(BoilerplateApplication.class, args);
 	}
-
 }

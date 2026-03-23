@@ -3,9 +3,6 @@ spring:
     name: boilerplate
   main:
     web-application-type: servlet
-  web:
-    resources:
-      add-mappings: false
   autoconfigure:
     time-zone: America/Sao_Paulo
   datasource:
@@ -41,6 +38,7 @@ spring:
 
 server:
   port: ${API_PORT}
+  forward-headers-strategy: framework
 
 management:
   endpoints:
@@ -61,12 +59,6 @@ logging:
     root: INFO
     org.springframework.jdbc.core: DEBUG        # Loga as queries SQL feitas pelo JdbcTemplate
     org.springframework.jdbc.datasource: DEBUG  # Loga operações com o DataSource
-
-springdoc:
-  swagger-ui:
-    path: /doc
-  api-docs:
-    path: /doc/api
 
 tokens:
   docPassword: ${DOC_PASSWORD}
