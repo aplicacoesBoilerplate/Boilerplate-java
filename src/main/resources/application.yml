@@ -3,6 +3,9 @@ spring:
     name: boilerplate
   main:
     web-application-type: servlet
+  web:
+    resources:
+      add-mappings: false
   autoconfigure:
     time-zone: America/Sao_Paulo
   datasource:
@@ -60,6 +63,12 @@ logging:
     org.springframework.jdbc.core: DEBUG        # Loga as queries SQL feitas pelo JdbcTemplate
     org.springframework.jdbc.datasource: DEBUG  # Loga operações com o DataSource
 
+springdoc:
+  swagger-ui:
+    path: /doc
+  api-docs:
+    path: /doc/api
+
 tokens:
   docPassword: ${DOC_PASSWORD}
   secret: ${JWT_SECRET}
@@ -73,3 +82,9 @@ tokens:
   infinitePayHandle: ${INFINITE_PAY_HANDLE}
   infinitePayRedirectUrl: ${INFINITE_PAY_REDIRECT_URL}
   infinitePayWebhookUrl: ${INFINITE_PAY_WEBHOOK_URL}
+
+push:
+  vapid:
+    publicKey: ${VAPID_PUBLIC_KEY}
+    privateKey: ${VAPID_PRIVATE_KEY}
+    subject: mailto:${EMAIL_USER}

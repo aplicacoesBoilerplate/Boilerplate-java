@@ -5,13 +5,10 @@ import com.java.boilerplate.dto.auth.DTOAuth;
 import com.java.boilerplate.dto.auth.DTOLoginResponse;
 import com.java.boilerplate.dto.auth.DTOOtp;
 import com.java.boilerplate.dto.auth.DTORefreshTokenRequest;
-import com.java.boilerplate.enums.SubscriptionStatus;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.RefreshToken;
-import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
-import com.java.boilerplate.service.helpers.HashUtil;
 import com.java.boilerplate.service.helpers.OtpService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -26,8 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Service
