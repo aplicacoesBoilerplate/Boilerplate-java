@@ -39,7 +39,8 @@ public class PushSubscriptionService {
     }
 
     public void deleteAllByIdUser(Long idUser) {
-        repository.deleteAllByIdUser(idUser);
+        Long idUserDefault = idUser == null ? this.authService.getMeIgnoringSubscription().getIdUser() : idUser;
+        repository.deleteAllByIdUser(idUserDefault);
     }
 
     public void deleteByEndpoint(String endpoint) {

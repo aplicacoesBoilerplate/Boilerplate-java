@@ -17,4 +17,13 @@ public class PushSubscriptionHandler {
         service.saveSubscription(dto);
         return ResponseEntity.ok().build();
     }
+
+    public ResponseEntity<Void> unsubscribe(String endpoint) {
+        if (endpoint == null) {
+            service.deleteAllByIdUser(null);
+        } else {
+            service.deleteByEndpoint(endpoint);
+        }
+        return ResponseEntity.ok().build();
+    }
 }
