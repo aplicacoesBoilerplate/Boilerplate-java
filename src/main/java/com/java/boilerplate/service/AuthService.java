@@ -124,7 +124,7 @@ public class AuthService implements UserDetailsService {
                 subscription.setStatus(SubscriptionStatus.OVERDUE);
             }
         } else {
-            subscription.setExpireAt(LocalDateTime.now().plusDays(60));
+            subscription.setExpireAt(LocalDateTime.now().plusDays(30));
             subscription.setStatus(SubscriptionStatus.ACTIVE);
         }
 
