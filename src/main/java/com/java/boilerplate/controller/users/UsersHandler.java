@@ -4,17 +4,13 @@ import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
 import com.java.boilerplate.dto.users.DTORequestWithinRadius;
 import com.java.boilerplate.dto.users.DTOUser;
-import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.service.UsersService;
 import com.java.boilerplate.service.helpers.LocationService;
 import org.locationtech.jts.geom.Point;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

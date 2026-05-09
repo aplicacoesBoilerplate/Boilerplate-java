@@ -1,9 +1,12 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.config.TokensProperties;
 import com.java.boilerplate.dto.DTOPagination;
+import com.java.boilerplate.dto.DTOPushNotification;
 import com.java.boilerplate.dto.chatMessages.DTOChatMessages;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.ChatMessages;
+import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IChatMessagesRepository;
 import com.java.boilerplate.repository.IFileStorageService;
@@ -31,8 +34,10 @@ public class ChatMessagesService {
     private final AuthService authService;
     private final SocketService socketService;
     private final IFileStorageService fileStorageService;
+    private final PushNotificationService notificationService;
+    private final TokensProperties properties;
 
-    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService, SocketService socketService, IFileStorageService fileStorageService) {
+    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService, SocketService socketService, IFileStorageService fileStorageService, PushNotificationService notificationService, TokensProperties properties) {
         this.chatMessagesRepository = chatMessagesRepository;
         this.usersRepository = usersRepository;
         this.usersService = usersService;
@@ -41,18 +46,21 @@ public class ChatMessagesService {
         this.authService = authService;
         this.socketService = socketService;
         this.fileStorageService = fileStorageService;
+        this.notificationService = notificationService;
+        this.properties = properties;
     }
 
     private ChatMessages findById(Long idMessage) {
         return chatMessagesRepository.findById(idMessage)
-                .orElseThrow(() -> new ExceptionsSystem(
-                        "Message not found",
-                        HttpStatus.NOT_FOUND
-                ));
+            .orElseThrow(() -> new ExceptionsSystem(
+                "Message not found",
+                HttpStatus.NOT_FOUND
+            ));
     }
 
     @Transactional
     public DTOChatMessages sendMessage(Long receiverId, String content, MultipartFile file) {
+        Users sender = authService.getMe();
         Long senderId = authService.getMe().getIdUser();
 
         boolean hasContent = content != null && !content.trim().isEmpty();
@@ -85,6 +93,23 @@ public class ChatMessagesService {
         DTOChatMessages dtoMessage = DTOChatMessages.fromEntity(savedMessage);
         String usernameReceiver = usersService.findById(receiverId).getUsername();
         socketService.notifyNewMessage(usernameReceiver, dtoMessage);
+
+        try {
+            DTOPushNotification pushNotification = new DTOPushNotification();
+            pushNotification.setTitle(sender.getFullName());
+
+            String body = hasFile ? "Enviou um arquivo 📎" : content;
+            pushNotification.setBody(body);
+
+            // URL para o frontend redirecionar ao chat específico
+            String fullUrl = properties.getHost() + "/chat/" + senderId;
+            pushNotification.setUrl(fullUrl);
+
+            notificationService.notifyUser(receiverId, pushNotification);
+        } catch (Exception e) {
+            System.err.println("Falha ao disparar Web Push: " + e.getMessage());
+        }
+
         return dtoMessage;
     }
 

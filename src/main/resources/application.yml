@@ -81,3 +81,9 @@ tokens:
   infinitePayHandle: ${INFINITE_PAY_HANDLE}
   infinitePayRedirectUrl: ${INFINITE_PAY_REDIRECT_URL}
   infinitePayWebhookUrl: ${INFINITE_PAY_WEBHOOK_URL}
+
+push:
+  vapid:
+    publicKey: ${VAPID_PUBLIC_KEY}
+    privateKey: ${VAPID_PRIVATE_KEY}
+    subject: mailto:${EMAIL_USER}
