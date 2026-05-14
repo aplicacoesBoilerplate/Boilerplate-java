@@ -2,7 +2,6 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.DTOPagination;
 import com.java.boilerplate.dto.users.DTOInsertLocationUser;
-import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
