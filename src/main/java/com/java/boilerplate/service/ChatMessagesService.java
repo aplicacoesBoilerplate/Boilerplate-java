@@ -102,7 +102,7 @@ public class ChatMessagesService {
             pushNotification.setBody(body);
 
             // URL para o frontend redirecionar ao chat específico
-            String fullUrl = properties.getHost() + "/chat/" + senderId;
+            String fullUrl = "/#/chat/" + sender.getUserUsername();
             pushNotification.setUrl(fullUrl);
 
             notificationService.notifyUser(receiverId, pushNotification);
