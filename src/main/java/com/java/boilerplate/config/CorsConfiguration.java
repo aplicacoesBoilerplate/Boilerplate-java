@@ -23,6 +23,7 @@ public class CorsConfiguration {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         List<String> origins = new ArrayList<>();
         origins.add("http://localhost:9000");
+        origins.add("http://localhost:9200");
         origins.add("http://localhost:5173");
         origins.add("http://localhost");
 
