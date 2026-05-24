@@ -8,12 +8,19 @@ import jakarta.annotation.PostConstruct;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import nl.martijndwars.webpush.Subscription;
+import nl.martijndwars.webpush.Urgency;
+import nl.martijndwars.webpush.Utils;
+import org.bouncycastle.jce.interfaces.ECPublicKey;
+import nl.martijndwars.webpush.Urgency;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 import org.apache.http.HttpResponse;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.List;
 
@@ -57,13 +64,20 @@ public class PushNotificationService {
     private void sendNotification(PushSubscription subscription, DTOPushNotification dto) {
         HttpStatus httpStatus = null;
         try {
-            Subscription pushSubscription = new Subscription(
-                subscription.getEndpoint(),
-                new Subscription.Keys(subscription.getP256dh(), subscription.getAuth())
-            );
-
             String payload = objectMapper.writeValueAsString(dto);
-            Notification notification = new Notification(pushSubscription, payload);
+            ECPublicKey publicKey = (ECPublicKey) Utils.loadPublicKey(subscription.getP256dh());
+
+            byte[] authBytes = Base64.getUrlDecoder().decode(subscription.getAuth());
+
+            Notification notification = new Notification(
+                subscription.getEndpoint(),
+                publicKey,
+                authBytes,
+                payload.getBytes(StandardCharsets.UTF_8),
+                24 * 60 * 60,
+                Urgency.HIGH,
+                null
+            );
 
             HttpResponse response = this.pushService.send(notification);
 
