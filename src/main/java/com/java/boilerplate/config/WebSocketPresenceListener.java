@@ -19,11 +19,13 @@ public class WebSocketPresenceListener {
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
-        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         Optional.ofNullable(event.getUser())
                 .ifPresent(user -> {
-                    String username = user.getName();
-                    updateUserPresence(username, true);
+                    try {
+                        usersService.updatePresence(user.getName(), true);
+                    } catch (Exception e) {
+                        System.err.println("❌ Erro ao registrar presença (Connect): " + e.getMessage());
+                    }
                 });
     }
 

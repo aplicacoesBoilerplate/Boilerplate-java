@@ -50,20 +50,23 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    try {
+                        String authorizationHeader = accessor.getFirstNativeHeader("Authorization");
 
-                    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                        String token = authorizationHeader.substring(7);
+                        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                            String token = authorizationHeader.substring(7);
+                            String login = tokenService.validateToken(token);
 
-                        String login = tokenService.validateToken(token);
-
-                        if (login != null) {
-                            UserDetails userDetails = usersService.findByUsernameOrEmail(login);
-                            UsernamePasswordAuthenticationToken authentication =
-                                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                            accessor.setUser(authentication);
+                            if (login != null) {
+                                UserDetails userDetails = usersService.findByUsernameOrEmail(login);
+                                UsernamePasswordAuthenticationToken authentication =
+                                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                                accessor.setUser(authentication);
+                            }
                         }
+                    } catch (Exception e) {
+                        return null;
                     }
                 }
                 return message;
