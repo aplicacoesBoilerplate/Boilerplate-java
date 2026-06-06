@@ -164,7 +164,8 @@ public class AuthService implements UserDetailsService {
 
     @Transactional
     public void logout(DTORefreshTokenRequest request) {
-        Users user = this.getMe();
+        RefreshToken refreshToken = refreshTokenService.findByToken(request.refreshToken());
+        Users user = refreshToken.getUser();
         refreshTokenService.deleteByToken(request.refreshToken());
         user.setIsOnline(false);
         usersService.saveEntity(user);

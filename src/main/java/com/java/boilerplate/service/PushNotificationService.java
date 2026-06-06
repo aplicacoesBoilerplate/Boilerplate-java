@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.java.boilerplate.config.VapidProperties;
 import com.java.boilerplate.dto.DTOPushNotification;
 import com.java.boilerplate.model.PushSubscription;
+import com.java.boilerplate.service.context.AppContextService;
 import jakarta.annotation.PostConstruct;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
@@ -30,12 +31,24 @@ public class PushNotificationService {
     private final PushSubscriptionService pushSubscriptionService;
     private final VapidProperties vapidProperties;
     private final ObjectMapper objectMapper;
+    private final AppContextService appContextService;
     private PushService pushService;
 
-    public PushNotificationService(PushSubscriptionService pushSubscriptionService, VapidProperties vapidProperties, ObjectMapper objectMapper) {
+    public PushNotificationService(PushSubscriptionService pushSubscriptionService, VapidProperties vapidProperties, ObjectMapper objectMapper, AppContextService appContextService) {
         this.pushSubscriptionService = pushSubscriptionService;
         this.vapidProperties = vapidProperties;
         this.objectMapper = objectMapper;
+        this.appContextService = appContextService;
+    }
+
+    private String contextAssetPath(String assetPath) {
+        String urlPath = appContextService.getCurrent().getUrlPath();
+
+        if (urlPath == null || urlPath.isBlank() || urlPath.equals("/")) {
+            return assetPath;
+        }
+
+        return urlPath.replaceAll("/$", "") + assetPath;
     }
 
     @PostConstruct
@@ -58,6 +71,17 @@ public class PushNotificationService {
     public void notifyUser(Long idUser, DTOPushNotification dto) {
         List<PushSubscription> subscriptions = pushSubscriptionService.findAllByIdUser(idUser);
         if (subscriptions.isEmpty()) return;
+
+        dto.setContextKey(appContextService.getCurrentKey());
+
+        if (dto.getIcon() == null) {
+            dto.setIcon(contextAssetPath("/icons/icon-web-push-notification.png"));
+        }
+
+        if (dto.getBadge() == null) {
+            dto.setBadge(dto.getIcon());
+        }
+
         subscriptions.forEach(subscription -> sendNotification(subscription, dto));
     }
 

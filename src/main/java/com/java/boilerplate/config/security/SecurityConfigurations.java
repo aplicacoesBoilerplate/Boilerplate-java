@@ -1,6 +1,7 @@
 package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.config.TokensProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +30,13 @@ public class SecurityConfigurations {
 
     @Autowired
     TokensProperties properties;
+
+    @Bean
+    public FilterRegistrationBean<SecurityFilter> securityFilterRegistration(SecurityFilter filter) {
+        FilterRegistrationBean<SecurityFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
 
     @Bean
     @Order(1)

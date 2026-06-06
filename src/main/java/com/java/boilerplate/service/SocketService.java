@@ -12,8 +12,8 @@ public class SocketService {
         this.template = template;
     }
 
-    public void notifyPaymentSuccess(Long userId) {
-        String destination = "/topic/payment/" + userId;
+    public void notifyPaymentSuccess(String contextKey, Long userId) {
+        String destination = "/topic/" + contextKey + "/payment/" + userId;
         template.convertAndSend(destination, "PAYMENT_APPROVED");
     }
 

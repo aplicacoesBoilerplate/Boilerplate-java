@@ -13,6 +13,7 @@ import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUsersRepository;
+import com.java.boilerplate.service.context.AppContextService;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -31,14 +32,16 @@ public class GoogleOAuthService {
     private final UsersService usersService;
     private final TokensProperties properties;
     private final UserSubscriptionService userSubscriptionService;
+    private final AppContextService appContextService;
 
-    public GoogleOAuthService(IUsersRepository usersRepository, TokenService tokenService, RefreshTokenService refreshTokenService, UsersService usersService, TokensProperties properties, UserSubscriptionService userSubscriptionService) {
+    public GoogleOAuthService(IUsersRepository usersRepository, TokenService tokenService, RefreshTokenService refreshTokenService, UsersService usersService, TokensProperties properties, UserSubscriptionService userSubscriptionService, AppContextService appContextService) {
         this.usersRepository = usersRepository;
         this.tokenService = tokenService;
         this.refreshTokenService = refreshTokenService;
         this.usersService = usersService;
         this.properties = properties;
         this.userSubscriptionService = userSubscriptionService;
+        this.appContextService = appContextService;
     }
 
     @Transactional
@@ -58,7 +61,7 @@ public class GoogleOAuthService {
             String name = (String) payload.get("name");
             String pictureUrl = (String) payload.get("picture");
 
-            Users user = usersRepository.findByUsernameOrEmail(email);
+            Users user = usersRepository.findByUsernameOrEmailAndContextKey(email, appContextService.getCurrentKey());
 
             if (user != null) {
                 user.setIsOnline(true);

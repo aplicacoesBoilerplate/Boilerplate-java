@@ -8,6 +8,7 @@ import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IFileStorageService;
 import com.java.boilerplate.repository.IUsersRepository;
+import com.java.boilerplate.service.context.AppContextService;
 import com.java.boilerplate.service.helpers.HashUtil;
 import com.java.boilerplate.service.helpers.LocationService;
 import org.locationtech.jts.geom.Point;
@@ -30,13 +31,15 @@ public class UsersService {
     private final LocationService locationService;
     private final AuthService authService;
     private final IFileStorageService fileStorageService;
+    private final AppContextService appContextService;
 
-    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService, @Lazy AuthService authService, IFileStorageService fileStorageService) {
+    public UsersService(IUsersRepository usersRepository, PasswordEncoder encoder, LocationService locationService, @Lazy AuthService authService, IFileStorageService fileStorageService, AppContextService appContextService) {
         this.usersRepository = usersRepository;
         this.encoder = encoder;
         this.locationService = locationService;
         this.authService = authService;
         this.fileStorageService = fileStorageService;
+        this.appContextService = appContextService;
     }
 
     private Boolean userIsAdmin() {
@@ -63,9 +66,20 @@ public class UsersService {
             );
         }
 
-        Boolean phoneNumberExisting = usersRepository.existsByPhoneNumber(dataUserTransaction.getPhoneNumber());
-        Users emailExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getEmail());
-        Users usernameExisting = usersRepository.findByUsernameOrEmail(dataUserTransaction.getUserUsername());
+        String contextKey = appContextService.getCurrentKey();
+
+        if (appContextService.currentRequiresGender() && dataUserTransaction.getUserGender() == null) {
+            throw new ExceptionsSystem(
+                    "O campo do sexo é obrigatório para este contexto",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        Boolean phoneNumberExisting = dataUserTransaction.getPhoneNumber() != null && !dataUserTransaction.getPhoneNumber().isBlank()
+                ? usersRepository.existsByPhoneNumberAndContextKey(dataUserTransaction.getPhoneNumber(), contextKey)
+                : false;
+        Users emailExisting = usersRepository.findByUsernameOrEmailAndContextKey(dataUserTransaction.getEmail(), contextKey);
+        Users usernameExisting = usersRepository.findByUsernameOrEmailAndContextKey(dataUserTransaction.getUserUsername(), contextKey);
 
         if (idUser != null) {
             Users userDoBanco = this.findById(idUser);
@@ -101,7 +115,7 @@ public class UsersService {
 
     @Transactional(readOnly = true)
     public Users findById(Long idUser) {
-        return usersRepository.findById(idUser)
+        return usersRepository.findByIdUserAndContextKey(idUser, appContextService.getCurrentKey())
                 .orElseThrow(() -> new ExceptionsSystem(
                         String.format("Usuário não encontrado para o ID: %d", idUser),
                         HttpStatus.NOT_FOUND
@@ -110,6 +124,7 @@ public class UsersService {
 
     @Transactional
     public Users saveUser(Users newUser) {
+        newUser.setContextKey(appContextService.getCurrentKey());
         this.dataValidModify(newUser, null);
 
         if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
@@ -196,12 +211,19 @@ public class UsersService {
     @Transactional(readOnly = true)
     public List<Users> findWithinRadius(Point point, Long radius) {
         Users user = authService.getMe();
-        return usersRepository.findWithinRadius(point, radius, user.getUserGender(), user.getIdUser());
+        return usersRepository.findWithinRadius(
+                point,
+                radius,
+                user.getUserGender(),
+                user.getIdUser(),
+                appContextService.getCurrentKey(),
+                appContextService.currentRequiresGender()
+        );
     }
 
     @Transactional(readOnly = true)
     public Users findByUsernameOrEmail(String usernameOrEmail) {
-        Users user = usersRepository.findByUsernameOrEmail(usernameOrEmail);
+        Users user = usersRepository.findByUsernameOrEmailAndContextKey(usernameOrEmail, appContextService.getCurrentKey());
         if (user == null) {
             throw new ExceptionsSystem(
                     "Usuário não encontrado",
@@ -235,7 +257,7 @@ public class UsersService {
 
     @Transactional
     public void updatePresence(String username, boolean online) {
-        Users user = usersRepository.findByUsernameOrEmail(username);
+        Users user = usersRepository.findByUsernameOrEmailAndContextKey(username, appContextService.getCurrentKey());
         if (user != null) {
             user.setIsOnline(online);
             usersRepository.save(user);

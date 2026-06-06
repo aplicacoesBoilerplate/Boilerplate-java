@@ -1,7 +1,7 @@
 package com.java.boilerplate.config;
 
 import com.java.boilerplate.config.security.TokenService;
-import com.java.boilerplate.service.UsersService;
+import com.java.boilerplate.repository.IUsersRepository;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -22,12 +22,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
     private final TokensProperties tokensProperties;
     private final TokenService tokenService;
-    private final UsersService usersService;
+    private final IUsersRepository usersRepository;
 
-    public WebSocketConfiguration(TokensProperties tokensProperties, TokenService tokenService, UsersService usersService) {
+    public WebSocketConfiguration(TokensProperties tokensProperties, TokenService tokenService, IUsersRepository usersRepository) {
         this.tokensProperties = tokensProperties;
         this.tokenService = tokenService;
-        this.usersService = usersService;
+        this.usersRepository = usersRepository;
     }
 
     @Override
@@ -57,9 +57,10 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
                         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                             String token = authorizationHeader.substring(7);
                             String login = tokenService.validateToken(token);
+                            String contextKey = tokenService.getContextKey(token);
 
-                            if (login != null) {
-                                UserDetails userDetails = usersService.findByUsernameOrEmail(login);
+                            if (login != null && !login.isBlank() && contextKey != null && !contextKey.isBlank()) {
+                                UserDetails userDetails = usersRepository.findByUsernameOrEmailAndContextKey(login, contextKey);
                                 UsernamePasswordAuthenticationToken authentication =
                                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                                 accessor.setUser(authentication);

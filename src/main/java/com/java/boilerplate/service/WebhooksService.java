@@ -1,7 +1,7 @@
 package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.infinitepay.DTOInfinitePayWebhook;
-import com.java.boilerplate.model.Users;
+import com.java.boilerplate.model.UserSubscription;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -9,12 +9,10 @@ import org.springframework.stereotype.Service;
 public class WebhooksService {
     private final UserSubscriptionService subscriptionService;
     private final SocketService socketService;
-    private final UsersService usersService;
 
-    public WebhooksService(UserSubscriptionService subscriptionService, SocketService socketService, UsersService usersService) {
+    public WebhooksService(UserSubscriptionService subscriptionService, SocketService socketService) {
         this.subscriptionService = subscriptionService;
         this.socketService = socketService;
-        this.usersService = usersService;
     }
 
     @Async
@@ -22,11 +20,11 @@ public class WebhooksService {
         try {
             if (payload != null && payload.order_nsu() != null) {
                 String orderNsu = payload.order_nsu();
-                String username = orderNsu.split("user:")[1].split("-")[0];
-                Users user = usersService.findByUsernameOrEmail(username);
+                String contextKey = orderNsu.split("ctx:")[1].split("-")[0];
+                Long subscriptionId = Long.parseLong(orderNsu.split("sub:")[1].split("-")[0]);
 
-                subscriptionService.renewSubscription(user.getIdUser(), payload.transaction_nsu());
-                socketService.notifyPaymentSuccess(user.getIdUser());
+                UserSubscription subscription = subscriptionService.renewSubscriptionById(subscriptionId, contextKey, payload.transaction_nsu());
+                socketService.notifyPaymentSuccess(contextKey, subscription.getUser().getIdUser());
             }
         } catch (Exception e) {
             System.err.println("Erro ao processar Webhook assíncrono: " + e.getMessage());

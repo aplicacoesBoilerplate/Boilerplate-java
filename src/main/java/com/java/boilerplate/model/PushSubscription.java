@@ -18,7 +18,10 @@ public class PushSubscription {
     @Column(name = "id_user")
     private Long idUser;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "context_key", nullable = false, length = 50)
+    private String contextKey;
+
+    @Column(nullable = false)
     private String endpoint;
 
     @Column(nullable = false)

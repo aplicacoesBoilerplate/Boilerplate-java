@@ -11,11 +11,11 @@ import java.util.List;
 
 @Repository
 public interface IChatMessagesRepository extends IBaseRepository<ChatMessages> {
-    List<ChatMessages> findConversation(@Param("userId") Long userId, @Param("contactId") Long contactId, @Param("nextEntryId") Integer nextEntryId, Pageable pageable );
+    List<ChatMessages> findConversation(@Param("userId") Long userId, @Param("contactId") Long contactId, @Param("nextEntryId") Integer nextEntryId, @Param("contextKey") String contextKey, Pageable pageable );
     List<ChatMessages> findLastMessageExchange(@Param("user") Users user, @Param("contact") Users contact, Pageable pageable);
-    Long countUnreadMessages(@Param("contactId") Long contactId, @Param("userId") Long userId);
-    List<ChatMessages> findMessagesWithFiles(@Param("userId") Long userId, @Param("contactId") Long contactId);
+    Long countUnreadMessages(@Param("contactId") Long contactId, @Param("userId") Long userId, @Param("contextKey") String contextKey);
+    List<ChatMessages> findMessagesWithFiles(@Param("userId") Long userId, @Param("contactId") Long contactId, @Param("contextKey") String contextKey);
 
     @Modifying
-    void deleteConversation(@Param("userId") Long userId, @Param("contactId") Long contactId);
+    void deleteConversation(@Param("userId") Long userId, @Param("contactId") Long contactId, @Param("contextKey") String contextKey);
 }

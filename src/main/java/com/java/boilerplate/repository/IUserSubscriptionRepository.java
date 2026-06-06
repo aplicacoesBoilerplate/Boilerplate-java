@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface IUserSubscriptionRepository extends IBaseRepository<UserSubscription>{
-    Optional<UserSubscription> findByUser_IdUser(@Param("idUser") Long idUser);
-    Optional<LocalDateTime> findLatestExpirationByEmailHash(@Param("emailHash") String emailHash);
+    Optional<UserSubscription> findByUser_IdUserAndContextKey(@Param("idUser") Long idUser, @Param("contextKey") String contextKey);
+    Optional<UserSubscription> findByIdAndContextKey(@Param("id") Long id, @Param("contextKey") String contextKey);
+    Optional<LocalDateTime> findLatestExpirationByEmailHash(@Param("emailHash") String emailHash, @Param("contextKey") String contextKey);
 }

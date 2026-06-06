@@ -9,9 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface IChatContactsRepository extends IBaseRepository<ChatContacts> {
-    Boolean checkBlockedContact(Long receiverId, Long senderId);
-    Optional<ChatContacts> findByUser_IdUserAndContact_IdUser(Long userId, Long contactId);
-    Boolean existsByUser_IdUserAndContact_IdUser(Long receiverId, Long senderId);
+    Boolean checkBlockedContact(@Param("receiverId") Long receiverId, @Param("senderId") Long senderId, @Param("contextKey") String contextKey);
+    Optional<ChatContacts> findByUser_IdUserAndContact_IdUserAndUser_ContextKeyAndContact_ContextKey(Long userId, Long contactId, String userContextKey, String contactContextKey);
+    Boolean existsByUser_IdUserAndContact_IdUserAndUser_ContextKeyAndContact_ContextKey(Long receiverId, Long senderId, String userContextKey, String contactContextKey);
     @Modifying
-    void deleteContactRelation(@Param("userId") Long userId, @Param("contactId") Long contactId);
+    void deleteContactRelation(@Param("userId") Long userId, @Param("contactId") Long contactId, @Param("contextKey") String contextKey);
 }

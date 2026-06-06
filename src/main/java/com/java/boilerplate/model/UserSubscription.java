@@ -22,8 +22,11 @@ public class UserSubscription extends UserSubscriptionQueriesJPA {
 
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_user", nullable = false, unique = true)
+    @JoinColumn(name = "id_user", nullable = false)
     private Users user;
+
+    @Column(name = "context_key", nullable = false, length = 50)
+    private String contextKey;
 
     @Column(name = "expire_at", nullable = false)
     private LocalDateTime expireAt;

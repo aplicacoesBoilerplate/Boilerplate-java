@@ -10,6 +10,8 @@ import org.hibernate.annotations.NamedQuery;
 })
 public class UserSubscriptionQueriesJPA {
     static final String sqlFindLatestExpirationByEmailHash = """
-        SELECT MAX(us.expireAt) FROM UserSubscription us WHERE us.user.emailHash = :emailHash
+        SELECT MAX(us.expireAt) FROM UserSubscription us
+        WHERE us.user.emailHash = :emailHash
+        AND us.contextKey = :contextKey
         """;
 }

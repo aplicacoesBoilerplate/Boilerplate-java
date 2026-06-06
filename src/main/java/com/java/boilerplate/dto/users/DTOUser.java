@@ -28,7 +28,6 @@ public record DTOUser(
         @JsonView(UserViews.Public.class)
         String bio,
 
-        @NotNull(message = "O campo do sexo é obrigatório")
         @JsonView(UserViews.Public.class)
         GenderUser userGender,
 

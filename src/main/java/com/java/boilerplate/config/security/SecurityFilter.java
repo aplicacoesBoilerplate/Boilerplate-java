@@ -1,10 +1,13 @@
 package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.repository.IUsersRepository;
+import com.java.boilerplate.service.context.AppContextService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,13 +18,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class SecurityFilter extends OncePerRequestFilter {
     private final TokenService tokenService;
     private final IUsersRepository userRepository;
+    private final AppContextService appContextService;
 
-    public SecurityFilter(TokenService tokenService, @Lazy IUsersRepository userRepository) {
+    public SecurityFilter(TokenService tokenService, @Lazy IUsersRepository userRepository, AppContextService appContextService) {
         this.tokenService = tokenService;
         this.userRepository = userRepository;
+        this.appContextService = appContextService;
     }
 
     @Override
@@ -29,7 +35,12 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = this.recoverToken(request);
         if(token != null) {
             var subject = tokenService.validateToken(token);
-            UserDetails user = userRepository.findByUsernameOrEmail(subject);
+            var tokenContextKey = tokenService.getContextKey(token);
+            UserDetails user = null;
+
+            if (!subject.isBlank() && appContextService.getCurrentKey().equals(tokenContextKey)) {
+                user = userRepository.findByUsernameOrEmailAndContextKey(subject, tokenContextKey);
+            }
 
             if (user != null) {
                 var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

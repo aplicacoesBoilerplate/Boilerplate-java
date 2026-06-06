@@ -4,6 +4,7 @@ import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.RefreshToken;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IRefreshTokenRepository;
+import com.java.boilerplate.service.context.AppContextService;
 import com.java.boilerplate.service.helpers.HashUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,11 @@ import java.util.UUID;
 @Service
 public class RefreshTokenService {
     private final IRefreshTokenRepository refreshTokenRepository;
+    private final AppContextService appContextService;
 
-    public RefreshTokenService(IRefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenService(IRefreshTokenRepository refreshTokenRepository, AppContextService appContextService) {
         this.refreshTokenRepository = refreshTokenRepository;
+        this.appContextService = appContextService;
     }
 
     @Transactional
@@ -30,6 +33,7 @@ public class RefreshTokenService {
 
         refreshToken.setUser(user);
         refreshToken.setTokenHash(hashToken);
+        refreshToken.setContextKey(user.getContextKey());
         refreshToken.setExpiryDate(LocalDateTime.now().plusDays(30));
 
         refreshTokenRepository.save(refreshToken);
@@ -49,6 +53,7 @@ public class RefreshTokenService {
     public RefreshToken findByToken(String plainToken) {
         String hashToken = HashUtil.generateSha256(plainToken);
         return refreshTokenRepository.findByTokenHash(hashToken)
+                .filter(token -> token.getContextKey().equals(appContextService.getCurrentKey()))
                 .orElseThrow(() -> new ExceptionsSystem("Refresh token não encontrado ou inválido.", HttpStatus.UNAUTHORIZED));
     }
 
