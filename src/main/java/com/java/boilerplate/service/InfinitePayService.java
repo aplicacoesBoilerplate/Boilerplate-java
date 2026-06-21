@@ -84,7 +84,7 @@ public class InfinitePayService {
             );
 
             HttpEntity<DTOInfinitePayLinkRequest> entity = new HttpEntity<>(requestBody, headers);
-            String endpoint = tokensProperties.getInfinitePayEndpoint() + "/links";
+            String endpoint = resolveLinksEndpoint();
 
             ResponseEntity<DTOInfinitePayLinkResponse> response = restTemplate.exchange(
                     endpoint,
@@ -103,5 +103,19 @@ public class InfinitePayService {
         } catch (Exception e) {
             throw new ExceptionsSystem("Erro ao gerar link de pagamento: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    String resolveLinksEndpoint() {
+        String endpoint = tokensProperties.getInfinitePayEndpoint();
+        if (endpoint == null || endpoint.isBlank()) {
+            throw new IllegalStateException("InfinitePay endpoint nao configurado");
+        }
+
+        String normalizedEndpoint = endpoint.trim().replaceAll("/+$", "");
+        if (normalizedEndpoint.endsWith("/links")) {
+            return normalizedEndpoint;
+        }
+
+        return normalizedEndpoint + "/links";
     }
 }

@@ -80,6 +80,10 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Gallery> galleryPhotos;
 
+    @JsonIgnore
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
+    private UserSubscription subscription;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if(this.role == UserRoles.ADMIN) return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));

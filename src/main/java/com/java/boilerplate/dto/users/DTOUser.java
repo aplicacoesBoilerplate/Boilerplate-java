@@ -1,6 +1,7 @@
 package com.java.boilerplate.dto.users;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.java.boilerplate.model.UserSubscription;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.java.boilerplate.enums.GenderUser;
 import com.java.boilerplate.enums.UserRoles;
@@ -59,7 +60,10 @@ public record DTOUser(
         Boolean isOnline,
 
         @JsonView(UserViews.Public.class)
-        Boolean isActive
+        Boolean isActive,
+
+        @JsonView(UserViews.Public.class)
+        Boolean hasActiveSubscription
 ) {
     public Users toEntity() {
         Users user = new Users();
@@ -94,6 +98,9 @@ public record DTOUser(
         Point p = user.getLocation();
         DTOLocation location = new DTOLocation(p.getY(), p.getX());
 
+        boolean hasActiveSubscription = user.getRole() == UserRoles.ADMIN ||
+                (user.getSubscription() != null && user.getSubscription().isValid());
+
         return new DTOUser(
                 user.getIdUser(),
                 user.getFullName(),
@@ -108,7 +115,8 @@ public record DTOUser(
                 user.getRole(),
                 location,
                 user.getIsOnline(),
-                user.getIsActive()
+                user.getIsActive(),
+                hasActiveSubscription
         );
     }
 }

@@ -118,8 +118,6 @@ public class ChatMessagesService {
             String fullUrl = "/#/chat/" + sender.getUserUsername();
             pushNotification.setUrl(fullUrl);
             pushNotification.setContextKey(appContextService.getCurrentKey());
-            pushNotification.setIcon("/icons/icon-web-push-notification.png");
-            pushNotification.setBadge(pushNotification.getIcon());
 
             notificationService.notifyUser(receiverId, pushNotification);
         } catch (Exception e) {
