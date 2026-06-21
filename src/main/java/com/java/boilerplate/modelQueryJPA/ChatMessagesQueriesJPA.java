@@ -20,6 +20,8 @@ public class ChatMessagesQueriesJPA {
             OR
             (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)
         )
+        AND m.sender.contextKey = :contextKey
+        AND m.receiver.contextKey = :contextKey
         AND (:nextEntryId IS NULL OR m.idMessage < :nextEntryId)
         ORDER BY m.idMessage DESC
         """;
@@ -35,6 +37,8 @@ public class ChatMessagesQueriesJPA {
         SELECT COUNT(m) FROM ChatMessages m
         WHERE m.sender.idUser = :contactId
         AND m.receiver.idUser = :userId
+        AND m.sender.contextKey = :contextKey
+        AND m.receiver.contextKey = :contextKey
         AND m.read = false
         """;
 
@@ -42,12 +46,18 @@ public class ChatMessagesQueriesJPA {
         SELECT m FROM ChatMessages m WHERE
         ((m.sender.idUser = :userId AND m.receiver.idUser = :contactId) OR
         (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)) AND
+        m.sender.contextKey = :contextKey AND
+        m.receiver.contextKey = :contextKey AND
         m.fileUrl IS NOT NULL
         """;
 
     static final String sqlDeleteConversation = """
         DELETE FROM ChatMessages m WHERE
-        (m.sender.idUser = :userId AND m.receiver.idUser = :contactId) OR
-        (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)
+        (
+            (m.sender.idUser = :userId AND m.receiver.idUser = :contactId) OR
+            (m.sender.idUser = :contactId AND m.receiver.idUser = :userId)
+        )
+        AND m.sender.contextKey = :contextKey
+        AND m.receiver.contextKey = :contextKey
         """;
 }

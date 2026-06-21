@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.java.boilerplate.config.VapidProperties;
 import com.java.boilerplate.dto.DTOPushNotification;
 import com.java.boilerplate.model.PushSubscription;
+import com.java.boilerplate.service.context.AppContextService;
 import jakarta.annotation.PostConstruct;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
@@ -11,7 +12,6 @@ import nl.martijndwars.webpush.Subscription;
 import nl.martijndwars.webpush.Urgency;
 import nl.martijndwars.webpush.Utils;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
-import nl.martijndwars.webpush.Urgency;
 import java.util.Base64;
 import java.nio.charset.StandardCharsets;
 import org.apache.http.HttpResponse;
@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.List;
 
@@ -30,12 +29,54 @@ public class PushNotificationService {
     private final PushSubscriptionService pushSubscriptionService;
     private final VapidProperties vapidProperties;
     private final ObjectMapper objectMapper;
+    private final AppContextService appContextService;
     private PushService pushService;
 
-    public PushNotificationService(PushSubscriptionService pushSubscriptionService, VapidProperties vapidProperties, ObjectMapper objectMapper) {
+    public PushNotificationService(PushSubscriptionService pushSubscriptionService, VapidProperties vapidProperties, ObjectMapper objectMapper, AppContextService appContextService) {
         this.pushSubscriptionService = pushSubscriptionService;
         this.vapidProperties = vapidProperties;
         this.objectMapper = objectMapper;
+        this.appContextService = appContextService;
+    }
+
+    private String contextAssetPath(String assetPath) {
+        String urlPath = appContextService.getCurrent().getUrlPath();
+
+        if (urlPath == null || urlPath.isBlank() || urlPath.equals("/")) {
+            return assetPath;
+        }
+
+        return urlPath.replaceAll("/$", "") + assetPath;
+    }
+
+    private String contextNotificationIconPath() {
+        if ("tz".equals(appContextService.getCurrentKey())) {
+            return "/tz/icons/icon-web-push-notification.png";
+        }
+
+        return contextAssetPath("/icons/icon-web-push-notification.png");
+    }
+
+    private String contextUrlPath(String url) {
+        String safeUrl = url == null || url.isBlank() ? "/#/chat" : url;
+        String urlPath = appContextService.getCurrent().getUrlPath();
+
+        if (safeUrl.startsWith("http://") || safeUrl.startsWith("https://")) {
+            return safeUrl;
+        }
+
+        if (urlPath == null || urlPath.isBlank() || urlPath.equals("/")) {
+            return safeUrl.startsWith("/") ? safeUrl : "/" + safeUrl;
+        }
+
+        String contextPath = urlPath.replaceAll("/$", "");
+        String normalizedUrl = safeUrl.startsWith("/") ? safeUrl : "/" + safeUrl;
+
+        if (normalizedUrl.equals(contextPath) || normalizedUrl.startsWith(contextPath + "/")) {
+            return normalizedUrl;
+        }
+
+        return contextPath + normalizedUrl;
     }
 
     @PostConstruct
@@ -58,6 +99,18 @@ public class PushNotificationService {
     public void notifyUser(Long idUser, DTOPushNotification dto) {
         List<PushSubscription> subscriptions = pushSubscriptionService.findAllByIdUser(idUser);
         if (subscriptions.isEmpty()) return;
+
+        dto.setContextKey(appContextService.getCurrentKey());
+        dto.setUrl(contextUrlPath(dto.getUrl()));
+
+        if (dto.getIcon() == null) {
+            dto.setIcon(contextNotificationIconPath());
+        }
+
+        if (dto.getBadge() == null) {
+            dto.setBadge("/push-badge.png");
+        }
+
         subscriptions.forEach(subscription -> sendNotification(subscription, dto));
     }
 

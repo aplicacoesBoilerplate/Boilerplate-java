@@ -10,12 +10,12 @@ import java.util.Optional;
 
 @Repository
 public interface IPushSubscription extends JpaRepository<PushSubscription, Long> {
-    Optional<PushSubscription> findByEndpoint(String endpoint);
-    List<PushSubscription> findAllByIdUser(Long idUser);
+    Optional<PushSubscription> findByEndpointAndContextKey(String endpoint, String contextKey);
+    List<PushSubscription> findAllByIdUserAndContextKey(Long idUser, String contextKey);
 
     @Modifying
-    void deleteAllByIdUser(Long idUser);
+    void deleteAllByIdUserAndContextKey(Long idUser, String contextKey);
 
     @Modifying
-    void deleteByEndpoint(String endpoint);
+    void deleteByEndpointAndContextKey(String endpoint, String contextKey);
 }

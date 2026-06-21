@@ -34,8 +34,11 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @Column(name = "user_bio")
     private String bio;
 
+    @Column(name = "context_key", nullable = false, length = 50)
+    private String contextKey;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_gender", nullable = false)
+    @Column(name = "user_gender")
     private GenderUser userGender;
 
     @Column(name = "user_avatar_url")
@@ -76,6 +79,10 @@ public class Users extends UsersQueriesJPA implements UserDetails {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Gallery> galleryPhotos;
+
+    @JsonIgnore
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER)
+    private UserSubscription subscription;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

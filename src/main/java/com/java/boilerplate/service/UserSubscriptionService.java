@@ -6,6 +6,7 @@ import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
 import com.java.boilerplate.repository.IUserSubscriptionRepository;
+import com.java.boilerplate.service.context.AppContextService;
 import com.java.boilerplate.service.helpers.HashUtil;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -19,10 +20,12 @@ import java.util.Optional;
 public class UserSubscriptionService {
     private final IUserSubscriptionRepository subscriptionRepository;
     private final UsersService usersService;
+    private final AppContextService appContextService;
 
-    public UserSubscriptionService(IUserSubscriptionRepository subscriptionRepository, @Lazy UsersService usersService) {
+    public UserSubscriptionService(IUserSubscriptionRepository subscriptionRepository, @Lazy UsersService usersService, AppContextService appContextService) {
         this.subscriptionRepository = subscriptionRepository;
         this.usersService = usersService;
+        this.appContextService = appContextService;
     }
 
     @Transactional
@@ -37,6 +40,7 @@ public class UserSubscriptionService {
 
         UserSubscription subscription = new UserSubscription();
         subscription.setUser(user);
+        subscription.setContextKey(appContextService.getCurrentKey());
 
         if (latestExpirationSubscription.isPresent()) {
             LocalDateTime latestExpiration = latestExpirationSubscription.get();
@@ -58,6 +62,21 @@ public class UserSubscriptionService {
     @Transactional
     public void renewSubscription(Long userId, String transactionId) {
         UserSubscription subscription = this.findByUser_IdUser(userId);
+        applyRenewal(subscription, transactionId);
+    }
+
+    @Transactional
+    public UserSubscription renewSubscriptionById(Long subscriptionId, String contextKey, String transactionId) {
+        UserSubscription subscription = subscriptionRepository.findByIdAndContextKey(subscriptionId, contextKey)
+                .orElseThrow(() -> new ExceptionsSystem(
+                        "Registro de contribuição não encontrado para o contexto informado",
+                        HttpStatus.NOT_FOUND
+                ));
+        applyRenewal(subscription, transactionId);
+        return subscription;
+    }
+
+    private void applyRenewal(UserSubscription subscription, String transactionId) {
         LocalDateTime now = LocalDateTime.now();
 
         if (transactionId != null && transactionId.equals(subscription.getLastPaymentId())) return;
@@ -76,7 +95,7 @@ public class UserSubscriptionService {
 
     @Transactional(readOnly = true)
     public UserSubscription findByUser_IdUser(Long idUser) {
-        return subscriptionRepository.findByUser_IdUser(idUser)
+        return subscriptionRepository.findByUser_IdUserAndContextKey(idUser, appContextService.getCurrentKey())
             .orElseThrow(() -> new ExceptionsSystem(
                     "Registro de contribuição não encontrado",
                     HttpStatus.INTERNAL_SERVER_ERROR
@@ -104,6 +123,6 @@ public class UserSubscriptionService {
 
     @Transactional
     public Optional<LocalDateTime> findByEmailHash(String emailHash) {
-        return subscriptionRepository.findLatestExpirationByEmailHash(emailHash);
+        return subscriptionRepository.findLatestExpirationByEmailHash(emailHash, appContextService.getCurrentKey());
     }
 }

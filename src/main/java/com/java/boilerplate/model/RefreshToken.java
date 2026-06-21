@@ -22,6 +22,9 @@ public class RefreshToken {
     @Column(name = "token_hash", nullable = false, unique = true, length = 64)
     private String tokenHash;
 
+    @Column(name = "context_key", nullable = false, length = 50)
+    private String contextKey;
+
     @Column(name = "expiry_date", nullable = false)
     private LocalDateTime expiryDate;
 }

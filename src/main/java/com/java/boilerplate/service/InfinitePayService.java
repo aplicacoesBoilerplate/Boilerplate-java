@@ -6,6 +6,7 @@ import com.java.boilerplate.dto.users.DTOLocation;
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.UserSubscription;
 import com.java.boilerplate.model.Users;
+import com.java.boilerplate.service.context.AppContextService;
 import com.java.boilerplate.service.helpers.GoogleServices;
 import org.locationtech.jts.geom.Point;
 import org.springframework.http.*;
@@ -23,12 +24,14 @@ public class InfinitePayService {
     private final UserSubscriptionService subscriptionService;
     private final UsersService usersService;
     private final GoogleServices googleServices;
+    private final AppContextService appContextService;
 
-    public InfinitePayService(TokensProperties tokensProperties, UserSubscriptionService subscriptionService, UsersService usersService, GoogleServices googleServices) {
+    public InfinitePayService(TokensProperties tokensProperties, UserSubscriptionService subscriptionService, UsersService usersService, GoogleServices googleServices, AppContextService appContextService) {
         this.tokensProperties = tokensProperties;
         this.subscriptionService = subscriptionService;
         this.usersService = usersService;
         this.googleServices = googleServices;
+        this.appContextService = appContextService;
     }
 
     @Transactional(readOnly = true)
@@ -56,7 +59,8 @@ public class InfinitePayService {
 
             UserSubscription subscriptionUser = subscriptionService.findByUser_IdUser(user.getIdUser());
             String order_nsu = String.format(
-                    "sub:%d-user:%s-expired:%s",
+                    "ctx:%s-sub:%d-user:%s-expired:%s",
+                    appContextService.getCurrentKey(),
                     subscriptionUser.getId(),
                     user.getUserUsername(),
                     subscriptionUser.getExpireAt().toString()
@@ -80,7 +84,7 @@ public class InfinitePayService {
             );
 
             HttpEntity<DTOInfinitePayLinkRequest> entity = new HttpEntity<>(requestBody, headers);
-            String endpoint = tokensProperties.getInfinitePayEndpoint() + "/links";
+            String endpoint = resolveLinksEndpoint();
 
             ResponseEntity<DTOInfinitePayLinkResponse> response = restTemplate.exchange(
                     endpoint,
@@ -99,5 +103,19 @@ public class InfinitePayService {
         } catch (Exception e) {
             throw new ExceptionsSystem("Erro ao gerar link de pagamento: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    String resolveLinksEndpoint() {
+        String endpoint = tokensProperties.getInfinitePayEndpoint();
+        if (endpoint == null || endpoint.isBlank()) {
+            throw new IllegalStateException("InfinitePay endpoint nao configurado");
+        }
+
+        String normalizedEndpoint = endpoint.trim().replaceAll("/+$", "");
+        if (normalizedEndpoint.endsWith("/links")) {
+            return normalizedEndpoint;
+        }
+
+        return normalizedEndpoint + "/links";
     }
 }

@@ -52,6 +52,10 @@ public class AuthHandler {
         return ResponseEntity.ok(response);
     }
 
+    public ResponseEntity<DTOUser> getMe() {
+        return ResponseEntity.ok(DTOUser.fromEntity(authService.getMeIgnoringSubscription()));
+    }
+
     public ResponseEntity<Void> logout(DTORefreshTokenRequest request) {
         authService.logout(request);
         return ResponseEntity.noContent().build();

@@ -10,10 +10,8 @@ import com.java.boilerplate.dto.googleOAuth.DTOGoogleComplete;
 import com.java.boilerplate.dto.googleOAuth.DTOGoogleToken;
 import com.java.boilerplate.dto.users.DTOUser;
 import com.java.boilerplate.dto.users.UserViews;
-import com.java.boilerplate.model.Users;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -53,9 +51,7 @@ public class AuthController {
 
     @GetMapping("/me")
     @JsonView(UserViews.Internal.class)
-    public ResponseEntity<DTOUser> getMe(
-            @AuthenticationPrincipal Users user
-    ) { return ResponseEntity.ok(DTOUser.fromEntity(user)); }
+    public ResponseEntity<DTOUser> getMe() { return authHandler.getMe(); }
 
     @PostMapping("/refresh")
     public ResponseEntity<DTOLoginResponse> refreshToken(

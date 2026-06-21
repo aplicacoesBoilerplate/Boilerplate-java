@@ -16,10 +16,16 @@ public class ChatContactsQueriesJPA {
         FROM ChatContacts c
         WHERE c.user.idUser = :receiverId
         AND c.contact.idUser = :senderId
+        AND c.user.contextKey = :contextKey
+        AND c.contact.contextKey = :contextKey
         AND c.contactBlocked = true
         """;
 
     static final String sqlDeleteContactRelation = """
-        DELETE FROM ChatContacts c WHERE c.user.idUser = :userId AND c.contact.idUser = :contactId
+        DELETE FROM ChatContacts c
+        WHERE c.user.idUser = :userId
+        AND c.contact.idUser = :contactId
+        AND c.user.contextKey = :contextKey
+        AND c.contact.contextKey = :contextKey
         """;
 }

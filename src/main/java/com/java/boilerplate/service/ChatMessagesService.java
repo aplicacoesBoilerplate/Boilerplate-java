@@ -10,7 +10,7 @@ import com.java.boilerplate.model.Users;
 import com.java.boilerplate.model.pagination.RequestPagination;
 import com.java.boilerplate.repository.IChatMessagesRepository;
 import com.java.boilerplate.repository.IFileStorageService;
-import com.java.boilerplate.repository.IUsersRepository;
+import com.java.boilerplate.service.context.AppContextService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +27,6 @@ import java.util.List;
 @Service
 public class ChatMessagesService {
     private final IChatMessagesRepository chatMessagesRepository;
-    private final IUsersRepository usersRepository;
     private final UsersService usersService;
     private final ChatContactsService chatContactsService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -36,10 +35,10 @@ public class ChatMessagesService {
     private final IFileStorageService fileStorageService;
     private final PushNotificationService notificationService;
     private final TokensProperties properties;
+    private final AppContextService appContextService;
 
-    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, IUsersRepository usersRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService, SocketService socketService, IFileStorageService fileStorageService, PushNotificationService notificationService, TokensProperties properties) {
+    public ChatMessagesService(IChatMessagesRepository chatMessagesRepository, @Lazy UsersService usersService, ChatContactsService chatContactsService, SimpMessagingTemplate messagingTemplate, AuthService authService, SocketService socketService, IFileStorageService fileStorageService, PushNotificationService notificationService, TokensProperties properties, AppContextService appContextService) {
         this.chatMessagesRepository = chatMessagesRepository;
-        this.usersRepository = usersRepository;
         this.usersService = usersService;
         this.chatContactsService = chatContactsService;
         this.messagingTemplate = messagingTemplate;
@@ -48,20 +47,34 @@ public class ChatMessagesService {
         this.fileStorageService = fileStorageService;
         this.notificationService = notificationService;
         this.properties = properties;
+        this.appContextService = appContextService;
     }
 
     private ChatMessages findById(Long idMessage) {
-        return chatMessagesRepository.findById(idMessage)
+        Users me = authService.getMe();
+        ChatMessages message = chatMessagesRepository.findById(idMessage)
             .orElseThrow(() -> new ExceptionsSystem(
                 "Message not found",
                 HttpStatus.NOT_FOUND
             ));
+
+        boolean sameContext = me.getContextKey().equals(message.getSender().getContextKey())
+                && me.getContextKey().equals(message.getReceiver().getContextKey());
+        boolean participant = me.getIdUser().equals(message.getSender().getIdUser())
+                || me.getIdUser().equals(message.getReceiver().getIdUser());
+
+        if (!sameContext || !participant) {
+            throw new ExceptionsSystem("Message not found", HttpStatus.NOT_FOUND);
+        }
+
+        return message;
     }
 
     @Transactional
     public DTOChatMessages sendMessage(Long receiverId, String content, MultipartFile file) {
         Users sender = authService.getMe();
         Long senderId = authService.getMe().getIdUser();
+        Users receiver = usersService.findById(receiverId);
 
         boolean hasContent = content != null && !content.trim().isEmpty();
         boolean hasFile = file != null && !file.isEmpty();
@@ -78,8 +91,8 @@ public class ChatMessagesService {
         this.chatContactsService.updateContactStatus(receiverId, false);
 
         ChatMessages message = new ChatMessages();
-        message.setSender(usersRepository.getReferenceById(senderId));
-        message.setReceiver(usersRepository.getReferenceById(receiverId));
+        message.setSender(sender);
+        message.setReceiver(receiver);
         message.setContent(content);
 
         String prefix = "chat_from_" + senderId + "_to_" + receiverId;
@@ -91,7 +104,7 @@ public class ChatMessagesService {
 
         ChatMessages savedMessage = chatMessagesRepository.save(message);
         DTOChatMessages dtoMessage = DTOChatMessages.fromEntity(savedMessage);
-        String usernameReceiver = usersService.findById(receiverId).getUsername();
+        String usernameReceiver = receiver.getUsername();
         socketService.notifyNewMessage(usernameReceiver, dtoMessage);
 
         try {
@@ -104,6 +117,7 @@ public class ChatMessagesService {
             // URL para o frontend redirecionar ao chat específico
             String fullUrl = "/#/chat/" + sender.getUserUsername();
             pushNotification.setUrl(fullUrl);
+            pushNotification.setContextKey(appContextService.getCurrentKey());
 
             notificationService.notifyUser(receiverId, pushNotification);
         } catch (Exception e) {
@@ -116,6 +130,7 @@ public class ChatMessagesService {
     @Transactional(readOnly = true)
     public DTOPagination<DTOChatMessages> findConversation(Long contactId, RequestPagination request) {
         Long currentUserId = authService.getMe().getIdUser();
+        usersService.findById(contactId);
 
         int limit = (request.getLimit() != null && request.getLimit() > 0) ? request.getLimit() : 20;
         Integer nextEntry = (request.getNextEntry() != null && request.getNextEntry() > 0)
@@ -127,6 +142,7 @@ public class ChatMessagesService {
                 currentUserId,
                 contactId,
                 nextEntry,
+                appContextService.getCurrentKey(),
                 pageable
         );
 
@@ -158,13 +174,15 @@ public class ChatMessagesService {
     @Transactional
     public void clearChatHistory(Long contactId) {
         Long userId = authService.getMe().getIdUser();
-        List<ChatMessages> messagesWithFiles = chatMessagesRepository.findMessagesWithFiles(userId, contactId);
+        usersService.findById(contactId);
+        String contextKey = appContextService.getCurrentKey();
+        List<ChatMessages> messagesWithFiles = chatMessagesRepository.findMessagesWithFiles(userId, contactId, contextKey);
         messagesWithFiles.forEach(msg -> {
             if (msg.getFileUrl() != null) {
                 fileStorageService.deleteFile(msg.getFileUrl());
             }
         });
 
-        chatMessagesRepository.deleteConversation(userId, contactId);
+        chatMessagesRepository.deleteConversation(userId, contactId, contextKey);
     }
 }

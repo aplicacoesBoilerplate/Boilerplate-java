@@ -2,6 +2,9 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.exception.ExceptionsSystem;
 import com.java.boilerplate.model.Gallery;
+import com.java.boilerplate.model.Users;
+import com.java.boilerplate.model.UserSubscription;
+import com.java.boilerplate.enums.UserRoles;
 import com.java.boilerplate.repository.IFileStorageService;
 import com.java.boilerplate.repository.IGalleryRepository;
 import org.springframework.http.HttpStatus;
@@ -64,7 +67,20 @@ public class GalleryService {
 
     @Transactional(readOnly = true)
     public List<Gallery> findPhotosOfUser(String username) {
-        userService.findByUsernameOrEmail(username);
+        Users targetUser = userService.findByUsernameOrEmail(username);
+
+        var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Users currentUser) {
+            if (!currentUser.getIdUser().equals(targetUser.getIdUser())) {
+                if (!targetUser.getRole().equals(UserRoles.ADMIN)) {
+                    UserSubscription sub = targetUser.getSubscription();
+                    if (sub == null || !sub.isValid()) {
+                        return new java.util.ArrayList<>();
+                    }
+                }
+            }
+        }
+
         return galleryRepository.findPhotosOfUser(username);
     }
 }
