@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:boilerplate_java;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  mail:
+    host: localhost
+    port: 2525
+    username: test@boilerplate.local
+    password:
+
+server:
+  port: 0
+
+documentacao:
+  usuario: DeveloperArea
+  senha: boilerplate
+  senhaHash:
+
+tokens:
+  secret: test-secret-with-enough-size-for-hmac
+  issuer: boilerplate-java-test
+  accessTokenMinutes: 30
+  googleClientId:
+
+app:
+  frontendUrl: http://localhost:5173
+  corsAllowedOrigins: http://localhost:5173
+  exposeErrorTrace: true

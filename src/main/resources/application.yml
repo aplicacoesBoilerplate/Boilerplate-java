@@ -1,53 +1,72 @@
 spring:
+  # Importação opcional do arquivo .env com as variáveis de ambiente necessárias para compilação.
+  # Facilita para executar usando o comando 'mvn spring-boot:run' sem precisar passar as variáveis de ambiente no terminal.
+  config:
+    import: optional:file:src/main/resources/.env[.properties]
+
   application:
-    name: boilerplate
+    name: Boilerplate-java
+
+  # Força o uso do stack Servlet/Spring MVC, evitando autodetecção de aplicações reativas.
   main:
     web-application-type: servlet
-  web:
-    resources:
-      add-mappings: false
-  autoconfigure:
-    time-zone: America/Sao_Paulo
+
+  # Conexão principal com o MySQL. Defaults locais são apenas para desenvolvimento.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    name: ${DB_NAME}
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    name: ${DB_NAME:boilerplate_java}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:boilerplate_java}?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_unicode_ci
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+
+    # Pool de conexões JDBC gerenciado pelo HikariCP.
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
       connection-timeout: 30000
       connection-init-sql: "SET NAMES utf8mb4"
+
+  # SMTP usado por fluxos de e-mail, como recuperação de senha/OTP.
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${EMAIL_USER}
-    password: ${EMAIL_PASS}
+    host: ${EMAIL_HOST:smtp.gmail.com}
+    port: ${EMAIL_PORT:587}
+    username: ${EMAIL_USER:no-reply@boilerplate.local}
+    password: ${EMAIL_PASS:}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+  # JPA/Hibernate: Flyway é responsável pelo schema; Hibernate apenas valida compatibilidade.
   jpa:
     open-in-view: false
     database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+
+  # Comportamento global de serialização/deserialização JSON.
   jackson:
     deserialization:
       fail-on-unknown-properties: false
     mapper:
       default-view-inclusion: true
 
+# Porta HTTP da API e suporte correto a headers de proxy/reverse proxy.
 server:
-  port: ${API_PORT}
+  port: ${API_PORT:8080}
   forward-headers-strategy: framework
 
+# Endpoints administrativos do Spring Actuator. Hoje expõe apenas /actuator/health.
 management:
+  health:
+    mail:
+      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
   endpoints:
     web:
       cors:
-        allowed-origins: "http://localhost:9000"
+        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
         allowed-methods: "GET, POST, OPTIONS"
         allowed-headers: "*"
         allow-credentials: true
@@ -55,36 +74,32 @@ management:
         include: health
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
+      show-components: when-authorized
+      roles: ADMIN
 
-logging:
-  level:
-    root: INFO
-    org.springframework.jdbc.core: DEBUG        # Loga as queries SQL feitas pelo JdbcTemplate
-    org.springframework.jdbc.datasource: DEBUG  # Loga operações com o DataSource
-
+# Configuração base do Swagger.
 springdoc:
   swagger-ui:
     path: /doc
   api-docs:
     path: /doc/api
 
-tokens:
-  docPassword: ${DOC_PASSWORD}
-  secret: ${JWT_SECRET}
-  googleApiKey: ${GOOGLE_API_KEY}
-  googleClientId: ${GOOGLE_CLIENT_ID}
-  googleSecretKey: ${GOOGLE_SECRET_KEY}
-  host: ${HOST}
-  uploadDir: ${UPLOAD_DIR}
-  portFront: ${PORT_FRONT}
-  infinitePayEndpoint: ${INFINITE_PAY_ENDPOINT}
-  infinitePayHandle: ${INFINITE_PAY_HANDLE}
-  infinitePayRedirectUrl: ${INFINITE_PAY_REDIRECT_URL}
-  infinitePayWebhookUrl: ${INFINITE_PAY_WEBHOOK_URL}
+# Credenciais Basic Auth usadas para proteger a documentação Swagger em /doc.
+documentacao:
+  usuario: ${DOC_USERNAME:DeveloperArea}
+  senha: ${DOC_PASSWORD:boilerplate}
+  senhaHash: ${DOC_PASSWORD_HASH:}
 
-push:
-  vapid:
-    publicKey: ${VAPID_PUBLIC_KEY}
-    privateKey: ${VAPID_PRIVATE_KEY}
-    subject: mailto:${EMAIL_USER}
+# Configurações de JWT e autenticação Google.
+tokens:
+  secret: ${JWT_SECRET:boilerplate-java-dev-secret-change-me}
+  issuer: ${JWT_ISSUER:boilerplate-java-api}
+  accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:720}
+  googleClientId: ${GOOGLE_CLIENT_ID:}
+
+# Configurações próprias da API: URL do frontend, CORS global e exposição de trace em erros.
+app:
+  frontendUrl: ${FRONTEND_URL:http://localhost:5173}
+  corsAllowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  exposeErrorTrace: ${EXPOSE_ERROR_TRACE:false}
