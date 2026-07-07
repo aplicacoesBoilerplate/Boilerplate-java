@@ -71,7 +71,7 @@ public class CSecurityConfigurations {
                 .csrf(pCsrf -> pCsrf.disable())
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(pAuthorize -> pAuthorize
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health-check").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/login/google").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/solicitacoes-acesso").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/recuperacao-senha/**").permitAll()

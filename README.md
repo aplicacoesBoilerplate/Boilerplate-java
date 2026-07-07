@@ -22,6 +22,7 @@ Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação 
 - Solicitação pública de acesso em `/auth/solicitacoes-acesso`.
 - CRUD administrativo de usuários em `/usuarios`.
 - CRUD administrativo de cargos/permissões em `/rbac/cargos`.
+- Health check operacional em `/actuator/health-check`.
 - Filtros e paginação por cursor com os operadores do frontend.
 - Migrations limpas para usuários, RBAC, OTP, refresh tokens, solicitações de acesso e logs de erro.
 
