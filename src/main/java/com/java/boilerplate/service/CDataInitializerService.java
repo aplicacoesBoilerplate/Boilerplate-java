@@ -45,13 +45,13 @@ public class CDataInitializerService implements ApplicationRunner {
             return;
         }
 
-        CCargoRbac cargo = criarCargoBase("ADMIN", "Administrador", "mdi-account-tie", "Acesso operacional completo ao boilerplate.", EComportamentoPadraoPermissao.liberar, "/", "Home");
+        CCargoRbac cargo = criarCargoBase("ADMIN", "Administrador", "mdi-account-tie", "Acesso operacional completo ao boilerplate.", EComportamentoPadraoPermissao.liberar, "/", "Inicio");
         cargoRepository.save(cargo);
     }
 
     private void criarCargoUserSeNecessario() {
         CCargoRbac cargo = cargoRepository.findByPapel("USER")
-                .orElseGet(() -> criarCargoBase("USER", "Usuário", "mdi-account", "Acesso básico para uso diário do sistema.", EComportamentoPadraoPermissao.bloquear, "/users", "Users"));
+                .orElseGet(() -> criarCargoBase("USER", "Usuário", "mdi-account", "Acesso básico para uso diário do sistema.", EComportamentoPadraoPermissao.bloquear, "/usuarios", "Usuarios"));
 
         garantirPermissoesPadraoUsuario(cargo);
         cargoRepository.save(cargo);
@@ -82,8 +82,8 @@ public class CDataInitializerService implements ApplicationRunner {
     private void garantirPermissoesPadraoUsuario(CCargoRbac pCargo) {
         List<CPermissaoCargoRbac> permissoes = new ArrayList<>(pCargo.getPermissoes());
 
-        garantirPermissao(permissoes, "rotas", "Home", true);
-        garantirPermissao(permissoes, "rotas", "Users", true);
+        garantirPermissao(permissoes, "rotas", "Inicio", true);
+        garantirPermissao(permissoes, "rotas", "Usuarios", true);
         garantirPermissao(permissoes, "api", "GET /usuarios/**", true);
         garantirPermissao(permissoes, "api", "POST /usuarios/consulta", true);
         garantirPermissao(permissoes, "api", "POST /usuarios/search", true);
