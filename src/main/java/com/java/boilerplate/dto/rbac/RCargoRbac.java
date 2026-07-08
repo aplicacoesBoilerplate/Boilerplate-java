@@ -1,5 +1,6 @@
 package com.java.boilerplate.dto.rbac;
 
+import com.java.boilerplate.dto.common.RAuditoriaRegistro;
 import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.model.CCargoRbac;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import java.util.List;
  * @property {List} permissoes - Permissões explicitamente configuradas.
  * @property {RRedirecionamentoInicialRbac} redirecionamentoInicial - Rota inicial do cargo.
  * @property {Boolean} ativo - Define se o cargo pode ser atribuído.
+ * @property {RAuditoriaRegistro} auditoria - Metadados de criação e última atualização.
  */
 public record RCargoRbac(
         Long id,
@@ -34,9 +36,14 @@ public record RCargoRbac(
         @Valid
         List<RPermissaoCargoRbac> permissoes,
         RRedirecionamentoInicialRbac redirecionamentoInicial,
-        Boolean ativo
+        Boolean ativo,
+        RAuditoriaRegistro auditoria
 ) {
     public static RCargoRbac fromEntity(CCargoRbac pCargo) {
+        return fromEntity(pCargo, RAuditoriaRegistro.fromEntity(pCargo));
+    }
+
+    public static RCargoRbac fromEntity(CCargoRbac pCargo, RAuditoriaRegistro pAuditoria) {
         return new RCargoRbac(
                 pCargo.getIdCargo(),
                 pCargo.getPapel(),
@@ -50,7 +57,8 @@ public record RCargoRbac(
                         pCargo.getRedirecionamentoName(),
                         List.of()
                 ),
-                pCargo.getAtivo()
+                pCargo.getAtivo(),
+                pAuditoria
         );
     }
 }

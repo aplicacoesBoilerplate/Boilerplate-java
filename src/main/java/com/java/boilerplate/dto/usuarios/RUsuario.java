@@ -1,5 +1,6 @@
 package com.java.boilerplate.dto.usuarios;
 
+import com.java.boilerplate.dto.common.RAuditoriaRegistro;
 import com.java.boilerplate.model.CUsuario;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +15,7 @@ import jakarta.validation.constraints.NotBlank;
  * @property {Boolean} notificar - Define se o usuário aceita notificações.
  * @property {Boolean} ativo - Define se o usuário pode autenticar.
  * @property {String} papel - Papel RBAC associado ao usuário.
+ * @property {RAuditoriaRegistro} auditoria - Metadados de criação e última atualização.
  */
 public record RUsuario(
         Long id,
@@ -27,9 +29,14 @@ public record RUsuario(
         Boolean notificar,
         Boolean ativo,
         @NotBlank(message = "O campo papel é obrigatório")
-        String papel
+        String papel,
+        RAuditoriaRegistro auditoria
 ) {
     public static RUsuario fromEntity(CUsuario pUsuario) {
+        return fromEntity(pUsuario, RAuditoriaRegistro.fromEntity(pUsuario));
+    }
+
+    public static RUsuario fromEntity(CUsuario pUsuario, RAuditoriaRegistro pAuditoria) {
         return new RUsuario(
                 pUsuario.getIdUsuario(),
                 pUsuario.getNome(),
@@ -38,7 +45,8 @@ public record RUsuario(
                 pUsuario.getTelefone(),
                 pUsuario.getNotificar(),
                 pUsuario.getAtivo(),
-                pUsuario.getPapel()
+                pUsuario.getPapel(),
+                pAuditoria
         );
     }
 }
