@@ -17,7 +17,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @description Entidade que representa um cargo operacional e suas regras base de RBAC.
@@ -70,14 +72,45 @@ public class CCargoRbac extends CEntidadeAuditavel {
      * @return void - O método realiza o set em lote mas não retorna nada.
      */
     public void definirPermissoes(List<CPermissaoCargoRbac> pPermissoes) {
-        this.permissoes.clear();
-        if (pPermissoes == null) {
+        Map<String, CPermissaoCargoRbac> permissoesRecebidas = mapearPermissoesPorChave(pPermissoes);
+
+        this.permissoes.removeIf(pPermissaoExistente -> !permissoesRecebidas.containsKey(montarChavePermissao(pPermissaoExistente)));
+
+        if (permissoesRecebidas.isEmpty()) {
             return;
         }
 
-        pPermissoes.forEach(pPermissao -> {
-            pPermissao.setCargo(this);
-            this.permissoes.add(pPermissao);
+        Map<String, CPermissaoCargoRbac> permissoesAtuais = mapearPermissoesPorChave(this.permissoes);
+
+        permissoesRecebidas.forEach((pChave, pPermissaoRecebida) -> {
+            CPermissaoCargoRbac permissaoExistente = permissoesAtuais.get(pChave);
+
+            if (permissaoExistente != null) {
+                permissaoExistente.setRecurso(pPermissaoRecebida.getRecurso().trim());
+                permissaoExistente.setAcao(pPermissaoRecebida.getAcao().trim());
+                permissaoExistente.setLiberado(Boolean.TRUE.equals(pPermissaoRecebida.getLiberado()));
+                return;
+            }
+
+            pPermissaoRecebida.setCargo(this);
+            this.permissoes.add(pPermissaoRecebida);
         });
+    }
+
+    private Map<String, CPermissaoCargoRbac> mapearPermissoesPorChave(List<CPermissaoCargoRbac> pPermissoes) {
+        Map<String, CPermissaoCargoRbac> permissoesPorChave = new LinkedHashMap<>();
+        if (pPermissoes == null) {
+            return permissoesPorChave;
+        }
+
+        pPermissoes.stream()
+                .filter(pPermissao -> pPermissao.getRecurso() != null && pPermissao.getAcao() != null)
+                .forEach(pPermissao -> permissoesPorChave.put(montarChavePermissao(pPermissao), pPermissao));
+
+        return permissoesPorChave;
+    }
+
+    private String montarChavePermissao(CPermissaoCargoRbac pPermissao) {
+        return pPermissao.getRecurso().trim() + "::" + pPermissao.getAcao().trim();
     }
 }

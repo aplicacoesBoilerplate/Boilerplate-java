@@ -10,6 +10,7 @@ import com.java.boilerplate.dto.auth.RRespostaUsuarioAutenticado;
 import com.java.boilerplate.dto.auth.RSolicitacaoAcesso;
 import com.java.boilerplate.dto.auth.RSolicitacaoRecuperacaoSenha;
 import com.java.boilerplate.dto.auth.RVerificacaoCodigoRecuperacaoSenha;
+import com.java.boilerplate.dto.rbac.RCargoRbac;
 import com.java.boilerplate.service.CAuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +43,11 @@ public class CAuthController {
     @GetMapping("/me")
     public ResponseEntity<RRespostaUsuarioAutenticado> buscarUsuarioAutenticado() {
         return ResponseEntity.ok(authService.buscarUsuarioAutenticado());
+    }
+
+    @GetMapping("/me/cargo")
+    public ResponseEntity<RCargoRbac> buscarCargoUsuarioAutenticado() {
+        return ResponseEntity.ok(authService.buscarCargoUsuarioAutenticado());
     }
 
     @PutMapping("/senha")

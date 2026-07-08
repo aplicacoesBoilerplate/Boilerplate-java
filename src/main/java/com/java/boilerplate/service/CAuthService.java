@@ -11,6 +11,7 @@ import com.java.boilerplate.dto.auth.RRespostaUsuarioAutenticado;
 import com.java.boilerplate.dto.auth.RSolicitacaoAcesso;
 import com.java.boilerplate.dto.auth.RSolicitacaoRecuperacaoSenha;
 import com.java.boilerplate.dto.auth.RVerificacaoCodigoRecuperacaoSenha;
+import com.java.boilerplate.dto.rbac.RCargoRbac;
 import com.java.boilerplate.enums.EStatusSolicitacaoAcesso;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CSolicitacaoAcesso;
@@ -36,6 +37,7 @@ public class CAuthService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final CTokenService tokenService;
     private final CUsuarioService usuarioService;
+    private final CRbacService rbacService;
     private final CGoogleOAuthService googleOAuthService;
     private final COtpService otpService;
     private final ISolicitacaoAcessoRepository solicitacaoAcessoRepository;
@@ -45,6 +47,7 @@ public class CAuthService implements UserDetailsService {
             PasswordEncoder pPasswordEncoder,
             CTokenService pTokenService,
             CUsuarioService pUsuarioService,
+            CRbacService pRbacService,
             @Lazy CGoogleOAuthService pGoogleOAuthService,
             COtpService pOtpService,
             ISolicitacaoAcessoRepository pSolicitacaoAcessoRepository
@@ -53,6 +56,7 @@ public class CAuthService implements UserDetailsService {
         this.passwordEncoder = pPasswordEncoder;
         this.tokenService = pTokenService;
         this.usuarioService = pUsuarioService;
+        this.rbacService = pRbacService;
         this.googleOAuthService = pGoogleOAuthService;
         this.otpService = pOtpService;
         this.solicitacaoAcessoRepository = pSolicitacaoAcessoRepository;
@@ -88,6 +92,16 @@ public class CAuthService implements UserDetailsService {
     @Transactional(readOnly = true)
     public RRespostaUsuarioAutenticado buscarUsuarioAutenticado() {
         return new RRespostaUsuarioAutenticado(buscarUsuarioLogado().getIdUsuario());
+    }
+
+    @Transactional(readOnly = true)
+    public RCargoRbac buscarCargoUsuarioAutenticado() {
+        CUsuario usuario = buscarUsuarioLogado();
+        if (usuario.getCargo() == null) {
+            throw new CExceptionsSystem("Usuário autenticado não possui cargo vinculado", HttpStatus.FORBIDDEN);
+        }
+
+        return rbacService.buscarPorId(usuario.getCargo().getIdCargo());
     }
 
     @Transactional

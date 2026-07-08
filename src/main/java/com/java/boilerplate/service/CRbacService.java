@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.AntPathMatcher;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CRbacService {
@@ -30,12 +32,18 @@ public class CRbacService {
 
     private final ICargoRbacRepository cargoRepository;
     private final IPermissaoCargoRbacRepository permissaoCargoRepository;
+    private final CAuditoriaRegistroService auditoriaRegistroService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
-    public CRbacService(ICargoRbacRepository pCargoRepository, IPermissaoCargoRbacRepository pPermissaoCargoRepository) {
+    public CRbacService(
+            ICargoRbacRepository pCargoRepository,
+            IPermissaoCargoRbacRepository pPermissaoCargoRepository,
+            CAuditoriaRegistroService pAuditoriaRegistroService
+    ) {
         this.cargoRepository = pCargoRepository;
         this.permissaoCargoRepository = pPermissaoCargoRepository;
+        this.auditoriaRegistroService = pAuditoriaRegistroService;
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +143,8 @@ public class CRbacService {
                         pCargo.getRedirecionamentoName(),
                         lerFiltros(pCargo.getRedirecionamentoFiltros())
                 ),
-                pCargo.getAtivo()
+                pCargo.getAtivo(),
+                auditoriaRegistroService.montar(pCargo)
         );
     }
 
@@ -152,10 +161,33 @@ public class CRbacService {
         pCargo.setRedirecionamentoName(redirecionamento == null ? null : redirecionamento.name());
         pCargo.setRedirecionamentoFiltros(escreverFiltros(redirecionamento == null ? List.of() : redirecionamento.filtros()));
 
-        List<CPermissaoCargoRbac> permissoes = pRequest.permissoes() == null
-                ? new ArrayList<>()
-                : pRequest.permissoes().stream().map(RPermissaoCargoRbac::toEntity).toList();
-        pCargo.definirPermissoes(permissoes);
+        pCargo.definirPermissoes(normalizarPermissoes(pRequest.permissoes()));
+    }
+
+    private List<CPermissaoCargoRbac> normalizarPermissoes(List<RPermissaoCargoRbac> pPermissoes) {
+        if (pPermissoes == null) {
+            return new ArrayList<>();
+        }
+
+        Map<String, RPermissaoCargoRbac> permissoesPorChave = new LinkedHashMap<>();
+        for (RPermissaoCargoRbac permissao : pPermissoes) {
+            if (permissao == null || permissao.recurso() == null || permissao.acao() == null) {
+                continue;
+            }
+
+            String recurso = permissao.recurso().trim();
+            String acao = permissao.acao().trim();
+            if (recurso.isBlank() || acao.isBlank()) {
+                continue;
+            }
+
+            permissoesPorChave.put(
+                    recurso + "::" + acao,
+                    new RPermissaoCargoRbac(recurso, acao, Boolean.TRUE.equals(permissao.liberado()))
+            );
+        }
+
+        return permissoesPorChave.values().stream().map(RPermissaoCargoRbac::toEntity).toList();
     }
 
     private String normalizarPapel(String pPapel) {

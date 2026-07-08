@@ -18,7 +18,17 @@ import java.util.List;
 @NoRepositoryBean
 public interface IBaseRepository<T> extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
     default RRespostaPaginacao<T> consultarPaginado(RParametrosPaginacao pParametros, String pCampoCursor) {
-        Specification<T> specification = (pRoot, pQuery, pCriteriaBuilder) -> pCriteriaBuilder.conjunction();
+        return consultarPaginado(pParametros, pCampoCursor, null);
+    }
+
+    default RRespostaPaginacao<T> consultarPaginado(
+            RParametrosPaginacao pParametros,
+            String pCampoCursor,
+            Specification<T> pSpecificationBase
+    ) {
+        Specification<T> specification = pSpecificationBase == null
+                ? (pRoot, pQuery, pCriteriaBuilder) -> pCriteriaBuilder.conjunction()
+                : pSpecificationBase;
         RParametrosPaginacao parametros = pParametros == null
                 ? new RParametrosPaginacao(null, null, null, null)
                 : pParametros;

@@ -75,7 +75,7 @@ public class CSecurityConfigurations {
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/login/google").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/solicitacoes-acesso").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/recuperacao-senha/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/auth/me", "/auth/me/cargo").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/auth/senha").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth/senha/confirmar").authenticated()
