@@ -15,10 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
-import java.util.UUID;
+import java.util.Map;
 
 @Service
 public class CGoogleOAuthService {
+    public static final String CODIGO_SOLICITACAO_ACESSO_NECESSARIA = "GOOGLE_ACCESS_REQUEST_REQUIRED";
     private final RTokensProperties tokensProperties;
     private final CUsuarioService usuarioService;
     private final CTokenService tokenService;
@@ -35,11 +36,16 @@ public class CGoogleOAuthService {
         String email = payload.getEmail();
         String nome = String.valueOf(payload.get("name"));
 
-        CUsuario usuario;
-        try {
-            usuario = usuarioService.buscarEntidadePorEmail(email);
-        } catch (CExceptionsSystem pException) {
-            usuario = usuarioService.criarUsuarioSistema(nome, email, UUID.randomUUID().toString(), "USER", true);
+        CUsuario usuario = usuarioService.buscarEntidadeOpcionalPorEmail(email)
+                .orElseThrow(() -> new CExceptionsSystem(
+                        "Solicite acesso para concluir o cadastro com este e-mail.",
+                        HttpStatus.CONFLICT,
+                        CODIGO_SOLICITACAO_ACESSO_NECESSARIA,
+                        Map.of("nome", nome, "email", email)
+                ));
+
+        if (!Boolean.TRUE.equals(usuario.getAtivo())) {
+            throw new CExceptionsSystem("Usuário aguardando liberação de acesso", HttpStatus.FORBIDDEN);
         }
 
         return new RRespostaLogin(tokenService.gerarToken(usuario));

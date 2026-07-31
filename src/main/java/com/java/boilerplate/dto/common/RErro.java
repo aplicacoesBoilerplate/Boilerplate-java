@@ -19,6 +19,8 @@ public record RErro(
         @JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss", timezone = "America/Sao_Paulo")
         LocalDateTime dataHora,
         Integer httpStatusCode,
+        String codigo,
+        Map<String, Object> dados,
         Map<String, Object> trace
 ) {
 }

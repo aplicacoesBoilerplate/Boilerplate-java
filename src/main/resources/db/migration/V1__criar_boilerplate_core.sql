@@ -54,6 +54,22 @@ CREATE TABLE permissoes_cargo_rbac (
     CONSTRAINT ck_permissao_acao_not_empty CHECK (CHAR_LENGTH(TRIM(acao)) > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Permissões explícitas por cargo';
 
+CREATE TABLE funcionalidades_cargo_rbac (
+    id_funcionalidade BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Identificador único da funcionalidade',
+    id_cargo BIGINT NOT NULL COMMENT 'Cargo proprietário da funcionalidade',
+    funcionalidade VARCHAR(120) NOT NULL COMMENT 'Chave estável da funcionalidade geral',
+    liberado BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Define se a funcionalidade está liberada',
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT 'Data de criação do registro',
+    criado_por BIGINT COMMENT 'Usuário responsável pela criação do registro',
+    atualizado_em DATETIME NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Data da última atualização do registro',
+    atualizado_por BIGINT COMMENT 'Usuário responsável pela última atualização do registro',
+
+    CONSTRAINT pk_funcionalidades_cargo_rbac PRIMARY KEY (id_funcionalidade),
+    CONSTRAINT fk_funcionalidade_cargo_rbac FOREIGN KEY (id_cargo) REFERENCES cargos_rbac(id_cargo) ON DELETE CASCADE,
+    CONSTRAINT uk_funcionalidade_cargo UNIQUE (id_cargo, funcionalidade),
+    CONSTRAINT ck_funcionalidade_not_empty CHECK (CHAR_LENGTH(TRIM(funcionalidade)) > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Funcionalidades gerais liberadas por cargo';
+
 CREATE TABLE usuarios (
     id_usuario BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Identificador único do usuário',
     nome VARCHAR(120) NOT NULL COMMENT 'Nome exibido na interface',
@@ -135,6 +151,7 @@ CREATE INDEX idx_log_errors_data_hora ON log_errors(data_hora);
 CREATE INDEX idx_usuarios_id_cargo ON usuarios(id_cargo);
 CREATE INDEX idx_usuarios_ativo ON usuarios(ativo);
 CREATE INDEX idx_permissoes_cargo_recurso ON permissoes_cargo_rbac(id_cargo, recurso);
+CREATE INDEX idx_funcionalidades_cargo ON funcionalidades_cargo_rbac(id_cargo);
 CREATE INDEX idx_preferencias_usuario_contexto ON preferencias_usuario(id_usuario, contexto);
 CREATE INDEX idx_solicitacoes_usuario_status ON solicitacoes_acesso(id_usuario, status, liberado);
 CREATE INDEX idx_solicitacoes_liberado ON solicitacoes_acesso(liberado);
@@ -142,6 +159,8 @@ CREATE INDEX idx_cargos_rbac_criado_por ON cargos_rbac(criado_por);
 CREATE INDEX idx_cargos_rbac_atualizado_por ON cargos_rbac(atualizado_por);
 CREATE INDEX idx_permissoes_cargo_rbac_criado_por ON permissoes_cargo_rbac(criado_por);
 CREATE INDEX idx_permissoes_cargo_rbac_atualizado_por ON permissoes_cargo_rbac(atualizado_por);
+CREATE INDEX idx_funcionalidades_cargo_rbac_criado_por ON funcionalidades_cargo_rbac(criado_por);
+CREATE INDEX idx_funcionalidades_cargo_rbac_atualizado_por ON funcionalidades_cargo_rbac(atualizado_por);
 CREATE INDEX idx_usuarios_criado_por ON usuarios(criado_por);
 CREATE INDEX idx_usuarios_atualizado_por ON usuarios(atualizado_por);
 CREATE INDEX idx_preferencias_usuario_criado_por ON preferencias_usuario(criado_por);
@@ -159,6 +178,10 @@ ALTER TABLE cargos_rbac
 ALTER TABLE permissoes_cargo_rbac
     ADD CONSTRAINT fk_permissoes_cargo_rbac_criado_por FOREIGN KEY (criado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
     ADD CONSTRAINT fk_permissoes_cargo_rbac_atualizado_por FOREIGN KEY (atualizado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL;
+
+ALTER TABLE funcionalidades_cargo_rbac
+    ADD CONSTRAINT fk_funcionalidades_cargo_rbac_criado_por FOREIGN KEY (criado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+    ADD CONSTRAINT fk_funcionalidades_cargo_rbac_atualizado_por FOREIGN KEY (atualizado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL;
 
 ALTER TABLE usuarios
     ADD CONSTRAINT fk_usuarios_criado_por FOREIGN KEY (criado_por) REFERENCES usuarios(id_usuario) ON DELETE SET NULL,

@@ -35,6 +35,8 @@ public record RCargoRbac(
         EComportamentoPadraoPermissao comportamentoPadrao,
         @Valid
         List<RPermissaoCargoRbac> permissoes,
+        @Valid
+        List<RFuncionalidadeCargoRbac> funcionalidades,
         RRedirecionamentoInicialRbac redirecionamentoInicial,
         Boolean ativo,
         RAuditoriaRegistro auditoria
@@ -52,6 +54,7 @@ public record RCargoRbac(
                 pCargo.getDescricao(),
                 pCargo.getComportamentoPadrao(),
                 pCargo.getPermissoes().stream().map(RPermissaoCargoRbac::fromEntity).toList(),
+                pCargo.getFuncionalidades().stream().map(RFuncionalidadeCargoRbac::fromEntity).toList(),
                 new RRedirecionamentoInicialRbac(
                         pCargo.getRedirecionamentoPath(),
                         pCargo.getRedirecionamentoName(),

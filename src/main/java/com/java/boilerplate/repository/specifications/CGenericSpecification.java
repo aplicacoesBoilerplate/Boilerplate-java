@@ -9,7 +9,9 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class CGenericSpecification<T> implements Specification<T> {
@@ -41,7 +43,7 @@ public class CGenericSpecification<T> implements Specification<T> {
             case maiorIgual -> pCriteriaBuilder.greaterThanOrEqualTo(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
             case menorQue -> pCriteriaBuilder.lessThan(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
             case menorIgual -> pCriteriaBuilder.lessThanOrEqualTo(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
-            case entre -> pCriteriaBuilder.between(path.as(LocalDateTime.class), filtro.dataInicio(), filtro.dataFinal());
+            case entre -> criarFiltroEntre(path, pCriteriaBuilder);
             case selecao -> path.in(valoresSelecionadosConvertidos(path));
             case excecao -> pCriteriaBuilder.not(path.in(valoresSelecionadosConvertidos(path)));
         };
@@ -70,6 +72,30 @@ public class CGenericSpecification<T> implements Specification<T> {
                 : filtro.valoresSelecionados().stream().map(pValor -> converterValor(pPath, pValor)).toList();
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Predicate criarFiltroEntre(Path<?> pPath, CriteriaBuilder pCriteriaBuilder) {
+        if (LocalDateTime.class.isAssignableFrom(pPath.getJavaType())) {
+            if (filtro.dataInicio() == null || filtro.dataFinal() == null) {
+                return pCriteriaBuilder.disjunction();
+            }
+
+            return pCriteriaBuilder.between(pPath.as(LocalDateTime.class), filtro.dataInicio(), filtro.dataFinal());
+        }
+
+        List<Object> valoresIntervalo = filtro.valor() instanceof List<?> valores
+                ? valores.stream().map(pValor -> (Object) pValor).toList()
+                : List.of();
+
+        if (valoresIntervalo.size() < 2) {
+            return pCriteriaBuilder.disjunction();
+        }
+
+        Comparable valorInicial = (Comparable) converterValor(pPath, valoresIntervalo.get(0));
+        Comparable valorFinal = (Comparable) converterValor(pPath, valoresIntervalo.get(1));
+
+        return pCriteriaBuilder.between(pPath.as(Comparable.class), valorInicial, valorFinal);
+    }
+
     private Object converterValor(Path<?> pPath, Object pValor) {
         if (pValor == null) {
             return null;
@@ -90,10 +116,22 @@ public class CGenericSpecification<T> implements Specification<T> {
             return Integer.valueOf(valor);
         }
 
+        if (LocalDateTime.class.equals(type)) {
+            return converterDataHora(valor);
+        }
+
         if (Enum.class.isAssignableFrom(type)) {
             return Enum.valueOf((Class<Enum>) type.asSubclass(Enum.class), valor);
         }
 
         return pValor;
+    }
+
+    private LocalDateTime converterDataHora(String pValor) {
+        try {
+            return LocalDateTime.parse(pValor);
+        } catch (DateTimeParseException pException) {
+            return LocalDate.parse(pValor).atStartOfDay();
+        }
     }
 }

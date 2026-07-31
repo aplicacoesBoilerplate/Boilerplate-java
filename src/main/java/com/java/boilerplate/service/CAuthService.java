@@ -2,16 +2,18 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.config.security.CTokenService;
 import com.java.boilerplate.dto.auth.RAlteracaoSenha;
+import com.java.boilerplate.dto.auth.RAtualizacaoPerfilUsuario;
 import com.java.boilerplate.dto.auth.RConfirmacaoSenha;
 import com.java.boilerplate.dto.auth.RLogin;
 import com.java.boilerplate.dto.auth.RLoginGoogle;
 import com.java.boilerplate.dto.auth.RRedefinicaoSenhaRecuperacao;
+import com.java.boilerplate.dto.auth.RRespostaAtualizacaoPerfilUsuario;
 import com.java.boilerplate.dto.auth.RRespostaLogin;
-import com.java.boilerplate.dto.auth.RRespostaUsuarioAutenticado;
 import com.java.boilerplate.dto.auth.RSolicitacaoAcesso;
 import com.java.boilerplate.dto.auth.RSolicitacaoRecuperacaoSenha;
 import com.java.boilerplate.dto.auth.RVerificacaoCodigoRecuperacaoSenha;
 import com.java.boilerplate.dto.rbac.RCargoRbac;
+import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.enums.EStatusSolicitacaoAcesso;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CSolicitacaoAcesso;
@@ -90,8 +92,21 @@ public class CAuthService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public RRespostaUsuarioAutenticado buscarUsuarioAutenticado() {
-        return new RRespostaUsuarioAutenticado(buscarUsuarioLogado().getIdUsuario());
+    public RUsuario buscarUsuarioAutenticado() {
+        return usuarioService.buscarPorId(buscarUsuarioLogado().getIdUsuario());
+    }
+
+    /**
+     * @description Atualiza os dados permitidos para o perfil do usuário autenticado.
+     * @param pPerfil Dados do perfil enviados pelo usuário autenticado.
+     * @returns Usuário atualizado e token renovado para a sessão.
+     */
+    @Transactional
+    public RRespostaAtualizacaoPerfilUsuario atualizarPerfilUsuarioAutenticado(RAtualizacaoPerfilUsuario pPerfil) {
+        CUsuario usuario = buscarUsuarioLogado();
+        RUsuario usuarioAtualizado = usuarioService.atualizarPerfil(usuario.getIdUsuario(), pPerfil);
+
+        return new RRespostaAtualizacaoPerfilUsuario(usuarioAtualizado, tokenService.gerarToken(usuario));
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +116,7 @@ public class CAuthService implements UserDetailsService {
             throw new CExceptionsSystem("Usuário autenticado não possui cargo vinculado", HttpStatus.FORBIDDEN);
         }
 
-        return rbacService.buscarPorId(usuario.getCargo().getIdCargo());
+        return rbacService.toDTO(rbacService.buscarEntidadePorId(usuario.getCargo().getIdCargo()));
     }
 
     @Transactional
@@ -199,9 +214,9 @@ public class CAuthService implements UserDetailsService {
     }
 
     private void validarSolicitacaoAcessoDisponivel(String pEmail) {
-        try {
-            CUsuario usuario = usuarioService.buscarEntidadePorEmail(pEmail);
-            solicitacaoAcessoRepository.findByUsuario_IdUsuario(usuario.getIdUsuario())
+        usuarioService.buscarEntidadeOpcionalPorEmail(pEmail)
+            .ifPresent(pUsuario -> {
+            solicitacaoAcessoRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario())
                     .ifPresent(pSolicitacao -> {
                         if (Boolean.TRUE.equals(pSolicitacao.getLiberado())) {
                             throw new CExceptionsSystem("Este usuário já teve o acesso liberado anteriormente", HttpStatus.CONFLICT);
@@ -211,12 +226,7 @@ public class CAuthService implements UserDetailsService {
                     });
 
             throw new CExceptionsSystem("Já existe um usuário cadastrado com esse e-mail", HttpStatus.CONFLICT);
-        } catch (CExceptionsSystem pException) {
-            if (pException.getStatus() == HttpStatus.NOT_FOUND) {
-                return;
-            }
-            throw pException;
-        }
+        });
     }
 
     private void validarSenha(String pSenha) {

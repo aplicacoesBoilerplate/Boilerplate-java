@@ -7,16 +7,19 @@ import com.java.boilerplate.dto.common.RRespostaPaginacao;
 import com.java.boilerplate.dto.filtros.RFiltroConsulta;
 import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
 import com.java.boilerplate.dto.rbac.RCargoRbac;
+import com.java.boilerplate.dto.rbac.RFuncionalidadeCargoRbac;
 import com.java.boilerplate.dto.rbac.RPermissaoCargoRbac;
 import com.java.boilerplate.dto.rbac.RRedirecionamentoInicialRbac;
 import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
+import com.java.boilerplate.model.CFuncionalidadeCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
 import com.java.boilerplate.repository.IPermissaoCargoRbacRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.AntPathMatcher;
@@ -29,6 +32,7 @@ import java.util.Map;
 @Service
 public class CRbacService {
     private static final String RECURSO_API = "api";
+    private static final String RECURSO_ROTAS = "rotas";
 
     private final ICargoRbacRepository cargoRepository;
     private final IPermissaoCargoRbacRepository permissaoCargoRepository;
@@ -81,6 +85,7 @@ public class CRbacService {
 
     @Transactional
     public RCargoRbac salvar(RCargoRbac pRequest) {
+        validarDelegacaoDentroDoCargoAtual(pRequest);
         if (pRequest.id() == null && cargoRepository.existsByPapel(pRequest.papel())) {
             throw new CExceptionsSystem("Já existe um cargo com o papel informado", HttpStatus.CONFLICT);
         }
@@ -92,6 +97,7 @@ public class CRbacService {
 
     @Transactional
     public RCargoRbac atualizar(Long pIdCargo, RCargoRbac pRequest) {
+        validarDelegacaoDentroDoCargoAtual(pRequest);
         CCargoRbac cargo = buscarEntidadePorId(pIdCargo);
         cargoRepository.findByPapel(pRequest.papel())
                 .filter(pCargo -> !pCargo.getIdCargo().equals(pIdCargo))
@@ -138,6 +144,7 @@ public class CRbacService {
                 pCargo.getDescricao(),
                 pCargo.getComportamentoPadrao(),
                 pCargo.getPermissoes().stream().map(RPermissaoCargoRbac::fromEntity).toList(),
+                pCargo.getFuncionalidades().stream().map(RFuncionalidadeCargoRbac::fromEntity).toList(),
                 new RRedirecionamentoInicialRbac(
                         pCargo.getRedirecionamentoPath(),
                         pCargo.getRedirecionamentoName(),
@@ -162,6 +169,7 @@ public class CRbacService {
         pCargo.setRedirecionamentoFiltros(escreverFiltros(redirecionamento == null ? List.of() : redirecionamento.filtros()));
 
         pCargo.definirPermissoes(normalizarPermissoes(pRequest.permissoes()));
+        pCargo.definirFuncionalidades(normalizarFuncionalidades(pRequest.funcionalidades()));
     }
 
     private List<CPermissaoCargoRbac> normalizarPermissoes(List<RPermissaoCargoRbac> pPermissoes) {
@@ -188,6 +196,95 @@ public class CRbacService {
         }
 
         return permissoesPorChave.values().stream().map(RPermissaoCargoRbac::toEntity).toList();
+    }
+
+    private List<CFuncionalidadeCargoRbac> normalizarFuncionalidades(List<RFuncionalidadeCargoRbac> pFuncionalidades) {
+        if (pFuncionalidades == null) {
+            return new ArrayList<>();
+        }
+
+        Map<String, RFuncionalidadeCargoRbac> itens = new LinkedHashMap<>();
+        for (RFuncionalidadeCargoRbac funcionalidade : pFuncionalidades) {
+            if (funcionalidade == null || funcionalidade.funcionalidade() == null) {
+                continue;
+            }
+            String chave = funcionalidade.funcionalidade().trim();
+            if (!chave.isBlank()) {
+                itens.put(chave, new RFuncionalidadeCargoRbac(chave, Boolean.TRUE.equals(funcionalidade.liberado())));
+            }
+        }
+        return itens.values().stream().map(RFuncionalidadeCargoRbac::toEntity).toList();
+    }
+
+    private void validarDelegacaoDentroDoCargoAtual(RCargoRbac pRequest) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication() == null
+                ? null
+                : SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof CUsuario usuarioAtual) || usuarioAtual.getCargo() == null) {
+            return;
+        }
+
+        CCargoRbac cargoAtual = buscarEntidadePorId(usuarioAtual.getCargo().getIdCargo());
+        if ("ADMIN".equals(cargoAtual.getPapel())) {
+            return;
+        }
+
+        if (pRequest.comportamentoPadrao() == EComportamentoPadraoPermissao.liberar) {
+            throw new CExceptionsSystem("Cargos delegados devem bloquear acessos não configurados por padrão", HttpStatus.FORBIDDEN);
+        }
+
+        RRedirecionamentoInicialRbac redirecionamento = pRequest.redirecionamentoInicial();
+        if (redirecionamento != null
+                && redirecionamento.name() != null
+                && !redirecionamento.name().isBlank()
+                && !permissaoEstaLiberada(cargoAtual, RECURSO_ROTAS, redirecionamento.name())) {
+            throw new CExceptionsSystem("Não é permitido configurar uma rota inicial sem acesso", HttpStatus.FORBIDDEN);
+        }
+
+        if (pRequest.permissoes() != null) {
+            pRequest.permissoes().stream()
+                    .filter(pItem -> pItem != null && Boolean.TRUE.equals(pItem.liberado()))
+                    .filter(pItem -> !permissaoEstaLiberada(cargoAtual, pItem.recurso(), pItem.acao()))
+                    .findFirst()
+                    .ifPresent(pItem -> {
+                        throw new CExceptionsSystem(
+                                "Não é permitido delegar a permissão " + pItem.recurso() + ": " + pItem.acao(),
+                                HttpStatus.FORBIDDEN
+                        );
+                    });
+        }
+
+        if (pRequest.funcionalidades() != null) {
+            pRequest.funcionalidades().stream()
+                    .filter(pItem -> pItem != null && Boolean.TRUE.equals(pItem.liberado()))
+                    .filter(pItem -> !funcionalidadeEstaLiberada(cargoAtual, pItem.funcionalidade()))
+                    .findFirst()
+                    .ifPresent(pItem -> {
+                        throw new CExceptionsSystem("Não é permitido delegar a funcionalidade " + pItem.funcionalidade(), HttpStatus.FORBIDDEN);
+                    });
+        }
+    }
+
+    private boolean permissaoEstaLiberada(CCargoRbac pCargo, String pRecurso, String pAcao) {
+        if (pRecurso == null || pAcao == null) {
+            return false;
+        }
+        return pCargo.getPermissoes().stream()
+                .filter(pItem -> pRecurso.trim().equals(pItem.getRecurso()) && pAcao.trim().equals(pItem.getAcao()))
+                .map(CPermissaoCargoRbac::getLiberado)
+                .findFirst()
+                .orElse(pCargo.getComportamentoPadrao() == EComportamentoPadraoPermissao.liberar);
+    }
+
+    private boolean funcionalidadeEstaLiberada(CCargoRbac pCargo, String pFuncionalidade) {
+        if (pFuncionalidade == null) {
+            return false;
+        }
+        return pCargo.getFuncionalidades().stream()
+                .filter(pItem -> pFuncionalidade.trim().equals(pItem.getFuncionalidade()))
+                .map(CFuncionalidadeCargoRbac::getLiberado)
+                .findFirst()
+                .orElse(pCargo.getComportamentoPadrao() == EComportamentoPadraoPermissao.liberar);
     }
 
     private String normalizarPapel(String pPapel) {

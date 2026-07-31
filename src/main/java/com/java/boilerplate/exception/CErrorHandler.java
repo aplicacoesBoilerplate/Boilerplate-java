@@ -40,20 +40,20 @@ public class CErrorHandler {
                 .map(FieldError::getDefaultMessage)
                 .orElse("Dados inválidos");
 
-        return construirResposta(pException, mensagem, HttpStatus.BAD_REQUEST, LocalDateTime.now(ZONE_ID_BRASIL));
+        return construirResposta(pException, mensagem, HttpStatus.BAD_REQUEST, LocalDateTime.now(ZONE_ID_BRASIL), null, null);
     }
 
     @ExceptionHandler(CExceptionsSystem.class)
     public ResponseEntity<RErro> handlerExceptionsSystem(CExceptionsSystem pException) {
-        return construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora());
+        return construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora(), pException.getCodigo(), pException.getDados());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RErro> handlerException(Exception pException) {
-        return construirResposta(pException, pException.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now(ZONE_ID_BRASIL));
+        return construirResposta(pException, pException.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now(ZONE_ID_BRASIL), null, null);
     }
 
-    private ResponseEntity<RErro> construirResposta(Exception pException, String pMensagem, HttpStatus pStatus, LocalDateTime pDataHora) {
+    private ResponseEntity<RErro> construirResposta(Exception pException, String pMensagem, HttpStatus pStatus, LocalDateTime pDataHora, String pCodigo, Map<String, Object> pDados) {
         Map<String, Object> trace = criarTrace(pException);
         salvarLog(pMensagem, pStatus, trace);
 
@@ -61,6 +61,8 @@ public class CErrorHandler {
                 pMensagem,
                 pDataHora,
                 pStatus.value(),
+                pCodigo,
+                pDados,
                 appProperties.deveExporTraceErro() ? trace : null
         );
 

@@ -2,6 +2,7 @@ package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.common.RRespostaPaginacao;
 import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
+import com.java.boilerplate.dto.auth.RAtualizacaoPerfilUsuario;
 import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.Optional;
 
 @Service
 public class CUsuarioService {
@@ -48,6 +50,11 @@ public class CUsuarioService {
     public CUsuario buscarEntidadePorEmail(String pEmail) {
         return usuarioRepository.findByEmailIgnoreCase(pEmail)
                 .orElseThrow(() -> new CExceptionsSystem("Usuário não encontrado", HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CUsuario> buscarEntidadeOpcionalPorEmail(String pEmail) {
+        return usuarioRepository.findByEmailIgnoreCase(pEmail);
     }
 
     @Transactional(readOnly = true)
@@ -113,6 +120,26 @@ public class CUsuarioService {
         CUsuario usuario = buscarEntidadePorId(pIdUsuario);
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
+        return toDTO(usuarioRepository.saveAndFlush(usuario));
+    }
+
+    /**
+     * @description Atualiza apenas os dados permitidos para o perfil do próprio usuário.
+     * @param pIdUsuario Identificador do usuário autenticado.
+     * @param pPerfil Dados permitidos para atualização do perfil.
+     * @returns Usuário atualizado.
+     */
+    @Transactional
+    public RUsuario atualizarPerfil(Long pIdUsuario, RAtualizacaoPerfilUsuario pPerfil) {
+        CUsuario usuario = buscarEntidadePorId(pIdUsuario);
+        validarEmailDisponivel(pPerfil.email(), pIdUsuario);
+
+        usuario.setNome(pPerfil.nome());
+        usuario.setEmail(pPerfil.email().toLowerCase());
+        usuario.setAvatar(pPerfil.avatar());
+        usuario.setTelefone(pPerfil.telefone());
+        usuario.setNotificar(Boolean.TRUE.equals(pPerfil.notificar()));
+
         return toDTO(usuarioRepository.saveAndFlush(usuario));
     }
 
