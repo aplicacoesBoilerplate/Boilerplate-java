@@ -53,10 +53,26 @@ spring:
     mapper:
       default-view-inclusion: true
 
+  # A sessão do BFF é persistida pelo Spring Session; o schema é mantido pelo Flyway.
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: never
+      table-name: SPRING_SESSION
+
 # Porta HTTP da API e suporte correto a headers de proxy/reverse proxy.
 server:
   port: ${API_PORT:8080}
   forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: ${BFF_SESSION_TIMEOUT:30m}
+      cookie:
+        name: BOILERPLATE_SESSION
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:true}
+        same-site: Lax
+        path: /
 
 # Endpoints administrativos do Spring Actuator. Hoje expõe apenas /actuator/health-check.
 management:
@@ -100,6 +116,14 @@ tokens:
   issuer: ${JWT_ISSUER:boilerplate-java-api}
   accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:720}
   googleClientId: ${GOOGLE_CLIENT_ID:}
+
+# Credenciais de integração ficam somente no processo do BFF. Nunca exponha essas variáveis ao browser.
+software-center:
+  base-url: ${SOFTWARE_CENTER_BASE_URL:http://localhost:8081}
+  bff-client-id: ${SOFTWARE_CENTER_BFF_CLIENT_ID:}
+  bff-client-secret: ${SOFTWARE_CENTER_BFF_CLIENT_SECRET:}
+  tenant-default: ${SOFTWARE_CENTER_TENANT_DEFAULT:}
+  timeout: ${SOFTWARE_CENTER_TIMEOUT:5s}
 
 # Configurações próprias da API: URL do frontend, CORS global e exposição de trace em erros.
 app:

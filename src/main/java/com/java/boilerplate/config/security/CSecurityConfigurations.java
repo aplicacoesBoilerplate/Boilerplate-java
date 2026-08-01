@@ -2,6 +2,7 @@ package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.config.RAcessoSwagger;
 import com.java.boilerplate.config.RDocumentacaoProperties;
+import com.java.boilerplate.service.CAuthBffService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,20 +21,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @EnableWebSecurity
 public class CSecurityConfigurations {
-    private final CSecurityFilter securityFilter;
     private final RDocumentacaoProperties documentacaoProperties;
     private final CAutorizacaoRbacManager autorizacaoRbacManager;
 
     public CSecurityConfigurations(
-            CSecurityFilter pSecurityFilter,
             RDocumentacaoProperties pDocumentacaoProperties,
             CAutorizacaoRbacManager pAutorizacaoRbacManager
     ) {
-        this.securityFilter = pSecurityFilter;
         this.documentacaoProperties = pDocumentacaoProperties;
         this.autorizacaoRbacManager = pAutorizacaoRbacManager;
     }
@@ -65,26 +64,39 @@ public class CSecurityConfigurations {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity pHttp) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity pHttp,
+            CookieCsrfTokenRepository pCsrfTokenRepository,
+            CAuthBffService pAuthBffService
+    ) throws Exception {
         return pHttp
                 .cors(Customizer.withDefaults())
-                .csrf(pCsrf -> pCsrf.disable())
-                .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(pCsrf -> pCsrf
+                        .csrfTokenRepository(pCsrfTokenRepository)
+                        .csrfTokenRequestHandler(new CSpaCsrfTokenRequestHandler()))
+                .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .exceptionHandling(pExceptions -> pExceptions
+                        .authenticationEntryPoint((pRequest, pResponse, pException) ->
+                                pResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+                        .accessDeniedHandler((pRequest, pResponse, pException) ->
+                                pResponse.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .authorizeHttpRequests(pAuthorize -> pAuthorize
-                        .requestMatchers("/actuator/health-check").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/login/google").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/solicitacoes-acesso").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/recuperacao-senha/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/auth/me", "/auth/me/cargo").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/auth/senha").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/auth/senha/confirmar").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/preferencias/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/preferencias/**").authenticated()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/actuator/health-check", "/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/login/google",
+                                "/api/v1/auth/cadastro",
+                                "/api/v1/auth/solicitacoes-acesso",
+                                "/api/v1/auth/recuperacao-senha/solicitar",
+                                "/api/v1/auth/recuperacao-senha/verificar",
+                                "/api/v1/auth/recuperacao-senha/redefinir",
+                                "/api/v1/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/session").authenticated()
                         .anyRequest().access(autorizacaoRbacManager)
                 )
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new CSessaoBffFilter(pAuthBffService), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

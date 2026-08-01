@@ -2,6 +2,7 @@ package com.java.boilerplate.exception;
 
 import com.java.boilerplate.config.RAppProperties;
 import com.java.boilerplate.dto.common.RErro;
+import com.java.boilerplate.integration.softwarecenter.CSoftwareCenterClientException;
 import com.java.boilerplate.model.CLogErro;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ILogErroRepository;
@@ -46,6 +47,12 @@ public class CErrorHandler {
     @ExceptionHandler(CExceptionsSystem.class)
     public ResponseEntity<RErro> handlerExceptionsSystem(CExceptionsSystem pException) {
         return construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora(), pException.getCodigo(), pException.getDados());
+    }
+
+    @ExceptionHandler(CSoftwareCenterClientException.class)
+    public ResponseEntity<RErro> handlerSoftwareCenterException(CSoftwareCenterClientException pException) {
+        return construirResposta(pException, pException.getMessage(), pException.getStatus(),
+                LocalDateTime.now(ZONE_ID_BRASIL), null, null);
     }
 
     @ExceptionHandler(Exception.class)
