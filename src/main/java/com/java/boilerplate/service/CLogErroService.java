@@ -23,7 +23,6 @@ public class CLogErroService {
                 pagina.limite(),
                 pagina.proximaEntrada(),
                 pagina.items().stream().map(RLogErro::fromEntity).toList(),
-                pagina.temMaisRegistros()
-        );
+                pagina.temMaisRegistros());
     }
 }

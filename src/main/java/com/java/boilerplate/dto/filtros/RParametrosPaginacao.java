@@ -10,9 +10,4 @@ import java.util.List;
  * @property {List} filtros - Filtros aplicados à consulta.
  */
 public record RParametrosPaginacao(
-        Integer limite,
-        Object proximaEntrada,
-        String ordem,
-        List<RFiltroConsulta> filtros
-) {
-}
+        Integer limite, Object proximaEntrada, String ordem, List<RFiltroConsulta> filtros) {}

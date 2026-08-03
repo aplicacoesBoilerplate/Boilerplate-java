@@ -6,6 +6,7 @@ import com.java.boilerplate.dto.usuarios.RRespostaUsuario;
 import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.service.CUsuarioService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -30,15 +29,16 @@ public class CUsuarioController {
 
     @GetMapping("/consulta")
     public ResponseEntity<RRespostaPaginacao<RUsuario>> consultarGet(
-            @RequestParam(required = false) Integer limite,
-            @RequestParam(required = false) Long proximaEntrada,
-            @RequestParam(required = false) String ordem
-    ) {
-        return ResponseEntity.ok(usuarioService.consultar(new RParametrosPaginacao(limite, proximaEntrada, ordem, null)));
+            @RequestParam(name = "limite", required = false) Integer pLimite,
+            @RequestParam(name = "proximaEntrada", required = false) Long pProximaEntrada,
+            @RequestParam(name = "ordem", required = false) String pOrdem) {
+        return ResponseEntity.ok(
+                usuarioService.consultar(new RParametrosPaginacao(pLimite, pProximaEntrada, pOrdem, null)));
     }
 
     @PostMapping("/consulta")
-    public ResponseEntity<RRespostaPaginacao<RUsuario>> consultarPost(@RequestBody(required = false) RParametrosPaginacao pParametros) {
+    public ResponseEntity<RRespostaPaginacao<RUsuario>> consultarPost(
+            @RequestBody(required = false) RParametrosPaginacao pParametros) {
         return ResponseEntity.ok(usuarioService.consultar(pParametros));
     }
 

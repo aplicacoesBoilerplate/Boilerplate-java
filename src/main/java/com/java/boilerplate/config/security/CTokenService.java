@@ -6,11 +6,10 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.java.boilerplate.config.RTokensProperties;
 import com.java.boilerplate.model.CUsuario;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CTokenService {
@@ -50,9 +49,7 @@ public class CTokenService {
     }
 
     private Instant gerarDataExpiracao() {
-        return LocalDateTime.now()
-                .plusMinutes(properties.accessTokenMinutes())
-                .toInstant(ZONE_OFFSET_BRASIL);
+        return LocalDateTime.now().plusMinutes(properties.accessTokenMinutes()).toInstant(ZONE_OFFSET_BRASIL);
     }
 
     private String limparBearer(String pToken) {

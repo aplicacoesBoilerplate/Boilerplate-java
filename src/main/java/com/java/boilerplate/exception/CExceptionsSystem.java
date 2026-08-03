@@ -1,9 +1,8 @@
 package com.java.boilerplate.exception;
 
-import org.springframework.http.HttpStatus;
-
 import java.time.LocalDateTime;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 
 /**
  * @description Exception personalizada da aplicação para emissões de erros interceptados e persistidos.

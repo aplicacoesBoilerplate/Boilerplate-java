@@ -52,8 +52,7 @@ public class CAuthService implements UserDetailsService {
             CRbacService pRbacService,
             @Lazy CGoogleOAuthService pGoogleOAuthService,
             COtpService pOtpService,
-            ISolicitacaoAcessoRepository pSolicitacaoAcessoRepository
-    ) {
+            ISolicitacaoAcessoRepository pSolicitacaoAcessoRepository) {
         this.authenticationManager = pAuthenticationManager;
         this.passwordEncoder = pPasswordEncoder;
         this.tokenService = pTokenService;
@@ -76,8 +75,10 @@ public class CAuthService implements UserDetailsService {
 
     @Transactional
     public RRespostaLogin login(RLogin pLogin) {
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(pLogin.email(), pLogin.password());
-        CUsuario usuario = (CUsuario) authenticationManager.authenticate(authenticationToken).getPrincipal();
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(pLogin.email(), pLogin.password());
+        CUsuario usuario = (CUsuario)
+                authenticationManager.authenticate(authenticationToken).getPrincipal();
 
         if (!Boolean.TRUE.equals(usuario.getAtivo())) {
             throw new DisabledException("Usuário inativo");
@@ -116,7 +117,8 @@ public class CAuthService implements UserDetailsService {
             throw new CExceptionsSystem("Usuário autenticado não possui cargo vinculado", HttpStatus.FORBIDDEN);
         }
 
-        return rbacService.toDTO(rbacService.buscarEntidadePorId(usuario.getCargo().getIdCargo()));
+        return rbacService.toDTO(
+                rbacService.buscarEntidadePorId(usuario.getCargo().getIdCargo()));
     }
 
     @Transactional
@@ -159,10 +161,7 @@ public class CAuthService implements UserDetailsService {
         validarSolicitacaoAcessoDisponivel(pSolicitacao.email());
 
         CUsuario usuario = usuarioService.criarUsuarioSolicitacaoAcesso(
-                pSolicitacao.nome(),
-                pSolicitacao.email(),
-                pSolicitacao.senha()
-        );
+                pSolicitacao.nome(), pSolicitacao.email(), pSolicitacao.senha());
 
         CSolicitacaoAcesso solicitacao = new CSolicitacaoAcesso();
         solicitacao.setUsuario(usuario);
@@ -214,15 +213,17 @@ public class CAuthService implements UserDetailsService {
     }
 
     private void validarSolicitacaoAcessoDisponivel(String pEmail) {
-        usuarioService.buscarEntidadeOpcionalPorEmail(pEmail)
-            .ifPresent(pUsuario -> {
-            solicitacaoAcessoRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario())
+        usuarioService.buscarEntidadeOpcionalPorEmail(pEmail).ifPresent(pUsuario -> {
+            solicitacaoAcessoRepository
+                    .findByUsuario_IdUsuario(pUsuario.getIdUsuario())
                     .ifPresent(pSolicitacao -> {
                         if (Boolean.TRUE.equals(pSolicitacao.getLiberado())) {
-                            throw new CExceptionsSystem("Este usuário já teve o acesso liberado anteriormente", HttpStatus.CONFLICT);
+                            throw new CExceptionsSystem(
+                                    "Este usuário já teve o acesso liberado anteriormente", HttpStatus.CONFLICT);
                         }
 
-                        throw new CExceptionsSystem("Já existe uma solicitação de acesso pendente para esse e-mail", HttpStatus.CONFLICT);
+                        throw new CExceptionsSystem(
+                                "Já existe uma solicitação de acesso pendente para esse e-mail", HttpStatus.CONFLICT);
                     });
 
             throw new CExceptionsSystem("Já existe um usuário cadastrado com esse e-mail", HttpStatus.CONFLICT);

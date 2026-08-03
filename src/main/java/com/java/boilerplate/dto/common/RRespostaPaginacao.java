@@ -9,10 +9,4 @@ import java.util.List;
  * @property {List} items - Registros retornados na página atual.
  * @property {Boolean} temMaisRegistros - Define se existe próxima página disponível.
  */
-public record RRespostaPaginacao<T>(
-        Integer limite,
-        Object proximaEntrada,
-        List<T> items,
-        Boolean temMaisRegistros
-) {
-}
+public record RRespostaPaginacao<T>(Integer limite, Object proximaEntrada, List<T> items, Boolean temMaisRegistros) {}

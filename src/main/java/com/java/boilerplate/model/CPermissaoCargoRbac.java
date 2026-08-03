@@ -20,8 +20,10 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "permissoes_cargo_rbac",
-        uniqueConstraints = @UniqueConstraint(name = "uk_permissao_cargo_recurso_acao", columnNames = {"id_cargo", "recurso", "acao"})
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_permissao_cargo_recurso_acao",
+                        columnNames = {"id_cargo", "recurso", "acao"}))
 @Getter
 @Setter
 public class CPermissaoCargoRbac extends CEntidadeAuditavel {

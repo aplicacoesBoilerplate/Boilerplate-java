@@ -11,19 +11,20 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record RPreferenciaUsuario(
         Long id,
+
         @NotBlank(message = "O contexto da preferência é obrigatório")
         String contexto,
+
         @NotBlank(message = "A chave da preferência é obrigatória")
         String chave,
+
         @NotBlank(message = "O valor da preferência é obrigatório")
-        String valorJson
-) {
+        String valorJson) {
     public static RPreferenciaUsuario fromEntity(CPreferenciaUsuario pPreferencia) {
         return new RPreferenciaUsuario(
                 pPreferencia.getIdPreferencia(),
                 pPreferencia.getContexto(),
                 pPreferencia.getChave(),
-                pPreferencia.getValorJson()
-        );
+                pPreferencia.getValorJson());
     }
 }

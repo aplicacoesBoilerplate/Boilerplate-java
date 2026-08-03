@@ -8,14 +8,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
 
 /**
  * @description Revalida a sessão opaca na Software Center antes de disponibilizar o contexto BFF em rotas protegidas.
@@ -32,8 +31,7 @@ public class CSessaoBffFilter extends OncePerRequestFilter {
             "/api/v1/auth/recuperacao-senha/verificar",
             "/api/v1/auth/recuperacao-senha/redefinir",
             "/actuator/health-check",
-            "/error"
-    );
+            "/error");
 
     private final CAuthBffService authBffService;
 
@@ -49,10 +47,8 @@ public class CSessaoBffFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest pRequest,
-            HttpServletResponse pResponse,
-            FilterChain pFilterChain
-    ) throws ServletException, IOException {
+            HttpServletRequest pRequest, HttpServletResponse pResponse, FilterChain pFilterChain)
+            throws ServletException, IOException {
         HttpSession sessao = pRequest.getSession(false);
         if (sessao == null) {
             pFilterChain.doFilter(pRequest, pResponse);
@@ -65,9 +61,8 @@ public class CSessaoBffFilter extends OncePerRequestFilter {
             List<SimpleGrantedAuthority> authorities = contexto.permissions().stream()
                     .map(pPermissao -> new SimpleGrantedAuthority("PERMISSION_" + pPermissao))
                     .toList();
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    principal, null, authorities
-            );
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(principal, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             pFilterChain.doFilter(pRequest, pResponse);
         } catch (CSoftwareCenterClientException pException) {

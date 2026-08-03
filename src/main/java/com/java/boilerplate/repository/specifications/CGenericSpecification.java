@@ -7,12 +7,11 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import org.springframework.data.jpa.domain.Specification;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import org.springframework.data.jpa.domain.Specification;
 
 public class CGenericSpecification<T> implements Specification<T> {
     private final RFiltroConsulta filtro;
@@ -31,18 +30,30 @@ public class CGenericSpecification<T> implements Specification<T> {
         EOperadorFiltro operador = EOperadorFiltro.valueOf(filtro.condicao());
 
         return switch (operador) {
-            case contem -> pCriteriaBuilder.like(pCriteriaBuilder.lower(path.as(String.class)), "%" + texto(filtro.valor()) + "%");
-            case naoContem -> pCriteriaBuilder.notLike(pCriteriaBuilder.lower(path.as(String.class)), "%" + texto(filtro.valor()) + "%");
-            case comecaCom -> pCriteriaBuilder.like(pCriteriaBuilder.lower(path.as(String.class)), texto(filtro.valor()) + "%");
-            case terminaCom -> pCriteriaBuilder.like(pCriteriaBuilder.lower(path.as(String.class)), "%" + texto(filtro.valor()));
+            case contem ->
+                pCriteriaBuilder.like(pCriteriaBuilder.lower(path.as(String.class)), "%" + texto(filtro.valor()) + "%");
+            case naoContem ->
+                pCriteriaBuilder.notLike(
+                        pCriteriaBuilder.lower(path.as(String.class)), "%" + texto(filtro.valor()) + "%");
+            case comecaCom ->
+                pCriteriaBuilder.like(pCriteriaBuilder.lower(path.as(String.class)), texto(filtro.valor()) + "%");
+            case terminaCom ->
+                pCriteriaBuilder.like(pCriteriaBuilder.lower(path.as(String.class)), "%" + texto(filtro.valor()));
             case igual -> pCriteriaBuilder.equal(path, converterValor(path, filtro.valor()));
             case diferente -> pCriteriaBuilder.notEqual(path, converterValor(path, filtro.valor()));
             case verdadeiro -> pCriteriaBuilder.isTrue(path.as(Boolean.class));
             case falso -> pCriteriaBuilder.isFalse(path.as(Boolean.class));
-            case maiorQue -> pCriteriaBuilder.greaterThan(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
-            case maiorIgual -> pCriteriaBuilder.greaterThanOrEqualTo(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
-            case menorQue -> pCriteriaBuilder.lessThan(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
-            case menorIgual -> pCriteriaBuilder.lessThanOrEqualTo(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
+            case maiorQue ->
+                pCriteriaBuilder.greaterThan(
+                        path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
+            case maiorIgual ->
+                pCriteriaBuilder.greaterThanOrEqualTo(
+                        path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
+            case menorQue ->
+                pCriteriaBuilder.lessThan(path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
+            case menorIgual ->
+                pCriteriaBuilder.lessThanOrEqualTo(
+                        path.as(Comparable.class), (Comparable) converterValor(path, filtro.valor()));
             case entre -> criarFiltroEntre(path, pCriteriaBuilder);
             case selecao -> path.in(valoresSelecionadosConvertidos(path));
             case excecao -> pCriteriaBuilder.not(path.in(valoresSelecionadosConvertidos(path)));
@@ -69,7 +80,9 @@ public class CGenericSpecification<T> implements Specification<T> {
     private List<Object> valoresSelecionadosConvertidos(Path<?> pPath) {
         return filtro.valoresSelecionados() == null
                 ? List.of()
-                : filtro.valoresSelecionados().stream().map(pValor -> converterValor(pPath, pValor)).toList();
+                : filtro.valoresSelecionados().stream()
+                        .map(pValor -> converterValor(pPath, pValor))
+                        .toList();
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

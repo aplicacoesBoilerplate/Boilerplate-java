@@ -18,16 +18,15 @@ import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
 import com.java.boilerplate.repository.IPermissaoCargoRbacRepository;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.AntPathMatcher;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class CRbacService {
@@ -43,8 +42,7 @@ public class CRbacService {
     public CRbacService(
             ICargoRbacRepository pCargoRepository,
             IPermissaoCargoRbacRepository pPermissaoCargoRepository,
-            CAuditoriaRegistroService pAuditoriaRegistroService
-    ) {
+            CAuditoriaRegistroService pAuditoriaRegistroService) {
         this.cargoRepository = pCargoRepository;
         this.permissaoCargoRepository = pPermissaoCargoRepository;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
@@ -52,14 +50,18 @@ public class CRbacService {
 
     @Transactional(readOnly = true)
     public CCargoRbac buscarEntidadePorPapel(String pPapel) {
-        return cargoRepository.findByPapel(pPapel)
-                .orElseThrow(() -> new CExceptionsSystem("Cargo não encontrado para o papel: " + pPapel, HttpStatus.NOT_FOUND));
+        return cargoRepository
+                .findByPapel(pPapel)
+                .orElseThrow(() ->
+                        new CExceptionsSystem("Cargo não encontrado para o papel: " + pPapel, HttpStatus.NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public CCargoRbac buscarEntidadePorId(Long pIdCargo) {
-        return cargoRepository.findById(pIdCargo)
-                .orElseThrow(() -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
+        return cargoRepository
+                .findById(pIdCargo)
+                .orElseThrow(() ->
+                        new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
@@ -69,8 +71,7 @@ public class CRbacService {
                 pagina.limite(),
                 pagina.proximaEntrada(),
                 pagina.items().stream().map(this::toDTO).toList(),
-                pagina.temMaisRegistros()
-        );
+                pagina.temMaisRegistros());
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +100,8 @@ public class CRbacService {
     public RCargoRbac atualizar(Long pIdCargo, RCargoRbac pRequest) {
         validarDelegacaoDentroDoCargoAtual(pRequest);
         CCargoRbac cargo = buscarEntidadePorId(pIdCargo);
-        cargoRepository.findByPapel(pRequest.papel())
+        cargoRepository
+                .findByPapel(pRequest.papel())
                 .filter(pCargo -> !pCargo.getIdCargo().equals(pIdCargo))
                 .ifPresent(pCargo -> {
                     throw new CExceptionsSystem("Já existe um cargo com o papel informado", HttpStatus.CONFLICT);
@@ -113,19 +115,23 @@ public class CRbacService {
     public void excluir(Long pIdCargo) {
         CCargoRbac cargo = buscarEntidadePorId(pIdCargo);
         if ("ADMIN".equals(cargo.getPapel()) || "USER".equals(cargo.getPapel())) {
-            throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser excluídos", HttpStatus.BAD_REQUEST);
+            throw new CExceptionsSystem(
+                    "Os cargos padrão ADMIN e USER não podem ser excluídos", HttpStatus.BAD_REQUEST);
         }
         cargoRepository.delete(cargo);
     }
 
     @Transactional(readOnly = true)
     public boolean usuarioPodeAcessarEndpoint(CUsuario pUsuario, String pMetodoHttp, String pCaminho) {
-        if (pUsuario == null || pUsuario.getCargo() == null || !Boolean.TRUE.equals(pUsuario.getCargo().getAtivo())) {
+        if (pUsuario == null
+                || pUsuario.getCargo() == null
+                || !Boolean.TRUE.equals(pUsuario.getCargo().getAtivo())) {
             return false;
         }
 
         CCargoRbac cargo = buscarEntidadePorId(pUsuario.getCargo().getIdCargo());
-        List<CPermissaoCargoRbac> permissoesApi = permissaoCargoRepository.findByCargo_IdCargoAndRecurso(cargo.getIdCargo(), RECURSO_API);
+        List<CPermissaoCargoRbac> permissoesApi =
+                permissaoCargoRepository.findByCargo_IdCargoAndRecurso(cargo.getIdCargo(), RECURSO_API);
         Boolean decisaoExplicita = resolverPermissaoExplicita(permissoesApi, pMetodoHttp, pCaminho);
 
         if (decisaoExplicita != null) {
@@ -143,16 +149,18 @@ public class CRbacService {
                 pCargo.getIcone(),
                 pCargo.getDescricao(),
                 pCargo.getComportamentoPadrao(),
-                pCargo.getPermissoes().stream().map(RPermissaoCargoRbac::fromEntity).toList(),
-                pCargo.getFuncionalidades().stream().map(RFuncionalidadeCargoRbac::fromEntity).toList(),
+                pCargo.getPermissoes().stream()
+                        .map(RPermissaoCargoRbac::fromEntity)
+                        .toList(),
+                pCargo.getFuncionalidades().stream()
+                        .map(RFuncionalidadeCargoRbac::fromEntity)
+                        .toList(),
                 new RRedirecionamentoInicialRbac(
                         pCargo.getRedirecionamentoPath(),
                         pCargo.getRedirecionamentoName(),
-                        lerFiltros(pCargo.getRedirecionamentoFiltros())
-                ),
+                        lerFiltros(pCargo.getRedirecionamentoFiltros())),
                 pCargo.getAtivo(),
-                auditoriaRegistroService.montar(pCargo)
-        );
+                auditoriaRegistroService.montar(pCargo));
     }
 
     private void preencherCargo(CCargoRbac pCargo, RCargoRbac pRequest) {
@@ -160,13 +168,22 @@ public class CRbacService {
         pCargo.setNome(pRequest.nome());
         pCargo.setIcone(pRequest.icone());
         pCargo.setDescricao(pRequest.descricao());
-        pCargo.setComportamentoPadrao(pRequest.comportamentoPadrao() == null ? EComportamentoPadraoPermissao.bloquear : pRequest.comportamentoPadrao());
+        pCargo.setComportamentoPadrao(
+                pRequest.comportamentoPadrao() == null
+                        ? EComportamentoPadraoPermissao.bloquear
+                        : pRequest.comportamentoPadrao());
         pCargo.setAtivo(pRequest.ativo() == null || pRequest.ativo());
 
         RRedirecionamentoInicialRbac redirecionamento = pRequest.redirecionamentoInicial();
-        pCargo.setRedirecionamentoPath(redirecionamento == null || redirecionamento.path() == null || redirecionamento.path().isBlank() ? "/" : redirecionamento.path());
+        pCargo.setRedirecionamentoPath(
+                redirecionamento == null
+                                || redirecionamento.path() == null
+                                || redirecionamento.path().isBlank()
+                        ? "/"
+                        : redirecionamento.path());
         pCargo.setRedirecionamentoName(redirecionamento == null ? null : redirecionamento.name());
-        pCargo.setRedirecionamentoFiltros(escreverFiltros(redirecionamento == null ? List.of() : redirecionamento.filtros()));
+        pCargo.setRedirecionamentoFiltros(
+                escreverFiltros(redirecionamento == null ? List.of() : redirecionamento.filtros()));
 
         pCargo.definirPermissoes(normalizarPermissoes(pRequest.permissoes()));
         pCargo.definirFuncionalidades(normalizarFuncionalidades(pRequest.funcionalidades()));
@@ -191,11 +208,12 @@ public class CRbacService {
 
             permissoesPorChave.put(
                     recurso + "::" + acao,
-                    new RPermissaoCargoRbac(recurso, acao, Boolean.TRUE.equals(permissao.liberado()))
-            );
+                    new RPermissaoCargoRbac(recurso, acao, Boolean.TRUE.equals(permissao.liberado())));
         }
 
-        return permissoesPorChave.values().stream().map(RPermissaoCargoRbac::toEntity).toList();
+        return permissoesPorChave.values().stream()
+                .map(RPermissaoCargoRbac::toEntity)
+                .toList();
     }
 
     private List<CFuncionalidadeCargoRbac> normalizarFuncionalidades(List<RFuncionalidadeCargoRbac> pFuncionalidades) {
@@ -230,7 +248,8 @@ public class CRbacService {
         }
 
         if (pRequest.comportamentoPadrao() == EComportamentoPadraoPermissao.liberar) {
-            throw new CExceptionsSystem("Cargos delegados devem bloquear acessos não configurados por padrão", HttpStatus.FORBIDDEN);
+            throw new CExceptionsSystem(
+                    "Cargos delegados devem bloquear acessos não configurados por padrão", HttpStatus.FORBIDDEN);
         }
 
         RRedirecionamentoInicialRbac redirecionamento = pRequest.redirecionamentoInicial();
@@ -249,8 +268,7 @@ public class CRbacService {
                     .ifPresent(pItem -> {
                         throw new CExceptionsSystem(
                                 "Não é permitido delegar a permissão " + pItem.recurso() + ": " + pItem.acao(),
-                                HttpStatus.FORBIDDEN
-                        );
+                                HttpStatus.FORBIDDEN);
                     });
         }
 
@@ -260,7 +278,9 @@ public class CRbacService {
                     .filter(pItem -> !funcionalidadeEstaLiberada(cargoAtual, pItem.funcionalidade()))
                     .findFirst()
                     .ifPresent(pItem -> {
-                        throw new CExceptionsSystem("Não é permitido delegar a funcionalidade " + pItem.funcionalidade(), HttpStatus.FORBIDDEN);
+                        throw new CExceptionsSystem(
+                                "Não é permitido delegar a funcionalidade " + pItem.funcionalidade(),
+                                HttpStatus.FORBIDDEN);
                     });
         }
     }
@@ -270,7 +290,8 @@ public class CRbacService {
             return false;
         }
         return pCargo.getPermissoes().stream()
-                .filter(pItem -> pRecurso.trim().equals(pItem.getRecurso()) && pAcao.trim().equals(pItem.getAcao()))
+                .filter(pItem -> pRecurso.trim().equals(pItem.getRecurso())
+                        && pAcao.trim().equals(pItem.getAcao()))
                 .map(CPermissaoCargoRbac::getLiberado)
                 .findFirst()
                 .orElse(pCargo.getComportamentoPadrao() == EComportamentoPadraoPermissao.liberar);
@@ -291,7 +312,8 @@ public class CRbacService {
         return pPapel == null ? null : pPapel.trim().toUpperCase();
     }
 
-    private Boolean resolverPermissaoExplicita(List<CPermissaoCargoRbac> pPermissoes, String pMetodoHttp, String pCaminho) {
+    private Boolean resolverPermissaoExplicita(
+            List<CPermissaoCargoRbac> pPermissoes, String pMetodoHttp, String pCaminho) {
         Boolean permissaoLiberada = null;
 
         for (CPermissaoCargoRbac permissao : pPermissoes) {
@@ -325,7 +347,8 @@ public class CRbacService {
         try {
             return objectMapper.writeValueAsString(pFiltros == null ? List.of() : pFiltros);
         } catch (JsonProcessingException pException) {
-            throw new CExceptionsSystem("Não foi possível serializar os filtros do redirecionamento", HttpStatus.BAD_REQUEST);
+            throw new CExceptionsSystem(
+                    "Não foi possível serializar os filtros do redirecionamento", HttpStatus.BAD_REQUEST);
         }
     }
 

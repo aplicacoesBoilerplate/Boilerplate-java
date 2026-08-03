@@ -6,7 +6,6 @@ import com.java.boilerplate.model.CCargoRbac;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.List;
 
 /**
@@ -24,23 +23,25 @@ import java.util.List;
  */
 public record RCargoRbac(
         Long id,
+
         @NotBlank(message = "O papel do cargo é obrigatório")
         String papel,
-        @NotBlank(message = "O nome do cargo é obrigatório")
-        String nome,
+
+        @NotBlank(message = "O nome do cargo é obrigatório") String nome,
+
         @NotBlank(message = "O ícone do cargo é obrigatório")
         String icone,
+
         String descricao,
+
         @NotNull(message = "O comportamento padrão é obrigatório")
         EComportamentoPadraoPermissao comportamentoPadrao,
-        @Valid
-        List<RPermissaoCargoRbac> permissoes,
-        @Valid
-        List<RFuncionalidadeCargoRbac> funcionalidades,
+
+        @Valid List<RPermissaoCargoRbac> permissoes,
+        @Valid List<RFuncionalidadeCargoRbac> funcionalidades,
         RRedirecionamentoInicialRbac redirecionamentoInicial,
         Boolean ativo,
-        RAuditoriaRegistro auditoria
-) {
+        RAuditoriaRegistro auditoria) {
     public static RCargoRbac fromEntity(CCargoRbac pCargo) {
         return fromEntity(pCargo, RAuditoriaRegistro.fromEntity(pCargo));
     }
@@ -53,15 +54,15 @@ public record RCargoRbac(
                 pCargo.getIcone(),
                 pCargo.getDescricao(),
                 pCargo.getComportamentoPadrao(),
-                pCargo.getPermissoes().stream().map(RPermissaoCargoRbac::fromEntity).toList(),
-                pCargo.getFuncionalidades().stream().map(RFuncionalidadeCargoRbac::fromEntity).toList(),
+                pCargo.getPermissoes().stream()
+                        .map(RPermissaoCargoRbac::fromEntity)
+                        .toList(),
+                pCargo.getFuncionalidades().stream()
+                        .map(RFuncionalidadeCargoRbac::fromEntity)
+                        .toList(),
                 new RRedirecionamentoInicialRbac(
-                        pCargo.getRedirecionamentoPath(),
-                        pCargo.getRedirecionamentoName(),
-                        List.of()
-                ),
+                        pCargo.getRedirecionamentoPath(), pCargo.getRedirecionamentoName(), List.of()),
                 pCargo.getAtivo(),
-                pAuditoria
-        );
+                pAuditoria);
     }
 }

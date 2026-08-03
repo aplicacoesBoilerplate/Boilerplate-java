@@ -4,14 +4,13 @@ import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.repository.ICargoRbacRepository;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class CDataInitializerService implements ApplicationRunner {
@@ -45,19 +44,41 @@ public class CDataInitializerService implements ApplicationRunner {
             return;
         }
 
-        CCargoRbac cargo = criarCargoBase("ADMIN", "Administrador", "mdi-account-tie", "Acesso operacional completo ao boilerplate.", EComportamentoPadraoPermissao.liberar, "/", "Inicio");
+        CCargoRbac cargo = criarCargoBase(
+                "ADMIN",
+                "Administrador",
+                "mdi-account-tie",
+                "Acesso operacional completo ao boilerplate.",
+                EComportamentoPadraoPermissao.liberar,
+                "/",
+                "Inicio");
         cargoRepository.save(cargo);
     }
 
     private void criarCargoUserSeNecessario() {
-        CCargoRbac cargo = cargoRepository.findByPapel("USER")
-                .orElseGet(() -> criarCargoBase("USER", "Usuário", "mdi-account", "Acesso básico para uso diário do sistema.", EComportamentoPadraoPermissao.bloquear, "/usuarios", "Usuarios"));
+        CCargoRbac cargo = cargoRepository
+                .findByPapel("USER")
+                .orElseGet(() -> criarCargoBase(
+                        "USER",
+                        "Usuário",
+                        "mdi-account",
+                        "Acesso básico para uso diário do sistema.",
+                        EComportamentoPadraoPermissao.bloquear,
+                        "/usuarios",
+                        "Usuarios"));
 
         garantirPermissoesPadraoUsuario(cargo);
         cargoRepository.save(cargo);
     }
 
-    private CCargoRbac criarCargoBase(String pPapel, String pNome, String pIcone, String pDescricao, EComportamentoPadraoPermissao pComportamento, String pPath, String pName) {
+    private CCargoRbac criarCargoBase(
+            String pPapel,
+            String pNome,
+            String pIcone,
+            String pDescricao,
+            EComportamentoPadraoPermissao pComportamento,
+            String pPath,
+            String pName) {
         CCargoRbac cargo = new CCargoRbac();
         cargo.setPapel(pPapel);
         cargo.setNome(pNome);
@@ -91,13 +112,13 @@ public class CDataInitializerService implements ApplicationRunner {
         pCargo.definirPermissoes(permissoes);
     }
 
-    private void garantirPermissao(List<CPermissaoCargoRbac> pPermissoes, String pRecurso, String pAcao, Boolean pLiberado) {
+    private void garantirPermissao(
+            List<CPermissaoCargoRbac> pPermissoes, String pRecurso, String pAcao, Boolean pLiberado) {
         pPermissoes.stream()
                 .filter(pPermissao -> pRecurso.equals(pPermissao.getRecurso()) && pAcao.equals(pPermissao.getAcao()))
                 .findFirst()
                 .ifPresentOrElse(
                         pPermissao -> pPermissao.setLiberado(pLiberado),
-                        () -> pPermissoes.add(criarPermissao(pRecurso, pAcao, pLiberado))
-                );
+                        () -> pPermissoes.add(criarPermissao(pRecurso, pAcao, pLiberado)));
     }
 }

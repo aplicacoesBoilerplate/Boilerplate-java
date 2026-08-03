@@ -10,12 +10,11 @@ import com.java.boilerplate.dto.auth.RLoginGoogle;
 import com.java.boilerplate.dto.auth.RRespostaLogin;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CUsuario;
+import java.util.Collections;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collections;
-import java.util.Map;
 
 @Service
 public class CGoogleOAuthService {
@@ -24,7 +23,8 @@ public class CGoogleOAuthService {
     private final CUsuarioService usuarioService;
     private final CTokenService tokenService;
 
-    public CGoogleOAuthService(RTokensProperties pTokensProperties, CUsuarioService pUsuarioService, CTokenService pTokenService) {
+    public CGoogleOAuthService(
+            RTokensProperties pTokensProperties, CUsuarioService pUsuarioService, CTokenService pTokenService) {
         this.tokensProperties = pTokensProperties;
         this.usuarioService = pUsuarioService;
         this.tokenService = pTokenService;
@@ -36,13 +36,13 @@ public class CGoogleOAuthService {
         String email = payload.getEmail();
         String nome = String.valueOf(payload.get("name"));
 
-        CUsuario usuario = usuarioService.buscarEntidadeOpcionalPorEmail(email)
+        CUsuario usuario = usuarioService
+                .buscarEntidadeOpcionalPorEmail(email)
                 .orElseThrow(() -> new CExceptionsSystem(
                         "Solicite acesso para concluir o cadastro com este e-mail.",
                         HttpStatus.CONFLICT,
                         CODIGO_SOLICITACAO_ACESSO_NECESSARIA,
-                        Map.of("nome", nome, "email", email)
-                ));
+                        Map.of("nome", nome, "email", email)));
 
         if (!Boolean.TRUE.equals(usuario.getAtivo())) {
             throw new CExceptionsSystem("Usuário aguardando liberação de acesso", HttpStatus.FORBIDDEN);
@@ -52,12 +52,14 @@ public class CGoogleOAuthService {
     }
 
     private GoogleIdToken.Payload validarCredencial(String pCredential) {
-        if (tokensProperties.googleClientId() == null || tokensProperties.googleClientId().isBlank()) {
+        if (tokensProperties.googleClientId() == null
+                || tokensProperties.googleClientId().isBlank()) {
             throw new CExceptionsSystem("Login com Google não configurado no backend", HttpStatus.BAD_REQUEST);
         }
 
         try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                            new NetHttpTransport(), new GsonFactory())
                     .setAudience(Collections.singletonList(tokensProperties.googleClientId()))
                     .build();
             GoogleIdToken idToken = verifier.verify(pCredential);

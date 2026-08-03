@@ -9,6 +9,7 @@ import com.java.boilerplate.integration.softwarecenter.RSoftwareCenterDtos.RSess
 import com.java.boilerplate.integration.softwarecenter.RSoftwareCenterDtos.RSessaoValidada;
 import com.java.boilerplate.integration.softwarecenter.RSoftwareCenterDtos.RSolicitarRecuperacao;
 import com.java.boilerplate.integration.softwarecenter.RSoftwareCenterDtos.RVerificarRecuperacao;
+import java.util.function.Supplier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -19,8 +20,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
-
-import java.util.function.Supplier;
 
 /**
  * @description Cliente RestClient para a Software Center que conserva a credencial técnica somente no servidor.
@@ -40,7 +39,8 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
 
     @Override
     public RSessaoCriada criarSessaoComSenha(RCriarSessaoSenha pComando) {
-        return validarRespostaSessao(executar(() -> restClient.post()
+        return validarRespostaSessao(executar(() -> restClient
+                .post()
                 .uri("/api/v1/integracoes/sessoes")
                 .headers(this::adicionarAutorizacaoBff)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +51,8 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
 
     @Override
     public RSessaoCriada criarSessaoComGoogle(RCriarSessaoGoogle pComando) {
-        return validarRespostaSessao(executar(() -> restClient.post()
+        return validarRespostaSessao(executar(() -> restClient
+                .post()
                 .uri("/api/v1/integracoes/sessoes/google")
                 .headers(this::adicionarAutorizacaoBff)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -62,7 +63,8 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
 
     @Override
     public RSessaoValidada revalidarSessao(String pSessionId) {
-        RSessaoValidada resposta = executar(() -> restClient.get()
+        RSessaoValidada resposta = executar(() -> restClient
+                .get()
                 .uri("/api/v1/integracoes/sessoes/{sessionId}", pSessionId)
                 .headers(this::adicionarAutorizacaoBff)
                 .retrieve()
@@ -78,7 +80,8 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
     @Override
     public void revogarSessao(String pSessionId) {
         executar(() -> {
-            restClient.delete()
+            restClient
+                    .delete()
                     .uri("/api/v1/integracoes/sessoes/{sessionId}", pSessionId)
                     .headers(this::adicionarAutorizacaoBff)
                     .retrieve()
@@ -109,7 +112,8 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
 
     private void executarComandoPublico(String pUri, Object pComando) {
         executar(() -> {
-            restClient.post()
+            restClient
+                    .post()
                     .uri(pUri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(pComando)
@@ -120,7 +124,9 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
     }
 
     private RSessaoCriada validarRespostaSessao(RSessaoCriada pResposta) {
-        if (pResposta == null || !StringUtils.hasText(pResposta.sessionId()) || pResposta.context() == null
+        if (pResposta == null
+                || !StringUtils.hasText(pResposta.sessionId())
+                || pResposta.context() == null
                 || pResposta.expiresAt() == null) {
             throw new CSoftwareCenterClientException(HttpStatus.BAD_GATEWAY, "Resposta de sessão inválida");
         }
@@ -144,8 +150,8 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
 
     private void adicionarAutorizacaoBff(HttpHeaders pHeaders) {
         if (!StringUtils.hasText(properties.bffClientId()) || !StringUtils.hasText(properties.bffClientSecret())) {
-            throw new CSoftwareCenterClientException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Credencial técnica da Software Center não configurada");
+            throw new CSoftwareCenterClientException(
+                    HttpStatus.SERVICE_UNAVAILABLE, "Credencial técnica da Software Center não configurada");
         }
 
         pHeaders.setBasicAuth(properties.bffClientId(), properties.bffClientSecret());
@@ -154,14 +160,13 @@ public class CSoftwareCenterClient implements ISoftwareCenterClient {
     private CSoftwareCenterClientException mapearResposta(HttpStatusCode pStatus) {
         return switch (pStatus.value()) {
             case 400 -> new CSoftwareCenterClientException(HttpStatus.BAD_REQUEST, "Solicitação inválida");
-            case 401 -> new CSoftwareCenterClientException(HttpStatus.UNAUTHORIZED,
-                    "Credenciais inválidas ou sessão expirada");
-            case 403 -> new CSoftwareCenterClientException(HttpStatus.FORBIDDEN,
-                    "Acesso à aplicação não autorizado");
-            case 429 -> new CSoftwareCenterClientException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Limite de tentativas atingido");
-            default -> new CSoftwareCenterClientException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Software Center indisponível");
+            case 401 ->
+                new CSoftwareCenterClientException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas ou sessão expirada");
+            case 403 -> new CSoftwareCenterClientException(HttpStatus.FORBIDDEN, "Acesso à aplicação não autorizado");
+            case 429 ->
+                new CSoftwareCenterClientException(HttpStatus.TOO_MANY_REQUESTS, "Limite de tentativas atingido");
+            default ->
+                new CSoftwareCenterClientException(HttpStatus.SERVICE_UNAVAILABLE, "Software Center indisponível");
         };
     }
 

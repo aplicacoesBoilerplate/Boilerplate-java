@@ -19,9 +19,7 @@ public class CAuditoriaRegistroService {
     public RAuditoriaRegistro montar(CEntidadeAuditavel pEntidade) {
         RAuditoriaRegistro auditoria = RAuditoriaRegistro.fromEntity(pEntidade);
         return auditoria.comReferencias(
-                resolverReferenciaUsuario(auditoria.criadoPor()),
-                resolverReferenciaUsuario(auditoria.atualizadoPor())
-        );
+                resolverReferenciaUsuario(auditoria.criadoPor()), resolverReferenciaUsuario(auditoria.atualizadoPor()));
     }
 
     private String resolverReferenciaUsuario(Long pIdUsuario) {
@@ -29,8 +27,6 @@ public class CAuditoriaRegistroService {
             return "Sistema";
         }
 
-        return usuarioRepository.findById(pIdUsuario)
-                .map(CUsuario::getEmail)
-                .orElse("Usuário #" + pIdUsuario);
+        return usuarioRepository.findById(pIdUsuario).map(CUsuario::getEmail).orElse("Usuário #" + pIdUsuario);
     }
 }

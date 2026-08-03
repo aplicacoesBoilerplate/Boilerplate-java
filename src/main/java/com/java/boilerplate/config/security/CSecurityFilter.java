@@ -6,11 +6,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
 
 public class CSecurityFilter extends OncePerRequestFilter {
     private final CTokenService tokenService;
@@ -22,7 +21,9 @@ public class CSecurityFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest pRequest, HttpServletResponse pResponse, FilterChain pFilterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest pRequest, HttpServletResponse pResponse, FilterChain pFilterChain)
+            throws ServletException, IOException {
         String token = recuperarToken(pRequest);
         if (token != null) {
             String email = tokenService.validarToken(token);
@@ -31,7 +32,8 @@ public class CSecurityFilter extends OncePerRequestFilter {
                     : usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
 
             if (usuario != null && usuario.getAtivo()) {
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }

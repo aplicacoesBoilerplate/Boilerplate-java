@@ -13,13 +13,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @description Entidade que representa um cargo operacional e suas regras base de RBAC.
@@ -78,7 +77,8 @@ public class CCargoRbac extends CEntidadeAuditavel {
     public void definirPermissoes(List<CPermissaoCargoRbac> pPermissoes) {
         Map<String, CPermissaoCargoRbac> permissoesRecebidas = mapearPermissoesPorChave(pPermissoes);
 
-        this.permissoes.removeIf(pPermissaoExistente -> !permissoesRecebidas.containsKey(montarChavePermissao(pPermissaoExistente)));
+        this.permissoes.removeIf(
+                pPermissaoExistente -> !permissoesRecebidas.containsKey(montarChavePermissao(pPermissaoExistente)));
 
         if (permissoesRecebidas.isEmpty()) {
             return;

@@ -6,12 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @description Configura o cookie HttpOnly que identifica a sessão persistida do BFF.
  */
 @ConfigurationProperties(prefix = "server.servlet.session.cookie")
-public record RSessaoCookieProperties(
-        String name,
-        Boolean httpOnly,
-        Boolean secure,
-        String sameSite
-) {
+public record RSessaoCookieProperties(String name, Boolean httpOnly, Boolean secure, String sameSite) {
     public String obterNome() {
         return name == null || name.isBlank() ? "BOILERPLATE_SESSION" : name;
     }

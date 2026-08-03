@@ -18,8 +18,8 @@ public record RContextoSessaoBff(
         String roleIcon,
         Set<String> permissions,
         Set<String> capabilities,
-        Instant expiresAt
-) implements Serializable {
+        Instant expiresAt)
+        implements Serializable {
     public RContextoSessaoBff {
         permissions = permissions == null ? Set.of() : Set.copyOf(permissions);
         capabilities = capabilities == null ? Set.of() : Set.copyOf(capabilities);

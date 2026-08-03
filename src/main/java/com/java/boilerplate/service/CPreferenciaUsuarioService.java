@@ -5,17 +5,17 @@ import com.java.boilerplate.dto.preferencias.RPreferenciasUsuario;
 import com.java.boilerplate.model.CPreferenciaUsuario;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.IPreferenciaUsuarioRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class CPreferenciaUsuarioService {
     private final IPreferenciaUsuarioRepository preferenciaUsuarioRepository;
     private final CAuthService authService;
 
-    public CPreferenciaUsuarioService(IPreferenciaUsuarioRepository pPreferenciaUsuarioRepository, CAuthService pAuthService) {
+    public CPreferenciaUsuarioService(
+            IPreferenciaUsuarioRepository pPreferenciaUsuarioRepository, CAuthService pAuthService) {
         this.preferenciaUsuarioRepository = pPreferenciaUsuarioRepository;
         this.authService = pAuthService;
     }
@@ -23,11 +23,12 @@ public class CPreferenciaUsuarioService {
     @Transactional(readOnly = true)
     public RPreferenciasUsuario buscarPreferenciasUsuarioAutenticado() {
         CUsuario usuario = authService.buscarUsuarioLogado();
-        List<RPreferenciaUsuario> preferencias = preferenciaUsuarioRepository
-                .findByUsuario_IdUsuarioOrderByContextoAscChaveAsc(usuario.getIdUsuario())
-                .stream()
-                .map(RPreferenciaUsuario::fromEntity)
-                .toList();
+        List<RPreferenciaUsuario> preferencias =
+                preferenciaUsuarioRepository
+                        .findByUsuario_IdUsuarioOrderByContextoAscChaveAsc(usuario.getIdUsuario())
+                        .stream()
+                        .map(RPreferenciaUsuario::fromEntity)
+                        .toList();
 
         return new RPreferenciasUsuario(preferencias);
     }
@@ -51,7 +52,8 @@ public class CPreferenciaUsuarioService {
 
     private CPreferenciaUsuario salvarPreferencia(CUsuario pUsuario, RPreferenciaUsuario pRequest) {
         CPreferenciaUsuario preferencia = preferenciaUsuarioRepository
-                .findByUsuario_IdUsuarioAndContextoAndChave(pUsuario.getIdUsuario(), pRequest.contexto(), pRequest.chave())
+                .findByUsuario_IdUsuarioAndContextoAndChave(
+                        pUsuario.getIdUsuario(), pRequest.contexto(), pRequest.chave())
                 .orElse(new CPreferenciaUsuario());
 
         preferencia.setUsuario(pUsuario);

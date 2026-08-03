@@ -5,8 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public final class CHashUtil {
-    private CHashUtil() {
-    }
+    private CHashUtil() {}
 
     public static String gerarSha256(String pValor) {
         try {

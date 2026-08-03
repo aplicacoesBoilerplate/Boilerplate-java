@@ -5,9 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record RFuncionalidadeCargoRbac(
-        @NotBlank(message = "A funcionalidade é obrigatória") String funcionalidade,
-        @NotNull(message = "O status da funcionalidade é obrigatório") Boolean liberado
-) {
+        @NotBlank(message = "A funcionalidade é obrigatória")
+        String funcionalidade,
+
+        @NotNull(message = "O status da funcionalidade é obrigatório")
+        Boolean liberado) {
     public CFuncionalidadeCargoRbac toEntity() {
         CFuncionalidadeCargoRbac entidade = new CFuncionalidadeCargoRbac();
         entidade.setFuncionalidade(funcionalidade);

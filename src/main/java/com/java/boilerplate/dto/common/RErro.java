@@ -2,7 +2,6 @@ package com.java.boilerplate.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -16,11 +15,11 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RErro(
         String mensagem,
+
         @JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss", timezone = "America/Sao_Paulo")
         LocalDateTime dataHora,
+
         Integer httpStatusCode,
         String codigo,
         Map<String, Object> dados,
-        Map<String, Object> trace
-) {
-}
+        Map<String, Object> trace) {}

@@ -20,7 +20,8 @@ public class CLogErroController {
     }
 
     @PostMapping("/consulta")
-    public ResponseEntity<RRespostaPaginacao<RLogErro>> consultar(@RequestBody(required = false) RParametrosPaginacao pParametros) {
+    public ResponseEntity<RRespostaPaginacao<RLogErro>> consultar(
+            @RequestBody(required = false) RParametrosPaginacao pParametros) {
         return ResponseEntity.ok(logErroService.consultar(pParametros));
     }
 }

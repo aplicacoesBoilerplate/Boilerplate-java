@@ -1,9 +1,8 @@
 package com.java.boilerplate.repository;
 
 import com.java.boilerplate.model.CUsuarioOtp;
-import org.springframework.stereotype.Repository;
-
 import java.util.Optional;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IUsuarioOtpRepository extends IBaseRepository<CUsuarioOtp> {

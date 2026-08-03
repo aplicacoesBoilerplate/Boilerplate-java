@@ -30,16 +30,15 @@ public class CSecurityConfigurations {
     private final CAutorizacaoRbacManager autorizacaoRbacManager;
 
     public CSecurityConfigurations(
-            RDocumentacaoProperties pDocumentacaoProperties,
-            CAutorizacaoRbacManager pAutorizacaoRbacManager
-    ) {
+            RDocumentacaoProperties pDocumentacaoProperties, CAutorizacaoRbacManager pAutorizacaoRbacManager) {
         this.documentacaoProperties = pDocumentacaoProperties;
         this.autorizacaoRbacManager = pAutorizacaoRbacManager;
     }
 
     @Bean
     @Order(1)
-    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity pHttp, PasswordEncoder pPasswordEncoder) throws Exception {
+    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity pHttp, PasswordEncoder pPasswordEncoder)
+            throws Exception {
         RAcessoSwagger usuarioDoc = resolveAcessoDocumentacao(pPasswordEncoder);
         UserDetails admin = User.builder()
                 .username(usuarioDoc.usuario())
@@ -47,8 +46,8 @@ public class CSecurityConfigurations {
                 .roles("SWAGGER_ADMIN")
                 .build();
 
-        return pHttp
-                .securityMatchers(pMatchers -> pMatchers.requestMatchers("/doc", "/doc/**", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**"))
+        return pHttp.securityMatchers(pMatchers -> pMatchers.requestMatchers(
+                        "/doc", "/doc/**", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**"))
                 .cors(Customizer.withDefaults())
                 .csrf(pCsrf -> pCsrf.disable())
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -65,14 +64,10 @@ public class CSecurityConfigurations {
     @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity pHttp,
-            CookieCsrfTokenRepository pCsrfTokenRepository,
-            CAuthBffService pAuthBffService
-    ) throws Exception {
-        return pHttp
-                .cors(Customizer.withDefaults())
-                .csrf(pCsrf -> pCsrf
-                        .csrfTokenRepository(pCsrfTokenRepository)
+            HttpSecurity pHttp, CookieCsrfTokenRepository pCsrfTokenRepository, CAuthBffService pAuthBffService)
+            throws Exception {
+        return pHttp.cors(Customizer.withDefaults())
+                .csrf(pCsrf -> pCsrf.csrfTokenRepository(pCsrfTokenRepository)
                         .csrfTokenRequestHandler(new CSpaCsrfTokenRequestHandler()))
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .exceptionHandling(pExceptions -> pExceptions
@@ -81,10 +76,14 @@ public class CSecurityConfigurations {
                         .accessDeniedHandler((pRequest, pResponse, pException) ->
                                 pResponse.sendError(HttpServletResponse.SC_FORBIDDEN)))
                 .authorizeHttpRequests(pAuthorize -> pAuthorize
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/actuator/health-check", "/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf").permitAll()
-                        .requestMatchers(HttpMethod.POST,
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+                        .requestMatchers("/actuator/health-check", "/error")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf")
+                        .permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/login/google",
                                 "/api/v1/auth/cadastro",
@@ -92,16 +91,19 @@ public class CSecurityConfigurations {
                                 "/api/v1/auth/recuperacao-senha/solicitar",
                                 "/api/v1/auth/recuperacao-senha/verificar",
                                 "/api/v1/auth/recuperacao-senha/redefinir",
-                                "/api/v1/auth/logout").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/session").authenticated()
-                        .anyRequest().access(autorizacaoRbacManager)
-                )
+                                "/api/v1/auth/logout")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/session")
+                        .authenticated()
+                        .anyRequest()
+                        .access(autorizacaoRbacManager))
                 .addFilterBefore(new CSessaoBffFilter(pAuthBffService), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration pAuthenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration pAuthenticationConfiguration)
+            throws Exception {
         return pAuthenticationConfiguration.getAuthenticationManager();
     }
 
@@ -114,18 +116,25 @@ public class CSecurityConfigurations {
      * @description Função que resolve o acesso à documentação com o swagger.
      */
     private RAcessoSwagger resolveAcessoDocumentacao(PasswordEncoder pPasswordEncoder) {
-        if (documentacaoProperties.usuario() == null || documentacaoProperties.usuario().isBlank()) {
+        if (documentacaoProperties.usuario() == null
+                || documentacaoProperties.usuario().isBlank()) {
             throw new IllegalStateException("A propriedade documentacao.usuario deve ser informada");
         }
 
-        if (documentacaoProperties.senhaHash() != null && !documentacaoProperties.senhaHash().isBlank()) {
-            return new RAcessoSwagger(documentacaoProperties.usuario(), documentacaoProperties.senhaHash().replaceFirst("^\\{bcrypt}", ""));
+        if (documentacaoProperties.senhaHash() != null
+                && !documentacaoProperties.senhaHash().isBlank()) {
+            return new RAcessoSwagger(
+                    documentacaoProperties.usuario(),
+                    documentacaoProperties.senhaHash().replaceFirst("^\\{bcrypt}", ""));
         }
 
-        if (documentacaoProperties.senha() == null || documentacaoProperties.senha().isBlank()) {
-            throw new IllegalStateException("A propriedade documentacao.senha ou documentacao.senhaHash deve ser informada");
+        if (documentacaoProperties.senha() == null
+                || documentacaoProperties.senha().isBlank()) {
+            throw new IllegalStateException(
+                    "A propriedade documentacao.senha ou documentacao.senhaHash deve ser informada");
         }
 
-        return new RAcessoSwagger(documentacaoProperties.usuario(), pPasswordEncoder.encode(documentacaoProperties.senha()));
+        return new RAcessoSwagger(
+                documentacaoProperties.usuario(), pPasswordEncoder.encode(documentacaoProperties.senha()));
     }
 }

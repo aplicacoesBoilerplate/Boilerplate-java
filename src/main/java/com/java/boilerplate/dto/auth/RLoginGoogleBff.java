@@ -10,7 +10,4 @@ public record RLoginGoogleBff(
         @NotBlank(message = "A credencial do Google é obrigatória")
         String credential,
 
-        @JsonAlias({"tenantSubdomain", "tenant"})
-        String tenantSubdominio
-) {
-}
+        @JsonAlias({"tenantSubdomain", "tenant"}) String tenantSubdominio) {}

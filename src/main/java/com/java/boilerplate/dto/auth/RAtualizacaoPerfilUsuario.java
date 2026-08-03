@@ -27,6 +27,4 @@ public record RAtualizacaoPerfilUsuario(
         @Size(max = 30, message = "O campo telefone deve ter no máximo 30 caracteres")
         String telefone,
 
-        Boolean notificar
-) {
-}
+        Boolean notificar) {}

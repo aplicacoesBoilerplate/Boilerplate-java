@@ -1,23 +1,22 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.dto.auth.RAtualizacaoPerfilUsuario;
 import com.java.boilerplate.dto.common.RRespostaPaginacao;
 import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
-import com.java.boilerplate.dto.auth.RAtualizacaoPerfilUsuario;
 import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.IUsuarioRepository;
-import org.springframework.http.HttpStatus;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
-import java.util.Optional;
 
 @Service
 public class CUsuarioService {
@@ -32,8 +31,7 @@ public class CUsuarioService {
             IUsuarioRepository pUsuarioRepository,
             CRbacService pRbacService,
             PasswordEncoder pPasswordEncoder,
-            CAuditoriaRegistroService pAuditoriaRegistroService
-    ) {
+            CAuditoriaRegistroService pAuditoriaRegistroService) {
         this.usuarioRepository = pUsuarioRepository;
         this.rbacService = pRbacService;
         this.passwordEncoder = pPasswordEncoder;
@@ -42,13 +40,16 @@ public class CUsuarioService {
 
     @Transactional(readOnly = true)
     public CUsuario buscarEntidadePorId(Long pIdUsuario) {
-        return usuarioRepository.findById(pIdUsuario)
-                .orElseThrow(() -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        return usuarioRepository
+                .findById(pIdUsuario)
+                .orElseThrow(() ->
+                        new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public CUsuario buscarEntidadePorEmail(String pEmail) {
-        return usuarioRepository.findByEmailIgnoreCase(pEmail)
+        return usuarioRepository
+                .findByEmailIgnoreCase(pEmail)
                 .orElseThrow(() -> new CExceptionsSystem("Usuário não encontrado", HttpStatus.NOT_FOUND));
     }
 
@@ -61,13 +62,13 @@ public class CUsuarioService {
     public RRespostaPaginacao<RUsuario> consultar(RParametrosPaginacao pParametros) {
         Specification<CUsuario> ocultarUsuarioRaiz = (pRoot, pQuery, pCriteriaBuilder) ->
                 pCriteriaBuilder.greaterThan(pRoot.get("idUsuario").as(Long.class), ID_USUARIO_RAIZ);
-        RRespostaPaginacao<CUsuario> pagina = usuarioRepository.consultarPaginado(pParametros, "idUsuario", ocultarUsuarioRaiz);
+        RRespostaPaginacao<CUsuario> pagina =
+                usuarioRepository.consultarPaginado(pParametros, "idUsuario", ocultarUsuarioRaiz);
         return new RRespostaPaginacao<>(
                 pagina.limite(),
                 pagina.proximaEntrada(),
                 pagina.items().stream().map(this::toDTO).toList(),
-                pagina.temMaisRegistros()
-        );
+                pagina.temMaisRegistros());
     }
 
     @Transactional(readOnly = true)
@@ -151,7 +152,8 @@ public class CUsuarioService {
 
         Long idUsuarioLogado = resolverIdUsuarioLogado();
         if (pIdUsuario != null && pIdUsuario.equals(idUsuarioLogado)) {
-            throw new CExceptionsSystem("O usuário autenticado não pode remover a própria conta", HttpStatus.BAD_REQUEST);
+            throw new CExceptionsSystem(
+                    "O usuário autenticado não pode remover a própria conta", HttpStatus.BAD_REQUEST);
         }
 
         CUsuario usuario = buscarEntidadePorId(pIdUsuario);
@@ -179,8 +181,10 @@ public class CUsuarioService {
     }
 
     private void validarEmailDisponivel(String pEmail, Long pIdUsuarioIgnorado) {
-        usuarioRepository.findByEmailIgnoreCase(pEmail)
-                .filter(pUsuario -> pIdUsuarioIgnorado == null || !pUsuario.getIdUsuario().equals(pIdUsuarioIgnorado))
+        usuarioRepository
+                .findByEmailIgnoreCase(pEmail)
+                .filter(pUsuario ->
+                        pIdUsuarioIgnorado == null || !pUsuario.getIdUsuario().equals(pIdUsuarioIgnorado))
                 .ifPresent(pUsuario -> {
                     throw new CExceptionsSystem("Já existe um usuário cadastrado com esse e-mail", HttpStatus.CONFLICT);
                 });

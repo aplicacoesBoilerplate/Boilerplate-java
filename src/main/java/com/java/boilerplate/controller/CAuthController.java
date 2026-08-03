@@ -15,12 +15,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.security.web.csrf.CsrfToken;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -32,18 +32,13 @@ public class CAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<RContextoSessaoBff> login(
-            @RequestBody @Valid RLoginBff pLogin,
-            HttpServletRequest pRequest
-    ) {
+    public ResponseEntity<RContextoSessaoBff> login(@RequestBody @Valid RLoginBff pLogin, HttpServletRequest pRequest) {
         return ResponseEntity.ok(authBffService.login(pLogin, pRequest));
     }
 
     @PostMapping("/login/google")
     public ResponseEntity<RContextoSessaoBff> loginGoogle(
-            @RequestBody @Valid RLoginGoogleBff pLoginGoogle,
-            HttpServletRequest pRequest
-    ) {
+            @RequestBody @Valid RLoginGoogleBff pLoginGoogle, HttpServletRequest pRequest) {
         return ResponseEntity.ok(authBffService.loginGoogle(pLoginGoogle, pRequest));
     }
 
@@ -56,9 +51,8 @@ public class CAuthController {
     public ResponseEntity<RRespostaCsrfBff> csrf(CsrfToken pCsrfToken, HttpServletRequest pRequest) {
         Object tokenBruto = pRequest.getAttribute(CSpaCsrfTokenRequestHandler.ATRIBUTO_TOKEN_BRUTO);
         CsrfToken csrfToken = tokenBruto instanceof CsrfToken token ? token : pCsrfToken;
-        return ResponseEntity.ok(new RRespostaCsrfBff(
-                csrfToken.getToken(), csrfToken.getHeaderName(), csrfToken.getParameterName()
-        ));
+        return ResponseEntity.ok(
+                new RRespostaCsrfBff(csrfToken.getToken(), csrfToken.getHeaderName(), csrfToken.getParameterName()));
     }
 
     @PostMapping("/logout")
@@ -81,8 +75,7 @@ public class CAuthController {
 
     @PostMapping("/recuperacao-senha/verificar")
     public ResponseEntity<Void> verificarRecuperacao(
-            @RequestBody @Valid RVerificacaoCodigoRecuperacaoSenha pVerificacao
-    ) {
+            @RequestBody @Valid RVerificacaoCodigoRecuperacaoSenha pVerificacao) {
         authBffService.verificarRecuperacao(pVerificacao);
         return ResponseEntity.noContent().build();
     }

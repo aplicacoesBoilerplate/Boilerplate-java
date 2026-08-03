@@ -5,13 +5,12 @@ import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.model.CUsuarioOtp;
 import com.java.boilerplate.repository.IUsuarioOtpRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class COtpService {
@@ -25,7 +24,8 @@ public class COtpService {
 
     @Transactional
     public void gerarCodigo(CUsuario pUsuario) {
-        CUsuarioOtp otp = otpRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario()).orElse(new CUsuarioOtp());
+        CUsuarioOtp otp =
+                otpRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario()).orElse(new CUsuarioOtp());
         String codigo = String.format("%06d", new Random().nextInt(1_000_000));
 
         otp.setUsuario(pUsuario);
@@ -38,8 +38,7 @@ public class COtpService {
                 pUsuario.getEmail(),
                 "Boilerplate - Código de recuperação",
                 "otp-email",
-                Map.of("nome", pUsuario.getNome(), "codigo", codigo)
-        );
+                Map.of("nome", pUsuario.getNome(), "codigo", codigo));
 
         sendEmailService.sendEmail(email);
     }
@@ -64,8 +63,10 @@ public class COtpService {
     }
 
     private CUsuarioOtp buscarOtpValido(CUsuario pUsuario, String pCodigo) {
-        CUsuarioOtp otp = otpRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario())
-                .orElseThrow(() -> new CExceptionsSystem("Código de recuperação não encontrado", HttpStatus.UNAUTHORIZED));
+        CUsuarioOtp otp = otpRepository
+                .findByUsuario_IdUsuario(pUsuario.getIdUsuario())
+                .orElseThrow(
+                        () -> new CExceptionsSystem("Código de recuperação não encontrado", HttpStatus.UNAUTHORIZED));
 
         if (!otp.getCodigo().equals(pCodigo)) {
             throw new CExceptionsSystem("Código de recuperação inválido", HttpStatus.UNAUTHORIZED);

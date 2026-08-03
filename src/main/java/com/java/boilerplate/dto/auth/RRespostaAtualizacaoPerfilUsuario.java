@@ -7,8 +7,4 @@ import com.java.boilerplate.dto.usuarios.RUsuario;
  * @property {RUsuario} usuario - Dados atualizados do usuário autenticado.
  * @property {String} tokenJWT - Token renovado para manter a sessão válida após alterar o e-mail.
  */
-public record RRespostaAtualizacaoPerfilUsuario(
-        RUsuario usuario,
-        String tokenJWT
-) {
-}
+public record RRespostaAtualizacaoPerfilUsuario(RUsuario usuario, String tokenJWT) {}

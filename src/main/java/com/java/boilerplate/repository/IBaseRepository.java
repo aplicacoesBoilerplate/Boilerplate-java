@@ -5,6 +5,7 @@ import com.java.boilerplate.dto.filtros.RFiltroConsulta;
 import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
 import com.java.boilerplate.repository.specifications.CGenericSpecification;
 import com.java.boilerplate.repository.specifications.COffsetSpecification;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -13,8 +14,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
 
-import java.util.List;
-
 @NoRepositoryBean
 public interface IBaseRepository<T> extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
     default RRespostaPaginacao<T> consultarPaginado(RParametrosPaginacao pParametros, String pCampoCursor) {
@@ -22,16 +21,12 @@ public interface IBaseRepository<T> extends JpaRepository<T, Long>, JpaSpecifica
     }
 
     default RRespostaPaginacao<T> consultarPaginado(
-            RParametrosPaginacao pParametros,
-            String pCampoCursor,
-            Specification<T> pSpecificationBase
-    ) {
+            RParametrosPaginacao pParametros, String pCampoCursor, Specification<T> pSpecificationBase) {
         Specification<T> specification = pSpecificationBase == null
                 ? (pRoot, pQuery, pCriteriaBuilder) -> pCriteriaBuilder.conjunction()
                 : pSpecificationBase;
-        RParametrosPaginacao parametros = pParametros == null
-                ? new RParametrosPaginacao(null, null, null, null)
-                : pParametros;
+        RParametrosPaginacao parametros =
+                pParametros == null ? new RParametrosPaginacao(null, null, null, null) : pParametros;
 
         if (parametros.filtros() != null) {
             for (RFiltroConsulta filtro : parametros.filtros()) {
@@ -40,11 +35,13 @@ public interface IBaseRepository<T> extends JpaRepository<T, Long>, JpaSpecifica
         }
 
         if (parametros.proximaEntrada() != null) {
-            specification = specification.and(new COffsetSpecification<>(pCampoCursor, parametros.proximaEntrada(), parametros.ordem()));
+            specification = specification.and(
+                    new COffsetSpecification<>(pCampoCursor, parametros.proximaEntrada(), parametros.ordem()));
         }
 
         int limite = parametros.limite() != null && parametros.limite() > 0 ? parametros.limite() : 20;
-        Sort.Direction direction = "desc".equalsIgnoreCase(parametros.ordem()) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort.Direction direction =
+                "desc".equalsIgnoreCase(parametros.ordem()) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Page<T> pagina = findAll(specification, PageRequest.of(0, limite, Sort.by(direction, pCampoCursor)));
         List<T> items = pagina.getContent();
         Object proximaEntrada = pagina.hasNext() && !items.isEmpty()

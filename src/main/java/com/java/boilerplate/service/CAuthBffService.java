@@ -1,7 +1,7 @@
 package com.java.boilerplate.service;
 
-import com.java.boilerplate.config.RSoftwareCenterProperties;
 import com.java.boilerplate.config.RSessaoCookieProperties;
+import com.java.boilerplate.config.RSoftwareCenterProperties;
 import com.java.boilerplate.config.security.RPrincipalSessaoBff;
 import com.java.boilerplate.dto.auth.RContextoSessaoBff;
 import com.java.boilerplate.dto.auth.RLoginBff;
@@ -52,8 +52,7 @@ public class CAuthBffService {
             RSessaoCookieProperties pSessaoCookieProperties,
             CsrfTokenRepository pCsrfTokenRepository,
             SessionRepository<? extends Session> pSessionRepository,
-            CookieSerializer pSessionCookieSerializer
-    ) {
+            CookieSerializer pSessionCookieSerializer) {
         this.softwareCenterClient = pSoftwareCenterClient;
         this.softwareCenterProperties = pSoftwareCenterProperties;
         this.sessaoCookieProperties = pSessaoCookieProperties;
@@ -64,18 +63,13 @@ public class CAuthBffService {
 
     public RContextoSessaoBff login(RLoginBff pLogin, HttpServletRequest pRequest) {
         RSessaoCriada sessao = softwareCenterClient.criarSessaoComSenha(new RSoftwareCenterDtos.RCriarSessaoSenha(
-                pLogin.email(),
-                pLogin.senha(),
-                resolverTenant(pLogin.tenantSubdominio())
-        ));
+                pLogin.email(), pLogin.senha(), resolverTenant(pLogin.tenantSubdominio())));
         return criarSessaoLocal(pRequest, sessao);
     }
 
     public RContextoSessaoBff loginGoogle(RLoginGoogleBff pLogin, HttpServletRequest pRequest) {
         RSessaoCriada sessao = softwareCenterClient.criarSessaoComGoogle(new RSoftwareCenterDtos.RCriarSessaoGoogle(
-                pLogin.credential(),
-                resolverTenant(pLogin.tenantSubdominio())
-        ));
+                pLogin.credential(), resolverTenant(pLogin.tenantSubdominio())));
         return criarSessaoLocal(pRequest, sessao);
     }
 
@@ -89,7 +83,8 @@ public class CAuthBffService {
 
     public RContextoSessaoBff obterContextoAutenticado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
+        if (authentication != null
+                && authentication.isAuthenticated()
                 && authentication.getPrincipal() instanceof RPrincipalSessaoBff principal) {
             return principal.contexto();
         }
@@ -132,11 +127,8 @@ public class CAuthBffService {
     public void cadastrar(RSolicitacaoAcesso pSolicitacao) {
         validarConfirmacaoSenha(pSolicitacao.senha(), pSolicitacao.confirmarSenha());
         validarSenhaSc(pSolicitacao.senha());
-        softwareCenterClient.cadastrar(new RSoftwareCenterDtos.RCadastro(
-                pSolicitacao.nome(),
-                pSolicitacao.email(),
-                pSolicitacao.senha()
-        ));
+        softwareCenterClient.cadastrar(
+                new RSoftwareCenterDtos.RCadastro(pSolicitacao.nome(), pSolicitacao.email(), pSolicitacao.senha()));
     }
 
     public void solicitarRecuperacao(RSolicitacaoRecuperacaoSenha pSolicitacao) {
@@ -144,21 +136,21 @@ public class CAuthBffService {
     }
 
     public void verificarRecuperacao(RVerificacaoCodigoRecuperacaoSenha pVerificacao) {
-        softwareCenterClient.verificarRecuperacao(new RSoftwareCenterDtos.RVerificarRecuperacao(
-                pVerificacao.email(), pVerificacao.codigo()
-        ));
+        softwareCenterClient.verificarRecuperacao(
+                new RSoftwareCenterDtos.RVerificarRecuperacao(pVerificacao.email(), pVerificacao.codigo()));
     }
 
     public void redefinirSenha(RRedefinicaoSenhaRecuperacao pRedefinicao) {
         validarConfirmacaoSenha(pRedefinicao.senha(), pRedefinicao.confirmarSenha());
         validarSenhaSc(pRedefinicao.senha());
         softwareCenterClient.redefinirSenha(new RSoftwareCenterDtos.RRedefinirSenha(
-                pRedefinicao.email(), pRedefinicao.codigo(), pRedefinicao.senha()
-        ));
+                pRedefinicao.email(), pRedefinicao.codigo(), pRedefinicao.senha()));
     }
 
     private RContextoSessaoBff criarSessaoLocal(HttpServletRequest pRequest, RSessaoCriada pSessao) {
-        if (pSessao == null || !StringUtils.hasText(pSessao.sessionId()) || pSessao.context() == null
+        if (pSessao == null
+                || !StringUtils.hasText(pSessao.sessionId())
+                || pSessao.context() == null
                 || pSessao.expiresAt() == null) {
             throw new CSoftwareCenterClientException(HttpStatus.BAD_GATEWAY, "Resposta de sessão inválida");
         }
@@ -172,8 +164,13 @@ public class CAuthBffService {
     }
 
     private RContextoSessaoBff converterContexto(RContextoSessao pContexto, java.time.Instant pExpiraEm) {
-        if (pContexto == null || pExpiraEm == null || pContexto.userId() == null || pContexto.tenantId() == null
-                || pContexto.membershipId() == null || pContexto.applicationId() == null || pContexto.roleId() == null
+        if (pContexto == null
+                || pExpiraEm == null
+                || pContexto.userId() == null
+                || pContexto.tenantId() == null
+                || pContexto.membershipId() == null
+                || pContexto.applicationId() == null
+                || pContexto.roleId() == null
                 || !StringUtils.hasText(pContexto.tenantSubdomain())) {
             throw new CSoftwareCenterClientException(HttpStatus.BAD_GATEWAY, "Resposta de sessão inválida");
         }
@@ -189,8 +186,7 @@ public class CAuthBffService {
                 pContexto.roleIcon(),
                 pContexto.permissions(),
                 pContexto.capabilities(),
-                pExpiraEm
-        );
+                pExpiraEm);
     }
 
     private String resolverTenant(String pTenant) {

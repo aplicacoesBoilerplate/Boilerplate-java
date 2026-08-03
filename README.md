@@ -11,7 +11,7 @@ Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação 
 - Flyway
 - MySQL 8.4
 - Thymeleaf para templates de e-mail
-- jgitver para versionamento baseado em Git
+- Conventional Commits e Release Please para versionamento semântico
 
 ## Recursos Implementados
 
@@ -82,3 +82,25 @@ A documentação Swagger fica em `/doc` e usa Basic Auth com usuário definido p
 ```
 
 O profile `test` usa H2 em memória e desativa Flyway para validar o contexto da aplicação sem depender de MySQL local.
+
+## Qualidade e commits
+
+Ative os hooks Git uma vez após clonar o repositório:
+
+```powershell
+.\scripts\configurar-git-hooks.ps1
+```
+
+Em macOS ou Linux, execute `sh scripts/configurar-git-hooks.sh`.
+
+Os hooks validam mensagens Conventional Commits no commit e executam `verify` antes do push. Use os comandos abaixo durante o desenvolvimento:
+
+```powershell
+# Aplica a formatação Java definida pelo projeto.
+.\mvnw.cmd spotless:apply
+
+# Executa testes, Checkstyle e validação de formatação.
+.\mvnw.cmd verify
+```
+
+Consulte [VERSIONING.md](./VERSIONING.md) para o fluxo de release gerenciado por Release Please.

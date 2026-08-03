@@ -4,6 +4,4 @@ import jakarta.validation.constraints.NotBlank;
 
 public record RLoginGoogle(
         @NotBlank(message = "A credencial do Google é obrigatória")
-        String credential
-) {
-}
+        String credential) {}

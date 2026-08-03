@@ -1,7 +1,6 @@
 package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.dto.auth.RContextoSessaoBff;
-
 import java.io.Serializable;
 import java.security.Principal;
 
