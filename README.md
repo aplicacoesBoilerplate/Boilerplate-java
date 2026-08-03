@@ -70,7 +70,7 @@ O `DB_APP_USERNAME` e `DB_APP_PASSWORD` existem apenas para o Docker criar um us
 Execute a API:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+mvn spring-boot:run "-Dspring-boot.run.jvmArguments=-Xms256m -Xmx512m"
 ```
 
 A documentação Swagger fica em `/doc` e usa Basic Auth com usuário definido por `DOC_USERNAME` e senha definida por `DOC_PASSWORD`. A aplicação aplica BCrypt no startup; se você quiser manter um hash pronto no ambiente, informe `DOC_PASSWORD_HASH`.
