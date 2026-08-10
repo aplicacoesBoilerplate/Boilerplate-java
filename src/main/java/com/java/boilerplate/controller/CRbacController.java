@@ -1,7 +1,7 @@
 package com.java.boilerplate.controller;
 
-import com.java.boilerplate.dto.common.RRespostaPaginacao;
-import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
+import com.java.boilerplate.dto.consulta.RConsultaRegistros;
+import com.java.boilerplate.dto.consulta.RRespostaConsultaRegistros;
 import com.java.boilerplate.dto.rbac.RCargoRbac;
 import com.java.boilerplate.service.CRbacService;
 import jakarta.validation.Valid;
@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,7 +33,7 @@ public class CRbacController {
     }
 
     @PostMapping("/cargos/consulta")
-    public ResponseEntity<RRespostaPaginacao<RCargoRbac>> consultar(@RequestBody(required = false) RParametrosPaginacao pParametros) {
+    public ResponseEntity<RRespostaConsultaRegistros<RCargoRbac>> consultar(@RequestBody(required = false) @Valid RConsultaRegistros pParametros) {
         return ResponseEntity.ok(rbacService.consultar(pParametros));
     }
 
@@ -43,12 +44,17 @@ public class CRbacController {
 
     @PostMapping("/cargos")
     public ResponseEntity<RCargoRbac> salvar(@RequestBody @Valid RCargoRbac pCargo) {
-        return ResponseEntity.ok(rbacService.salvar(pCargo));
+        return ResponseEntity.ok(rbacService.cadastrar(pCargo));
     }
 
-    @PutMapping("/cargos/{pIdCargo}")
-    public ResponseEntity<RCargoRbac> atualizar(@PathVariable Long pIdCargo, @RequestBody @Valid RCargoRbac pCargo) {
-        return ResponseEntity.ok(rbacService.atualizar(pIdCargo, pCargo));
+    @PutMapping("/cargos")
+    public ResponseEntity<RCargoRbac> editar(@RequestBody @Valid RCargoRbac pCargo) {
+        return ResponseEntity.ok(rbacService.editar(pCargo));
+    }
+
+    @PatchMapping("/cargos")
+    public ResponseEntity<RCargoRbac> modificar(@RequestBody @Valid RCargoRbac pCargo) {
+        return ResponseEntity.ok(rbacService.modificar(pCargo));
     }
 
     @DeleteMapping("/cargos/{pIdCargo}")

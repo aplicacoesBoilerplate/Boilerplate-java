@@ -2,6 +2,7 @@ package com.java.boilerplate.repository.specifications;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,15 +24,16 @@ public class COffsetSpecification<T> implements Specification<T> {
             return pCriteriaBuilder.conjunction();
         }
 
-        Comparable valor = converterOffset();
+        Expression<Long> campoCursor = pRoot.get(campo).as(Long.class);
+        Long valor = converterOffset();
         if ("desc".equalsIgnoreCase(ordem)) {
-            return pCriteriaBuilder.lessThan(pRoot.get(campo).as(Comparable.class), valor);
+            return pCriteriaBuilder.lessThan(campoCursor, valor);
         }
 
-        return pCriteriaBuilder.greaterThan(pRoot.get(campo).as(Comparable.class), valor);
+        return pCriteriaBuilder.greaterThan(campoCursor, valor);
     }
 
-    private Comparable converterOffset() {
+    private Long converterOffset() {
         if (offset instanceof Number number) {
             return number.longValue();
         }

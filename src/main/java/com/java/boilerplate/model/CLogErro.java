@@ -26,7 +26,7 @@ public class CLogErro {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_error")
-    private Long idError;
+    private Long idErro;
 
     @Column(name = "mensagem", nullable = false, length = 1000)
     private String mensagem;

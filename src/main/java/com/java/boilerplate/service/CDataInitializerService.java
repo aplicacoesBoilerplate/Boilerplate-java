@@ -86,7 +86,6 @@ public class CDataInitializerService implements ApplicationRunner {
         garantirPermissao(permissoes, "rotas", "Usuarios", true);
         garantirPermissao(permissoes, "api", "GET /usuarios/**", true);
         garantirPermissao(permissoes, "api", "POST /usuarios/consulta", true);
-        garantirPermissao(permissoes, "api", "POST /usuarios/search", true);
 
         pCargo.definirPermissoes(permissoes);
     }

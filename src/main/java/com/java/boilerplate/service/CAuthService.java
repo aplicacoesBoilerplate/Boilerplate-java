@@ -74,7 +74,7 @@ public class CAuthService implements UserDetailsService {
 
     @Transactional
     public RRespostaLogin login(RLogin pLogin) {
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(pLogin.email(), pLogin.password());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(pLogin.identificacaoAcesso(), pLogin.senha());
         CUsuario usuario = (CUsuario) authenticationManager.authenticate(authenticationToken).getPrincipal();
 
         if (!Boolean.TRUE.equals(usuario.getAtivo())) {

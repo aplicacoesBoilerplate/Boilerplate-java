@@ -1,24 +1,25 @@
 package com.java.boilerplate.service;
 
-import com.java.boilerplate.dto.common.RRespostaPaginacao;
-import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
 import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.IUsuarioRepository;
+import com.java.boilerplate.service.base.CBaseConsultaService;
+import com.java.boilerplate.service.base.IServiceCrud;
+import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
-public class CUsuarioService {
+public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> implements IServiceCrud<RUsuario> {
     private static final Long ID_USUARIO_RAIZ = 1L;
 
     private final IUsuarioRepository usuarioRepository;
@@ -27,11 +28,13 @@ public class CUsuarioService {
     private final CAuditoriaRegistroService auditoriaRegistroService;
 
     public CUsuarioService(
+            EntityManager pEntityManager,
             IUsuarioRepository pUsuarioRepository,
             CRbacService pRbacService,
             PasswordEncoder pPasswordEncoder,
             CAuditoriaRegistroService pAuditoriaRegistroService
     ) {
+        super(pEntityManager, CUsuario.class);
         this.usuarioRepository = pUsuarioRepository;
         this.rbacService = pRbacService;
         this.passwordEncoder = pPasswordEncoder;
@@ -51,31 +54,20 @@ public class CUsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public RRespostaPaginacao<RUsuario> consultar(RParametrosPaginacao pParametros) {
-        Specification<CUsuario> ocultarUsuarioRaiz = (pRoot, pQuery, pCriteriaBuilder) ->
-                pCriteriaBuilder.greaterThan(pRoot.get("idUsuario").as(Long.class), ID_USUARIO_RAIZ);
-        RRespostaPaginacao<CUsuario> pagina = usuarioRepository.consultarPaginado(pParametros, "idUsuario", ocultarUsuarioRaiz);
-        return new RRespostaPaginacao<>(
-                pagina.limite(),
-                pagina.proximaEntrada(),
-                pagina.items().stream().map(this::toDTO).toList(),
-                pagina.temMaisRegistros()
-        );
-    }
-
-    @Transactional(readOnly = true)
+    @Override
     public RUsuario buscarPorId(Long pIdUsuario) {
-        return toDTO(buscarEntidadePorId(pIdUsuario));
+        return paraRegistro(buscarEntidadePorId(pIdUsuario));
     }
 
     @Transactional
-    public RUsuario criar(RUsuario pRequest) {
+    @Override
+    public RUsuario cadastrar(RUsuario pRequest) {
         validarEmailDisponivel(pRequest.email(), null);
 
         CUsuario usuario = new CUsuario();
         preencherUsuario(usuario, pRequest);
         usuario.setSenha(passwordEncoder.encode(UUID.randomUUID().toString()));
-        return toDTO(usuarioRepository.saveAndFlush(usuario));
+        return paraRegistro(usuarioRepository.saveAndFlush(usuario));
     }
 
     @Transactional
@@ -109,14 +101,31 @@ public class CUsuarioService {
     }
 
     @Transactional
+    @Override
+    public RUsuario editar(RUsuario pRequest) {
+        if (pRequest.id() == null) {
+            throw new CExceptionsSystem("O identificador do usuário é obrigatório para edição", HttpStatus.BAD_REQUEST);
+        }
+
+        return atualizar(pRequest.id(), pRequest);
+    }
+
+    @Transactional
+    @Override
+    public RUsuario modificar(RUsuario pRequest) {
+        return editar(pRequest);
+    }
+
+    @Transactional
     public RUsuario atualizar(Long pIdUsuario, RUsuario pRequest) {
         CUsuario usuario = buscarEntidadePorId(pIdUsuario);
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
-        return toDTO(usuarioRepository.saveAndFlush(usuario));
+        return paraRegistro(usuarioRepository.saveAndFlush(usuario));
     }
 
     @Transactional
+    @Override
     public void excluir(Long pIdUsuario) {
         if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
             throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
@@ -147,8 +156,39 @@ public class CUsuarioService {
         pUsuario.setCargo(cargo);
     }
 
-    private RUsuario toDTO(CUsuario pUsuario) {
+    @Override
+    protected Set<String> camposFiltroPermitidos() {
+        return Set.of("id", "nome", "email", "telefone", "ativo", "papel");
+    }
+
+    @Override
+    protected String campoCursor() {
+        return "idUsuario";
+    }
+
+    @Override
+    protected RUsuario paraRegistro(CUsuario pUsuario) {
         return RUsuario.fromEntity(pUsuario, auditoriaRegistroService.montar(pUsuario));
+    }
+
+    @Override
+    protected Long extrairProximaEntrada(CUsuario pUsuario) {
+        return pUsuario.getIdUsuario();
+    }
+
+    @Override
+    protected String mapearCampoFiltro(String pCampo) {
+        return switch (pCampo) {
+            case "id" -> "idUsuario";
+            case "papel" -> "cargo.papel";
+            default -> pCampo;
+        };
+    }
+
+    @Override
+    protected org.springframework.data.jpa.domain.Specification<CUsuario> criarSpecificationBase() {
+        return (pRoot, pQuery, pCriteriaBuilder) ->
+                pCriteriaBuilder.greaterThan(pRoot.get("idUsuario").as(Long.class), ID_USUARIO_RAIZ);
     }
 
     private void validarEmailDisponivel(String pEmail, Long pIdUsuarioIgnorado) {
