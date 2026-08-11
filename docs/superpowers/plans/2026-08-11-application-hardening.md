@@ -130,6 +130,229 @@ git add -- docs/security/hardening-assessment.md
 git commit -m "docs(security): registrar avaliacao de fortificacao"
 ```
 
+### Task 1A: Bound public authentication work and make identity responses indistinguishable
+
+**Files:**
+
+- Modify: `backends/Boilerplate-java/pom.xml`
+- Create: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/config/RAuthAbuseProperties.java`
+- Create: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/helpers/CAuthAbuseProtectionService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/controller/CAuthController.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/CAuthService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/helpers/COtpService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/exception/CErrorHandler.java`
+- Modify: `backends/Boilerplate-java/src/main/resources/application.yml`
+- Modify: `backends/Boilerplate-java/src/test/resources/application-test.yml`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/service/helpers/CAuthAbuseProtectionServiceTests.java`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/service/CAuthPublicFlowSecurityTests.java`
+- Modify: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/exception/CErrorHandlerTests.java`
+
+**Interfaces:**
+
+- A bounded, expiring limiter applies per source, normalized account identifier and globally to login, access request, OTP issuance and OTP validation.
+- Rejected requests return `429` with a stable public message and `Retry-After`.
+- Recovery/access-request issuance returns the same public status/body for known, unknown, existing and pending identities.
+- SMTP connection/read/write timeouts are finite; valid outstanding recovery codes are not replaced during the cooldown.
+- Expected `4xx` exceptions are not inserted into `log_errors`.
+
+- [ ] **Step 1: Write failing abuse-window tests**
+
+Inject a deterministic `Clock`. Prove that each route accepts requests below its configured threshold, rejects the next request, keeps the limiter bounded under unique attacker keys, emits `Retry-After`, and recovers after the window. Add concurrent tests for the final permit.
+
+- [ ] **Step 2: Implement a bounded limiter**
+
+Use a bounded expiring cache rather than an unbounded `ConcurrentHashMap`. Normalize email keys and hash identifiers before retaining them. Resolve source IP from the direct peer by default; trust forwarded headers only when an explicit trusted-proxy mode is enabled. Never store passwords, OTPs or bearer tokens in limiter keys.
+
+- [ ] **Step 3: Make public identity responses generic**
+
+Return one accepted contract for recovery and access requests. Perform permitted work internally only for an eligible identity and keep practical work comparable without revealing account state. Collapse missing, invalid, expired and used OTP responses into one public authentication failure.
+
+- [ ] **Step 4: Bound SMTP and recovery issuance**
+
+Configure connection, read and write timeouts. Enforce an account resend cooldown, keep one still-valid code instead of replacing it, and let the global/source budgets fail before database or SMTP work.
+
+- [ ] **Step 5: Stop durable 4xx amplification**
+
+Persist only unexpected server faults that meet the bounded diagnostic policy. Routine validation, authentication, not-found and conflict responses must perform zero `ILogErroRepository.save` calls.
+
+- [ ] **Step 6: Verify and commit**
+
+```powershell
+.\mvnw.cmd -ntp -Dtest=CAuthAbuseProtectionServiceTests,CAuthPublicFlowSecurityTests,CErrorHandlerTests test
+git add -- pom.xml src/main/java/com/java/boilerplate/config/RAuthAbuseProperties.java src/main/java/com/java/boilerplate/controller/CAuthController.java src/main/java/com/java/boilerplate/service src/main/java/com/java/boilerplate/exception/CErrorHandler.java src/main/resources/application.yml src/test/resources/application-test.yml src/test/java/com/java/boilerplate
+git commit -m "fix(security): limitar fluxos publicos de autenticacao"
+```
+
+### Task 1B: Enforce approved federated identities and least-privilege user data
+
+**Files:**
+
+- Create: `backends/Boilerplate-java/src/main/resources/db/migration/V5__vincular_identidade_google_e_restringir_diretorio.sql`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/model/CUsuario.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/CGoogleOAuthService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/CUsuarioService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/controller/CUsuarioController.java`
+- Create: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/dto/usuarios/RUsuarioAutenticado.java`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/service/CGoogleOAuthServiceSecurityTests.java`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/controller/CUsuarioAuthorizationTests.java`
+- Modify: `frontends/Boilerplate-vue/src/services/core/CUsuarioService.ts`
+- Modify: frontend user/self-profile call sites affected by the restricted contract.
+
+**Interfaces:**
+
+- Google login requires a nonblank `sub`, a nonblank email and `email_verified == true`.
+- An unknown or inactive Google identity never creates an active account or bypasses the pending-access workflow.
+- `google_subject` is unique and an existing binding cannot be silently replaced.
+- Full `/usuarios/**` reads require administrative API permission; ordinary users use a principal-bound minimal self projection.
+
+- [ ] **Step 1: Write failing Google identity tests**
+
+Reject missing/unverified email, missing subject, unknown user, inactive user and a subject collision. Prove an approved active user can bind once and subsequent logins require the same subject.
+
+- [ ] **Step 2: Add subject binding and remove auto-activation**
+
+Add the nullable unique `google_subject` migration and entity field. Do not call `criarUsuarioSistema(..., true)` from Google login. Require the existing approved identity, bind the first verified subject transactionally, and reject collisions generically.
+
+- [ ] **Step 3: Write failing user-directory authorization tests**
+
+With `ROLE_USER`, assert `POST /usuarios/consulta` and `GET /usuarios/{id}` return `403`, including ID `1`. With `ROLE_ADMIN`, retain access. Assert the self endpoint never exposes another user's email, phone, role or audit record.
+
+- [ ] **Step 4: Restrict seeded permissions and expose self-service only**
+
+The migration must revoke the USER wildcard/query API permissions. Add the minimal principal-bound endpoint/DTO only where the frontend needs it; never depend solely on Vue route guards.
+
+- [ ] **Step 5: Verify both applications and commit**
+
+```powershell
+.\mvnw.cmd -ntp -Dtest=CGoogleOAuthServiceSecurityTests,CUsuarioAuthorizationTests test
+npm run type-check
+```
+
+Backend commit: `fix(security): exigir identidade aprovada e restringir diretorio`.
+
+Frontend commit, if compatibility changes are required: `fix(frontend): consumir perfil restrito do usuario`.
+
+### Task 1C: Bound backend input complexity and harden local deployment artifacts
+
+**Files:**
+
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/dto/preferencias/RPreferenciaUsuario.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/dto/preferencias/RPreferenciasUsuario.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/dto/consulta/RConsultaRegistros.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/dto/filtros/RFiltroConsulta.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/CPreferenciaUsuarioService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/base/CBaseConsultaService.java`
+- Modify: `backends/Boilerplate-java/src/main/java/com/java/boilerplate/service/CDataInitializerService.java`
+- Modify: `backends/Boilerplate-java/src/main/resources/application.yml`
+- Modify: `backends/Boilerplate-java/compose.yml`
+- Modify: `backends/Boilerplate-java/src/main/resources/db/docker-compose.yml`
+- Modify: `backends/Boilerplate-java/README.md`
+- Modify: `backends/Boilerplate-java/.env.example`
+- Create: `backends/Boilerplate-java/scripts/verify-no-secrets.ps1`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/controller/CInputBoundMvcTests.java`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/service/CPreferenciaUsuarioServiceTests.java`
+- Create: `backends/Boilerplate-java/src/test/java/com/java/boilerplate/service/CDataInitializerServiceSecurityTests.java`
+
+**Interfaces:**
+
+- At most 20 preferences per bulk request, 120 characters per context/key and 16 KiB per JSON value; duplicate context/key pairs are rejected.
+- At most 10 filters, 50 selected values per filter and 256 characters per scalar value; aggregate request size remains bounded by server configuration.
+- Administrator bootstrap is explicitly enabled, credential-explicit and idempotently disabled after a successful initial provision.
+- MySQL/phpMyAdmin are opt-in development services bound to `127.0.0.1`; all database credentials are required and `PMA_ARBITRARY` is disabled.
+- The resource-tree `.env` import is removed. Concrete secrets must not remain under either repository root.
+
+- [ ] **Step 1: Write failing DTO and persistence-bound tests**
+
+Assert oversized lists, fields, JSON and selected-value sets return `400` before repository work. Reject duplicate preference keys. Assert a maximum-size preference bulk operation has a bounded query count and readback cannot grow without the per-user quota.
+
+- [ ] **Step 2: Add validation and bounded persistence**
+
+Mirror database lengths with Bean Validation, add list/value caps and validate again in services. Batch-load existing preference keys and batch-save the bounded set. Add an explicit per-user row quota and paginate or cap preference readback.
+
+- [ ] **Step 3: Make administrator bootstrap explicit**
+
+Remove `@Value` fallbacks. Require a bootstrap-enabled flag plus validated email/password, refuse source-known values, and record completion so later startups do not retain a standing bootstrap path.
+
+- [ ] **Step 4: Harden Compose and documentation**
+
+Put phpMyAdmin/direct MySQL publication behind a `dev-tools` profile, bind host ports to loopback, require passwords with Compose required-variable syntax and disable arbitrary hosts. Validate the rendered configuration, not just YAML text.
+
+- [ ] **Step 5: Remove worktree secret storage without exposing values**
+
+Stop importing `src/main/resources/.env`. Run the secret verifier without printing matched values. Preserve any current ignored credential file only in a protected location outside both repositories, report the exact move, and require rotation of every credential/key that was stored there before closure. Do not commit, echo or copy secret contents into reports or logs.
+
+- [ ] **Step 6: Verify and commit**
+
+```powershell
+.\mvnw.cmd -ntp -Dtest=CInputBoundMvcTests,CPreferenciaUsuarioServiceTests,CDataInitializerServiceSecurityTests test
+powershell -ExecutionPolicy Bypass -File scripts/verify-no-secrets.ps1
+docker compose config
+git add -- src/main/java/com/java/boilerplate src/main/resources/application.yml compose.yml src/main/resources/db/docker-compose.yml README.md .env.example scripts src/test/java/com/java/boilerplate
+git commit -m "fix(security): limitar entradas e endurecer implantacao local"
+```
+
+### Task 1D: Keep browser secrets ephemeral and make session/export lifecycles bounded
+
+**Execution dependency:** complete Task 2 Steps 1–2 (Vitest harness and initial red test) before Task 1D Step 1. Tasks 1A–1C can proceed independently while that frontend harness is established.
+
+**Files:**
+
+- Modify: `frontends/Boilerplate-vue/src/views/RecuperacaoSenhaView.vue`
+- Modify: `frontends/Boilerplate-vue/src/stores/auth.store.ts`
+- Modify: `frontends/Boilerplate-vue/src/services/base/axios.ts`
+- Modify: `frontends/Boilerplate-vue/src/services/base/CBaseConsultaApiService.ts`
+- Modify: `frontends/Boilerplate-vue/src/composables/useExportacaoDados.ts`
+- Modify: `frontends/Boilerplate-vue/src/stores/genericList.store.ts`
+- Modify: `frontends/Boilerplate-vue/src/stores/genericFilter.store.ts`
+- Modify: `frontends/Boilerplate-vue/src/stores/preferences.store.ts`
+- Create: `frontends/Boilerplate-vue/src/services/base/sessionLifecycle.ts`
+- Create: `frontends/Boilerplate-vue/tests/unit/recovery-storage.spec.ts`
+- Create: `frontends/Boilerplate-vue/tests/unit/session-lifecycle.spec.ts`
+- Create: `frontends/Boilerplate-vue/tests/unit/pagination-budget.spec.ts`
+- Modify: `frontends/Boilerplate-vue/tests/e2e/authentication-compatibility.spec.ts`
+
+**Interfaces:**
+
+- Persisted recovery state never contains the OTP; the code is memory-only and cleared on unmount/navigation.
+- One idempotent session-termination action clears token/user/cargo, generic list/filter/preference state, legacy storage and private records before redirecting.
+- Logout invokes `POST /auth/logout` once, always performs local cleanup in `finally`, and broadcasts the termination to sibling tabs.
+- Bulk pagination requires a new non-null cursor on every continuing page and enforces configurable page, record, byte/time and cancellation budgets.
+
+- [ ] **Step 1: Write failing recovery-storage tests**
+
+Enter and verify a code, inspect both Web Storage implementations, remount the view, and prove the OTP is never serialized or restored. Assert unmount clears the in-memory secret.
+
+- [ ] **Step 2: Remove OTP persistence**
+
+Persist only non-secret visual state when necessary. Prefer the backend single-use reset grant from Task 7; never substitute sessionStorage for localStorage as the fix.
+
+- [ ] **Step 3: Write failing session-termination tests**
+
+Cover manual logout, a burst of concurrent `401` responses, failed remote logout, a legacy local token, and login A/cache/logout/login B. Assert exactly one remote call/redirect and zero cross-principal records.
+
+- [ ] **Step 4: Centralize cleanup and remote logout**
+
+The interceptor must call the auth-store lifecycle owner instead of mutating storage directly. Clear the actual `genericListStore`, all context options/storage keys and principal-derived stores. Use `BroadcastChannel` with a safe fallback and never broadcast a token.
+
+- [ ] **Step 5: Write failing pagination/export budget tests**
+
+Simulate permanent `possuiMais`, repeated cursor, empty page with continuation, oversized record counts and cancellation. Assert controlled failure before unbounded requests or document generation.
+
+- [ ] **Step 6: Enforce progress and resource budgets**
+
+Require cursor progress, cap pages/records/estimated bytes/duration, accept `AbortSignal`, and move large generation to an explicit worker/backend path or reject it with a clear message. Do not retain partial results after cancellation.
+
+- [ ] **Step 7: Verify and commit**
+
+```powershell
+npm run test:unit -- tests/unit/recovery-storage.spec.ts tests/unit/session-lifecycle.spec.ts tests/unit/pagination-budget.spec.ts
+npm run test:e2e -- tests/e2e/authentication-compatibility.spec.ts
+npm run lint
+npm run type-check
+git add -- src/views/RecuperacaoSenhaView.vue src/stores src/services/base src/composables/useExportacaoDados.ts tests/unit tests/e2e/authentication-compatibility.spec.ts
+git commit -m "fix(security): encerrar sessoes e limitar exportacoes"
+```
+
 ### Task 2: Add the frontend unit-test harness and remove the Vuetify full-catalogue build path
 
 **Files:**
