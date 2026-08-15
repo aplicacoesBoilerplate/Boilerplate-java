@@ -3,34 +3,36 @@ services:
     container_name: boilerplate-java-database
     image: mysql:8.4
     restart: always
+    profiles: ["dev-tools"]
     networks:
       - app-network
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Defina DB_ROOT_PASSWORD no arquivo .env}
       MYSQL_DATABASE: ${DB_NAME:-boilerplate_java}
-      MYSQL_USER: ${DB_APP_USERNAME:-boilerplate_app}
-      MYSQL_PASSWORD: ${DB_APP_PASSWORD:-boilerplate_app}
+      MYSQL_USER: ${DB_APP_USERNAME:?Defina DB_APP_USERNAME no arquivo .env}
+      MYSQL_PASSWORD: ${DB_APP_PASSWORD:?Defina DB_APP_PASSWORD no arquivo .env}
       TZ: America/Sao_Paulo
     volumes:
       - mysqldata:/var/lib/mysql
 
   phpmyadmin:
-    image: phpmyadmin
+    image: phpmyadmin:5.2.2-apache
     container_name: boilerplate-java-phpmyadmin
     restart: always
+    profiles: ["dev-tools"]
     networks:
       - app-network
     environment:
       PMA_HOST: database
       PMA_PORT: 3306
-      PMA_ARBITRARY: 1
+      PMA_ARBITRARY: 0
     ports:
-      - "8081:80"
+      - "127.0.0.1:${PHPMYADMIN_PORT:-8081}:80"
     depends_on:
       - database
 

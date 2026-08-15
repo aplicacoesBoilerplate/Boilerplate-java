@@ -35,3 +35,4 @@ uploads/
 src/main/resources/.env
 .env
 .env.local
+/boilerplate/

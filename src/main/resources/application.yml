@@ -1,9 +1,4 @@
 spring:
-  # Importação opcional do arquivo .env com as variáveis de ambiente necessárias para compilação.
-  # Facilita para executar usando o comando 'mvn spring-boot:run' sem precisar passar as variáveis de ambiente no terminal.
-  config:
-    import: optional:file:src/main/resources/.env[.properties]
-
   application:
     name: Boilerplate-java
 
@@ -11,13 +6,18 @@ spring:
   main:
     web-application-type: servlet
 
+  # Contrato público unificado de controllers REST, Actuator e documentação.
+  mvc:
+    servlet:
+      path: /api/v1
+
   # Conexão principal com o MySQL. Defaults locais são apenas para desenvolvimento.
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     name: ${DB_NAME:boilerplate_java}
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:boilerplate_java}?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_unicode_ci
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
 
     # Pool de conexões JDBC gerenciado pelo HikariCP.
     hikari:
@@ -38,11 +38,13 @@ spring:
           auth: true
           starttls:
             enable: true
+          connectiontimeout: ${EMAIL_CONNECTION_TIMEOUT_MILLIS:5000}
+          timeout: ${EMAIL_READ_TIMEOUT_MILLIS:5000}
+          writetimeout: ${EMAIL_WRITE_TIMEOUT_MILLIS:5000}
 
   # JPA/Hibernate: Flyway é responsável pelo schema; Hibernate apenas valida compatibilidade.
   jpa:
     open-in-view: false
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: validate
 
@@ -56,9 +58,15 @@ spring:
 # Porta HTTP da API e suporte correto a headers de proxy/reverse proxy.
 server:
   port: ${API_PORT:8080}
-  forward-headers-strategy: framework
+  # Ative headers encaminhados apenas em um perfil de proxy que remova valores
+  # fornecidos pelo cliente e aceite somente proxies explicitamente confiaveis.
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:none}
+  tomcat:
+    remoteip:
+      # Vazio por padrao: nenhum proxy e confiavel fora de um perfil que o declare.
+      internal-proxies: ${TRUSTED_PROXY_IP_REGEX:}
 
-# Endpoints administrativos do Spring Actuator. Hoje expõe apenas /actuator/health-check.
+# Actuator: liveness público mínimo; health completo e métricas exigem ADMIN.
 management:
   health:
     mail:
@@ -73,41 +81,62 @@ management:
         allowed-headers: "*"
         allow-credentials: true
       exposure:
-        include: health
+        include: health,metrics
   endpoint:
     health:
       show-details: when-authorized
       show-components: when-authorized
       roles: ADMIN
+      group:
+        public:
+          include: ping
 
 # Configuração base do Swagger.
 springdoc:
-  show-actuator: true
-  swagger-ui:
-    path: /doc
   api-docs:
+    enabled: ${DOCS_ENABLED:false}
     path: /doc/api
+  swagger-ui:
+    enabled: ${DOCS_ENABLED:false}
+    path: /doc
+  show-actuator: true
 
 # Credenciais Basic Auth usadas para proteger a documentação Swagger em /doc.
 documentacao:
-  usuario: ${DOC_USERNAME:DeveloperArea}
-  senha: ${DOC_PASSWORD:boilerplate}
+  enabled: ${DOCS_ENABLED:false}
+  usuario: ${DOC_USERNAME:}
+  senha: ${DOC_PASSWORD:}
   senhaHash: ${DOC_PASSWORD_HASH:}
 
 # Configurações de JWT e autenticação Google.
 tokens:
-  secret: ${JWT_SECRET:boilerplate-java-dev-secret-change-me}
+  secret: ${JWT_SECRET:}
   issuer: ${JWT_ISSUER:boilerplate-java-api}
-  accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:720}
+  accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:30}
   googleClientId: ${GOOGLE_CLIENT_ID:}
+
+otp:
+  pepper: ${OTP_PEPPER:}
+  expirationMinutes: ${OTP_EXPIRATION_MINUTES:10}
+  maxAttempts: ${OTP_MAX_ATTEMPTS:5}
+
+security:
+  rate-limit:
+    windowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:60}
+    publicRequestsPerWindow: ${RATE_LIMIT_PUBLIC_REQUESTS:30}
+    loginAttemptsPerWindow: ${RATE_LIMIT_LOGIN_ATTEMPTS:5}
+    maxTrackedKeys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
 
 # Configurações próprias da API: URL do frontend, CORS global e exposição de trace em erros.
 app:
   frontendUrl: ${FRONTEND_URL:http://localhost:5173}
   corsAllowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   exposeErrorTrace: ${EXPOSE_ERROR_TRACE:false}
+  maxPersistedErrors: ${MAX_PERSISTED_ERRORS:1000}
 
-# Configuração do usuário padrão da aplicação no CDataInicializerService
-ADMIN_EMAIL: ${ADMIN_EMAIL:boilerplate@gmail.com}
-ADMIN_PASSWORD: ${ADMIN_PASSWORD:Boilerplate@123}
-ADMIN_NAME: ${ADMIN_NAME:BOILERPLATE}
+bootstrap:
+  admin:
+    enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    name: ${ADMIN_NAME:}

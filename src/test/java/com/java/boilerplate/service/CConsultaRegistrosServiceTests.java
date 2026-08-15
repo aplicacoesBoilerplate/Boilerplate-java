@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -92,6 +93,36 @@ class CConsultaRegistrosServiceTests {
 
         assertThat(resposta.registros()).hasSize(2);
         assertThat(resposta.registros()).allSatisfy(pErro -> assertThat(pErro.httpStatusCode()).isGreaterThan(499));
+    }
+
+    @Test
+    void consultarDeveRejeitarMaisDeDezFiltros() {
+        List<RFiltroConsulta> filtros = IntStream.range(0, 11)
+                .mapToObj(pIndice -> new RFiltroConsulta("httpStatusCode", "maiorQue", pIndice, null, null, null))
+                .toList();
+
+        assertThatThrownBy(() -> logErroService.consultar(new RConsultaRegistros(filtros, "asc", 10, null, true)))
+                .isInstanceOf(CExceptionsSystem.class)
+                .hasMessageContaining("10 filtros");
+    }
+
+    @Test
+    void consultarDeveRejeitarMaisDeCemValoresSelecionados() {
+        List<Object> valores = IntStream.range(0, 101).boxed().map(pValor -> (Object) pValor).toList();
+        RFiltroConsulta filtro = new RFiltroConsulta("idErro", "selecao", null, null, null, valores);
+
+        assertThatThrownBy(() -> logErroService.consultar(new RConsultaRegistros(List.of(filtro), "asc", 10, null, true)))
+                .isInstanceOf(CExceptionsSystem.class)
+                .hasMessageContaining("100 valores");
+    }
+
+    @Test
+    void consultarDeveRejeitarValorTextualAcimaDe256Caracteres() {
+        RFiltroConsulta filtro = new RFiltroConsulta("mensagem", "contem", "x".repeat(257), null, null, null);
+
+        assertThatThrownBy(() -> logErroService.consultar(new RConsultaRegistros(List.of(filtro), "asc", 10, null, true)))
+                .isInstanceOf(CExceptionsSystem.class)
+                .hasMessageContaining("256 caracteres");
     }
 
     private void salvarLog(String pMensagem) {

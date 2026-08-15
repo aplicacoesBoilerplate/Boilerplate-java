@@ -48,6 +48,10 @@ public class CUsuario extends CEntidadeAuditavel implements UserDetails {
     @Column(name = "telefone", length = 30)
     private String telefone;
 
+    @JsonIgnore
+    @Column(name = "google_subject", unique = true, length = 255)
+    private String googleSubject;
+
     @Column(name = "notificar", nullable = false)
     private Boolean notificar = false;
 
@@ -64,7 +68,7 @@ public class CUsuario extends CEntidadeAuditavel implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (cargo == null || cargo.getPapel() == null) {
+        if (cargo == null || !Boolean.TRUE.equals(cargo.getAtivo()) || cargo.getPapel() == null) {
             return List.of();
         }
 
@@ -98,6 +102,8 @@ public class CUsuario extends CEntidadeAuditavel implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return Boolean.TRUE.equals(ativo);
+        return Boolean.TRUE.equals(ativo)
+                && cargo != null
+                && Boolean.TRUE.equals(cargo.getAtivo());
     }
 }

@@ -6,10 +6,16 @@ import com.java.boilerplate.model.CLogErro;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ILogErroRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,6 +28,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class CErrorHandler {
     private static final ZoneId ZONE_ID_BRASIL = ZoneId.of("America/Sao_Paulo");
+    private static final String MENSAGEM_ERRO_INTERNO = "Erro interno ao processar a solicitação";
 
     private final ILogErroRepository logErroRepository;
     private final RAppProperties appProperties;
@@ -45,17 +52,46 @@ public class CErrorHandler {
 
     @ExceptionHandler(CExceptionsSystem.class)
     public ResponseEntity<RErro> handlerExceptionsSystem(CExceptionsSystem pException) {
-        return construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora());
+        ResponseEntity<RErro> resposta = construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora());
+        if (pException.getStatus() == HttpStatus.TOO_MANY_REQUESTS && pException.getRetryAfterSeconds() != null) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.putAll(resposta.getHeaders());
+            headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(pException.getRetryAfterSeconds()));
+            return new ResponseEntity<>(resposta.getBody(), headers, resposta.getStatusCode());
+        }
+        return resposta;
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<RErro> handlerAuthenticationException(AuthenticationException pException) {
+        return construirResposta(
+                pException,
+                "Credenciais inválidas",
+                HttpStatus.UNAUTHORIZED,
+                LocalDateTime.now(ZONE_ID_BRASIL)
+        );
+    }
+
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<RErro> handlerClientParsingException(Exception pException) {
+        return construirResposta(
+                pException,
+                "Dados inválidos",
+                HttpStatus.BAD_REQUEST,
+                LocalDateTime.now(ZONE_ID_BRASIL)
+        );
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RErro> handlerException(Exception pException) {
-        return construirResposta(pException, pException.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now(ZONE_ID_BRASIL));
+        return construirResposta(pException, MENSAGEM_ERRO_INTERNO, HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now(ZONE_ID_BRASIL));
     }
 
     private ResponseEntity<RErro> construirResposta(Exception pException, String pMensagem, HttpStatus pStatus, LocalDateTime pDataHora) {
         Map<String, Object> trace = criarTrace(pException);
-        salvarLog(pMensagem, pStatus, trace);
+        if (pStatus.is5xxServerError()) {
+            salvarLog(pMensagem, pStatus, trace);
+        }
 
         RErro erro = new RErro(
                 pMensagem,
@@ -90,6 +126,20 @@ public class CErrorHandler {
         logErro.setHttpStatusCode(pStatus.value());
         preencherUsuarioResponsavel(logErro);
         logErroRepository.save(logErro);
+        limitarRetencaoErros();
+    }
+
+    private void limitarRetencaoErros() {
+        long excedentes = logErroRepository.count() - appProperties.limiteErrosPersistidos();
+        if (excedentes <= 0) {
+            return;
+        }
+
+        int tamanhoLote = (int) Math.min(excedentes, 100);
+        var antigos = logErroRepository.findAll(PageRequest.of(0, tamanhoLote, Sort.by("dataHora", "idErro"))).getContent();
+        if (!antigos.isEmpty()) {
+            logErroRepository.deleteAllInBatch(antigos);
+        }
     }
 
     private void preencherUsuarioResponsavel(CLogErro pLogErro) {

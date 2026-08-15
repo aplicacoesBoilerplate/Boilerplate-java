@@ -32,8 +32,11 @@ public class CUsuarioOtp {
     @JoinColumn(name = "id_usuario")
     private CUsuario usuario;
 
-    @Column(name = "codigo", nullable = false, length = 6)
+    @Column(name = "codigo_hash", nullable = false, length = 64)
     private String codigo;
+
+    @Column(name = "tentativas", nullable = false)
+    private Integer tentativas = 0;
 
     @Column(name = "expira_em", nullable = false)
     private LocalDateTime expiraEm;

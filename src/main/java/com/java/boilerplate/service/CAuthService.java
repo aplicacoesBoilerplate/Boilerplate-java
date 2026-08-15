@@ -1,6 +1,7 @@
 package com.java.boilerplate.service;
 
 import com.java.boilerplate.config.security.CTokenService;
+import com.java.boilerplate.config.RRateLimitProperties;
 import com.java.boilerplate.dto.auth.RAlteracaoSenha;
 import com.java.boilerplate.dto.auth.RConfirmacaoSenha;
 import com.java.boilerplate.dto.auth.RLogin;
@@ -18,11 +19,13 @@ import com.java.boilerplate.model.CSolicitacaoAcesso;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ISolicitacaoAcessoRepository;
 import com.java.boilerplate.service.helpers.COtpService;
+import com.java.boilerplate.service.helpers.CRateLimitService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,6 +33,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.task.TaskRejectedException;
+
+import java.time.Duration;
 
 @Service
 public class CAuthService implements UserDetailsService {
@@ -40,7 +46,10 @@ public class CAuthService implements UserDetailsService {
     private final CRbacService rbacService;
     private final CGoogleOAuthService googleOAuthService;
     private final COtpService otpService;
+    private final CRecoveryService recoveryService;
     private final ISolicitacaoAcessoRepository solicitacaoAcessoRepository;
+    private final CRateLimitService rateLimitService;
+    private final RRateLimitProperties rateLimitProperties;
 
     public CAuthService(
             @Lazy AuthenticationManager pAuthenticationManager,
@@ -50,7 +59,10 @@ public class CAuthService implements UserDetailsService {
             CRbacService pRbacService,
             @Lazy CGoogleOAuthService pGoogleOAuthService,
             COtpService pOtpService,
-            ISolicitacaoAcessoRepository pSolicitacaoAcessoRepository
+            CRecoveryService pRecoveryService,
+            ISolicitacaoAcessoRepository pSolicitacaoAcessoRepository,
+            CRateLimitService pRateLimitService,
+            RRateLimitProperties pRateLimitProperties
     ) {
         this.authenticationManager = pAuthenticationManager;
         this.passwordEncoder = pPasswordEncoder;
@@ -59,7 +71,10 @@ public class CAuthService implements UserDetailsService {
         this.rbacService = pRbacService;
         this.googleOAuthService = pGoogleOAuthService;
         this.otpService = pOtpService;
+        this.recoveryService = pRecoveryService;
         this.solicitacaoAcessoRepository = pSolicitacaoAcessoRepository;
+        this.rateLimitService = pRateLimitService;
+        this.rateLimitProperties = pRateLimitProperties;
     }
 
     @Override
@@ -74,6 +89,7 @@ public class CAuthService implements UserDetailsService {
 
     @Transactional
     public RRespostaLogin login(RLogin pLogin) {
+        limitarFluxoPublico("login", pLogin.identificacaoAcesso(), rateLimitProperties.loginAttemptsPerWindow());
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(pLogin.identificacaoAcesso(), pLogin.senha());
         CUsuario usuario = (CUsuario) authenticationManager.authenticate(authenticationToken).getPrincipal();
 
@@ -81,11 +97,13 @@ public class CAuthService implements UserDetailsService {
             throw new DisabledException("Usuário inativo");
         }
 
+        rateLimitService.limpar("login:identidade", pLogin.identificacaoAcesso());
         return new RRespostaLogin(tokenService.gerarToken(usuario));
     }
 
     @Transactional
     public RRespostaLogin loginGoogle(RLoginGoogle pLoginGoogle) {
+        limitarFluxoPublico("login-google", pLoginGoogle.credential(), rateLimitProperties.loginAttemptsPerWindow());
         return googleOAuthService.login(pLoginGoogle);
     }
 
@@ -106,7 +124,7 @@ public class CAuthService implements UserDetailsService {
 
     @Transactional
     public boolean confirmarSenha(RConfirmacaoSenha pConfirmacao) {
-        CUsuario usuario = usuarioService.buscarEntidadePorEmail(pConfirmacao.email());
+        CUsuario usuario = buscarUsuarioLogado();
         if (!pConfirmacao.password().equals(pConfirmacao.confirmPassword())) {
             throw new CExceptionsSystem("A confirmação da senha não confere", HttpStatus.BAD_REQUEST);
         }
@@ -124,24 +142,29 @@ public class CAuthService implements UserDetailsService {
             throw new CExceptionsSystem("A confirmação da nova senha não confere", HttpStatus.BAD_REQUEST);
         }
 
-        CUsuario usuario = usuarioService.buscarEntidadePorEmail(pAlteracao.emailUser());
+        CUsuario usuario = buscarUsuarioLogado();
         if (!passwordEncoder.matches(pAlteracao.passwordUser(), usuario.getSenha())) {
             throw new CExceptionsSystem("Senha atual inválida", HttpStatus.UNAUTHORIZED);
         }
 
         validarSenha(pAlteracao.newPassword());
         usuario.setSenha(passwordEncoder.encode(pAlteracao.newPassword()));
+        tokenService.revogarSessoesUsuario(usuario.getIdUsuario());
         return true;
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public boolean solicitarAcesso(RSolicitacaoAcesso pSolicitacao) {
+        limitarFluxoPublico("solicitacao-acesso", pSolicitacao.email(), rateLimitProperties.publicRequestsPerWindow());
         if (!pSolicitacao.senha().equals(pSolicitacao.confirmarSenha())) {
             throw new CExceptionsSystem("A confirmação da senha não confere", HttpStatus.BAD_REQUEST);
         }
 
         validarSenha(pSolicitacao.senha());
-        validarSolicitacaoAcessoDisponivel(pSolicitacao.email());
+        if (!solicitacaoAcessoDisponivel(pSolicitacao.email())) {
+            return true;
+        }
 
         CUsuario usuario = usuarioService.criarUsuarioSolicitacaoAcesso(
                 pSolicitacao.nome(),
@@ -157,32 +180,42 @@ public class CAuthService implements UserDetailsService {
         return true;
     }
 
-    @Transactional
     public boolean solicitarRecuperacaoSenha(RSolicitacaoRecuperacaoSenha pSolicitacao) {
-        CUsuario usuario = usuarioService.buscarEntidadePorEmail(pSolicitacao.email());
-        otpService.gerarCodigo(usuario);
+        limitarFluxoPublico("recuperacao-solicitar", pSolicitacao.email(), rateLimitProperties.loginAttemptsPerWindow());
+        try {
+            recoveryService.solicitar(pSolicitacao.email());
+        } catch (TaskRejectedException pException) {
+            // Mantem a resposta publica uniforme quando a fila limitada esta cheia.
+        }
         return true;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(noRollbackFor = CExceptionsSystem.class)
     public boolean verificarCodigoRecuperacaoSenha(RVerificacaoCodigoRecuperacaoSenha pVerificacao) {
-        CUsuario usuario = usuarioService.buscarEntidadePorEmail(pVerificacao.email());
+        limitarFluxoPublico("recuperacao-verificar", pVerificacao.email(), rateLimitProperties.loginAttemptsPerWindow());
+        CUsuario usuario = buscarUsuarioRecuperacao(pVerificacao.email());
         otpService.validarCodigoSemConsumir(usuario, pVerificacao.codigo());
         return true;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = CExceptionsSystem.class)
     public boolean redefinirSenhaRecuperacao(RRedefinicaoSenhaRecuperacao pRedefinicao) {
+        limitarFluxoPublico("recuperacao-redefinir", pRedefinicao.email(), rateLimitProperties.loginAttemptsPerWindow());
         if (!pRedefinicao.senha().equals(pRedefinicao.confirmarSenha())) {
             throw new CExceptionsSystem("A confirmação da senha não confere", HttpStatus.BAD_REQUEST);
         }
 
         validarSenha(pRedefinicao.senha());
-        CUsuario usuario = usuarioService.buscarEntidadePorEmail(pRedefinicao.email());
+        CUsuario usuario = buscarUsuarioRecuperacao(pRedefinicao.email());
         otpService.validarCodigoEConsumir(usuario, pRedefinicao.codigo());
         usuario.setSenha(passwordEncoder.encode(pRedefinicao.senha()));
-        usuario.setAtivo(true);
+        tokenService.revogarSessoesUsuario(usuario.getIdUsuario());
         return true;
+    }
+
+    @Transactional
+    public void logout(String pAuthorizationHeader) {
+        tokenService.revogarToken(pAuthorizationHeader);
     }
 
     @Transactional(readOnly = true)
@@ -198,22 +231,14 @@ public class CAuthService implements UserDetailsService {
         throw new CExceptionsSystem("Usuário não autenticado", HttpStatus.UNAUTHORIZED);
     }
 
-    private void validarSolicitacaoAcessoDisponivel(String pEmail) {
+    private boolean solicitacaoAcessoDisponivel(String pEmail) {
         try {
             CUsuario usuario = usuarioService.buscarEntidadePorEmail(pEmail);
-            solicitacaoAcessoRepository.findByUsuario_IdUsuario(usuario.getIdUsuario())
-                    .ifPresent(pSolicitacao -> {
-                        if (Boolean.TRUE.equals(pSolicitacao.getLiberado())) {
-                            throw new CExceptionsSystem("Este usuário já teve o acesso liberado anteriormente", HttpStatus.CONFLICT);
-                        }
-
-                        throw new CExceptionsSystem("Já existe uma solicitação de acesso pendente para esse e-mail", HttpStatus.CONFLICT);
-                    });
-
-            throw new CExceptionsSystem("Já existe um usuário cadastrado com esse e-mail", HttpStatus.CONFLICT);
+            solicitacaoAcessoRepository.findByUsuario_IdUsuario(usuario.getIdUsuario());
+            return false;
         } catch (CExceptionsSystem pException) {
             if (pException.getStatus() == HttpStatus.NOT_FOUND) {
-                return;
+                return true;
             }
             throw pException;
         }
@@ -223,5 +248,21 @@ public class CAuthService implements UserDetailsService {
         if (pSenha == null || pSenha.length() < 8 || pSenha.length() > 72) {
             throw new CExceptionsSystem("A senha deve ter entre 8 e 72 caracteres", HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private CUsuario buscarUsuarioRecuperacao(String pEmail) {
+        try {
+            return usuarioService.buscarEntidadePorEmail(pEmail);
+        } catch (CExceptionsSystem pException) {
+            if (pException.getStatus() == HttpStatus.NOT_FOUND) {
+                throw new CExceptionsSystem("Código de recuperação inválido ou expirado", HttpStatus.UNAUTHORIZED);
+            }
+            throw pException;
+        }
+    }
+
+    private void limitarFluxoPublico(String pEscopo, String pIdentidade, int pLimiteIdentidade) {
+        Duration janela = Duration.ofSeconds(rateLimitProperties.windowSeconds());
+        rateLimitService.consumir(pEscopo + ":identidade", pIdentidade, pLimiteIdentidade, janela);
     }
 }

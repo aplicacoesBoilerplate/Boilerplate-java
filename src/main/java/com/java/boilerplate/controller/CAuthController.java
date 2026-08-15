@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -61,7 +62,10 @@ public class CAuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(
+            @RequestHeader(value = "Authorization", required = false) String pAuthorizationHeader
+    ) {
+        authService.logout(pAuthorizationHeader);
         return ResponseEntity.noContent().build();
     }
 

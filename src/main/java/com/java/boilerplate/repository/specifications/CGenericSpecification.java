@@ -88,12 +88,16 @@ public class CGenericSpecification<TEntidade> implements Specification<TEntidade
             return Boolean.valueOf(valor);
         }
 
-        if (Long.class.equals(type) || long.class.equals(type)) {
-            return Long.valueOf(valor);
-        }
+        try {
+            if (Long.class.equals(type) || long.class.equals(type)) {
+                return Long.valueOf(valor);
+            }
 
-        if (Integer.class.equals(type) || int.class.equals(type)) {
-            return Integer.valueOf(valor);
+            if (Integer.class.equals(type) || int.class.equals(type)) {
+                return Integer.valueOf(valor);
+            }
+        } catch (NumberFormatException pException) {
+            throw new CExceptionsSystem("O valor numerico informado no filtro e invalido", HttpStatus.BAD_REQUEST);
         }
 
         if (LocalDateTime.class.equals(type)) {

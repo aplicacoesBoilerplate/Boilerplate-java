@@ -1,10 +1,10 @@
 package com.java.boilerplate.service;
 
+import com.java.boilerplate.config.RAdminProperties;
 import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.repository.ICargoRbacRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
@@ -12,24 +12,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 public class CDataInitializerService implements ApplicationRunner {
+    private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private final ICargoRbacRepository cargoRepository;
     private final CUsuarioService usuarioService;
+    private final RAdminProperties adminProperties;
 
-    @Value("${ADMIN_EMAIL:boilerplate@gmail.com}")
-    private String adminEmail;
-
-    @Value("${ADMIN_PASSWORD:Boilerplate@123}")
-    private String adminPassword;
-
-    @Value("${ADMIN_NAME:BOILERPLATE}")
-    private String adminName;
-
-    public CDataInitializerService(ICargoRbacRepository pCargoRepository, CUsuarioService pUsuarioService) {
+    public CDataInitializerService(
+            ICargoRbacRepository pCargoRepository,
+            CUsuarioService pUsuarioService,
+            RAdminProperties pAdminProperties
+    ) {
         this.cargoRepository = pCargoRepository;
         this.usuarioService = pUsuarioService;
+        this.adminProperties = pAdminProperties;
     }
 
     @Override
@@ -37,7 +36,22 @@ public class CDataInitializerService implements ApplicationRunner {
     public void run(ApplicationArguments pArgs) {
         criarCargoAdminSeNecessario();
         criarCargoUserSeNecessario();
-        usuarioService.criarUsuarioSistema(adminName, adminEmail, adminPassword, "ADMIN", true);
+        criarAdministradorSeHabilitado();
+    }
+
+    private void criarAdministradorSeHabilitado() {
+        if (!adminProperties.habilitado()) {
+            return;
+        }
+        if (adminProperties.name() == null || adminProperties.name().isBlank() || adminProperties.name().length() > 120
+                || adminProperties.email() == null || !EMAIL.matcher(adminProperties.email()).matches()
+                || adminProperties.password() == null || adminProperties.password().length() < 12 || adminProperties.password().length() > 72
+                || "troque-esta-senha".equalsIgnoreCase(adminProperties.password())) {
+            throw new IllegalStateException("Bootstrap administrativo habilitado exige nome, e-mail e senha forte explícitos");
+        }
+        usuarioService.criarUsuarioSistema(
+                adminProperties.name(), adminProperties.email(), adminProperties.password(), "ADMIN", true
+        );
     }
 
     private void criarCargoAdminSeNecessario() {
@@ -83,9 +97,9 @@ public class CDataInitializerService implements ApplicationRunner {
         List<CPermissaoCargoRbac> permissoes = new ArrayList<>(pCargo.getPermissoes());
 
         garantirPermissao(permissoes, "rotas", "Inicio", true);
-        garantirPermissao(permissoes, "rotas", "Usuarios", true);
-        garantirPermissao(permissoes, "api", "GET /usuarios/**", true);
-        garantirPermissao(permissoes, "api", "POST /usuarios/consulta", true);
+        garantirPermissao(permissoes, "rotas", "Usuarios", false);
+        garantirPermissao(permissoes, "api", "GET /usuarios/**", false);
+        garantirPermissao(permissoes, "api", "POST /usuarios/consulta", false);
 
         pCargo.definirPermissoes(permissoes);
     }

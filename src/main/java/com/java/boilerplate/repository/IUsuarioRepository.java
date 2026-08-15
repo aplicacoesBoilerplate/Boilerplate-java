@@ -8,5 +8,6 @@ import java.util.Optional;
 @Repository
 public interface IUsuarioRepository extends IBaseRepository<CUsuario> {
     Optional<CUsuario> findByEmailIgnoreCase(String pEmail);
+    Optional<CUsuario> findByGoogleSubject(String pGoogleSubject);
     boolean existsByEmailIgnoreCase(String pEmail);
 }

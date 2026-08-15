@@ -375,7 +375,7 @@ git commit -m "fix(security): encerrar sessoes e limitar exportacoes"
 Run:
 
 ```powershell
-npm install --save-dev vitest@4.1.6 @vue/test-utils happy-dom
+npm install --save-dev vitest@4.1.10 @vue/test-utils happy-dom
 ```
 
 Add scripts:

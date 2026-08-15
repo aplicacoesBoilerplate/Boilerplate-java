@@ -1,6 +1,7 @@
 package com.java.boilerplate.dto.preferencias;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
  */
 public record RPreferenciasUsuario(
         @Valid
+        @Size(max = 20, message = "O lote aceita no máximo 20 preferências")
         List<RPreferenciaUsuario> preferencias
 ) {
 }

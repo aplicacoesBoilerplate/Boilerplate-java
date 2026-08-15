@@ -2,7 +2,9 @@ package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.config.RAcessoSwagger;
 import com.java.boilerplate.config.RDocumentacaoProperties;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -12,6 +14,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,9 +23,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+
+import static org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class CSecurityConfigurations {
     private final CSecurityFilter securityFilter;
     private final RDocumentacaoProperties documentacaoProperties;
@@ -40,8 +47,10 @@ public class CSecurityConfigurations {
 
     @Bean
     @Order(1)
+    @ConditionalOnProperty(prefix = "documentacao", name = "enabled", havingValue = "true")
     public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity pHttp, PasswordEncoder pPasswordEncoder) throws Exception {
         RAcessoSwagger usuarioDoc = resolveAcessoDocumentacao(pPasswordEncoder);
+        PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         UserDetails admin = User.builder()
                 .username(usuarioDoc.usuario())
                 .password(usuarioDoc.senha())
@@ -49,7 +58,13 @@ public class CSecurityConfigurations {
                 .build();
 
         return pHttp
-                .securityMatchers(pMatchers -> pMatchers.requestMatchers("/doc", "/doc/**", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**"))
+                .securityMatchers(pMatchers -> pMatchers.requestMatchers(
+                        api.matcher("/doc"),
+                        api.matcher("/doc/**"),
+                        api.matcher("/swagger-ui/**"),
+                        api.matcher("/v3/api-docs/**"),
+                        api.matcher("/webjars/**")
+                ))
                 .cors(Customizer.withDefaults())
                 .csrf(pCsrf -> pCsrf.disable())
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -66,21 +81,31 @@ public class CSecurityConfigurations {
     @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity pHttp) throws Exception {
+        PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         return pHttp
                 .cors(Customizer.withDefaults())
                 .csrf(pCsrf -> pCsrf.disable())
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(pExceptions -> pExceptions.authenticationEntryPoint((pRequest, pResponse, pException) -> {
+                    pResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    pResponse.setHeader("WWW-Authenticate", "Bearer");
+                }))
                 .authorizeHttpRequests(pAuthorize -> pAuthorize
-                        .requestMatchers("/actuator/health-check").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/login/google").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/solicitacoes-acesso").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/recuperacao-senha/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/auth/me", "/auth/me/cargo").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/auth/senha").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/auth/senha/confirmar").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/preferencias/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/preferencias/**").authenticated()
+                        .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
+                        .requestMatchers(api.matcher(HttpMethod.GET, "/actuator/health-check/public")).permitAll()
+                        .requestMatchers(api.matcher(HttpMethod.HEAD, "/actuator/health-check/public")).permitAll()
+                        .requestMatchers(api.matcher("/actuator/health-check/public")).denyAll()
+                        .requestMatchers(api.matcher("/actuator/health-check"), api.matcher("/actuator/health-check/**")).hasRole("ADMIN")
+                        .requestMatchers(api.matcher("/actuator/metrics"), api.matcher("/actuator/metrics/**")).hasRole("ADMIN")
+                        .requestMatchers(api.matcher(HttpMethod.POST, "/auth/login"), api.matcher(HttpMethod.POST, "/auth/login/google")).permitAll()
+                        .requestMatchers(api.matcher(HttpMethod.POST, "/auth/solicitacoes-acesso")).hasRole("ADMIN")
+                        .requestMatchers(api.matcher(HttpMethod.POST, "/auth/recuperacao-senha/**")).permitAll()
+                        .requestMatchers(api.matcher(HttpMethod.GET, "/auth/me"), api.matcher(HttpMethod.GET, "/auth/me/cargo")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.POST, "/auth/logout")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.PUT, "/auth/senha")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.POST, "/auth/senha/confirmar")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.GET, "/preferencias/**")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.PUT, "/preferencias/**")).authenticated()
                         .anyRequest().access(autorizacaoRbacManager)
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
