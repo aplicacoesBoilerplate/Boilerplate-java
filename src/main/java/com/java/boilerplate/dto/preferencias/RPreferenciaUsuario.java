@@ -2,6 +2,7 @@ package com.java.boilerplate.dto.preferencias;
 
 import com.java.boilerplate.model.CPreferenciaUsuario;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * @description Contrato de preferência persistida por usuário, contexto e chave.
@@ -12,10 +13,13 @@ import jakarta.validation.constraints.NotBlank;
 public record RPreferenciaUsuario(
         Long id,
         @NotBlank(message = "O contexto da preferência é obrigatório")
+        @Size(max = 120, message = "O contexto não pode exceder 120 caracteres")
         String contexto,
         @NotBlank(message = "A chave da preferência é obrigatória")
+        @Size(max = 120, message = "A chave não pode exceder 120 caracteres")
         String chave,
         @NotBlank(message = "O valor da preferência é obrigatório")
+        @Size(max = 16384, message = "O valor não pode exceder 16384 caracteres")
         String valorJson
 ) {
     public static RPreferenciaUsuario fromEntity(CPreferenciaUsuario pPreferencia) {

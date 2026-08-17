@@ -13,7 +13,6 @@ import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
-import com.java.boilerplate.repository.IPermissaoCargoRbacRepository;
 import com.java.boilerplate.service.base.CBaseConsultaService;
 import com.java.boilerplate.service.base.IServiceCrud;
 import jakarta.persistence.EntityManager;
@@ -33,7 +32,6 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     private static final String RECURSO_API = "api";
 
     private final ICargoRbacRepository cargoRepository;
-    private final IPermissaoCargoRbacRepository permissaoCargoRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
@@ -41,12 +39,10 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     public CRbacService(
             EntityManager pEntityManager,
             ICargoRbacRepository pCargoRepository,
-            IPermissaoCargoRbacRepository pPermissaoCargoRepository,
             CAuditoriaRegistroService pAuditoriaRegistroService
     ) {
         super(pEntityManager, CCargoRbac.class);
         this.cargoRepository = pCargoRepository;
-        this.permissaoCargoRepository = pPermissaoCargoRepository;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
     }
 
@@ -64,7 +60,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
     @Transactional(readOnly = true)
     public List<RCargoRbac> listarTodos() {
-        return cargoRepository.findAll().stream().map(this::paraRegistro).toList();
+        return cargoRepository.findAllWithPermissoes().stream().map(this::paraRegistro).toList();
     }
 
     @Transactional(readOnly = true)
@@ -134,8 +130,11 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
             return false;
         }
 
-        CCargoRbac cargo = buscarEntidadePorId(pUsuario.getCargo().getIdCargo());
-        List<CPermissaoCargoRbac> permissoesApi = permissaoCargoRepository.findByCargo_IdCargoAndRecurso(cargo.getIdCargo(), RECURSO_API);
+        CCargoRbac cargo = cargoRepository.findByIdWithPermissoes(pUsuario.getCargo().getIdCargo())
+                .orElseThrow(() -> new CExceptionsSystem("Cargo não encontrado", HttpStatus.NOT_FOUND));
+        List<CPermissaoCargoRbac> permissoesApi = cargo.getPermissoes().stream()
+                .filter(pPermissao -> RECURSO_API.equals(pPermissao.getRecurso()))
+                .toList();
         Boolean decisaoExplicita = resolverPermissaoExplicita(permissoesApi, pMetodoHttp, pCaminho);
 
         if (decisaoExplicita != null) {

@@ -6,6 +6,8 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.mail.MailException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -23,6 +25,7 @@ public class CSendEmailService {
         this.templateEngine = pTemplateEngine;
     }
 
+    @Async("securityTaskExecutor")
     public void sendEmail(RParamsSendingEmail pRequest) {
         try {
             Context context = new Context();
@@ -40,8 +43,8 @@ public class CSendEmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-        } catch (MessagingException pException) {
-            throw new IllegalStateException(String.format("Erro ao enviar e-mail para %s", pRequest.to()), pException);
+        } catch (MessagingException | MailException pException) {
+            throw new IllegalStateException("Falha ao processar envio de e-mail");
         }
     }
 }

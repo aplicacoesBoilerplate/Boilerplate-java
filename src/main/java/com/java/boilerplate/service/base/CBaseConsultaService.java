@@ -30,6 +30,10 @@ import java.util.Set;
 public abstract class CBaseConsultaService<TEntidade, TRegistro> implements IServiceConsulta<TRegistro> {
     private static final int LIMITE_PADRAO = 20;
     private static final int LIMITE_MAXIMO = 100;
+    private static final int MAXIMO_FILTROS = 10;
+    private static final int MAXIMO_VALORES_SELECIONADOS = 100;
+    private static final int MAXIMO_CARACTERES_VALOR = 256;
+    private static final int QUERY_TIMEOUT_MILLIS = 2_000;
 
     private final EntityManager entityManager;
     private final Class<TEntidade> classeEntidade;
@@ -152,6 +156,12 @@ public abstract class CBaseConsultaService<TEntidade, TRegistro> implements ISer
             throw new CExceptionsSystem("A ordenação deve ser asc ou desc", HttpStatus.BAD_REQUEST);
         }
 
+        if (filtros.size() > MAXIMO_FILTROS) {
+            throw new CExceptionsSystem("A consulta aceita no máximo 10 filtros", HttpStatus.BAD_REQUEST);
+        }
+
+        filtros.forEach(this::validarComplexidadeFiltro);
+
         return new RConsultaRegistros(
                 filtros,
                 ordenacao,
@@ -159,6 +169,24 @@ public abstract class CBaseConsultaService<TEntidade, TRegistro> implements ISer
                 pConsulta == null ? null : pConsulta.proximaEntrada(),
                 pConsulta == null || pConsulta.possuiMais() == null || pConsulta.possuiMais()
         );
+    }
+
+    private void validarComplexidadeFiltro(RFiltroConsulta pFiltro) {
+        if (pFiltro == null) {
+            return;
+        }
+        if (pFiltro.valoresSelecionados() != null && pFiltro.valoresSelecionados().size() > MAXIMO_VALORES_SELECIONADOS) {
+            throw new CExceptionsSystem("O filtro aceita no máximo 100 valores selecionados", HttpStatus.BAD_REQUEST);
+        }
+        if (pFiltro.valor() != null && String.valueOf(pFiltro.valor()).length() > MAXIMO_CARACTERES_VALOR) {
+            throw new CExceptionsSystem("O valor do filtro aceita no máximo 256 caracteres", HttpStatus.BAD_REQUEST);
+        }
+        if (pFiltro.valoresSelecionados() != null && pFiltro.valoresSelecionados().stream()
+                .filter(java.util.Objects::nonNull)
+                .map(String::valueOf)
+                .anyMatch(pValor -> pValor.length() > MAXIMO_CARACTERES_VALOR)) {
+            throw new CExceptionsSystem("Cada valor selecionado aceita no máximo 256 caracteres", HttpStatus.BAD_REQUEST);
+        }
     }
 
     private RFiltroConsulta mapearFiltro(RFiltroConsulta pFiltro) {
@@ -194,6 +222,7 @@ public abstract class CBaseConsultaService<TEntidade, TRegistro> implements ISer
                 : criteriaBuilder.asc(root.get(campoCursor())));
 
         TypedQuery<TEntidade> query = entityManager.createQuery(criteriaQuery);
+        query.setHint("jakarta.persistence.query.timeout", QUERY_TIMEOUT_MILLIS);
         return new ArrayList<>(query.setMaxResults(pConsulta.limite() + 1).getResultList());
     }
 }

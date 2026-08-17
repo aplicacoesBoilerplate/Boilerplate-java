@@ -1,17 +1,21 @@
 package com.java.boilerplate.service;
 
 import com.java.boilerplate.dto.usuarios.RUsuario;
+import com.java.boilerplate.dto.consulta.RConsultaRegistros;
+import com.java.boilerplate.dto.consulta.RRespostaConsultaRegistros;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.IUsuarioRepository;
 import com.java.boilerplate.service.base.CBaseConsultaService;
 import com.java.boilerplate.service.base.IServiceCrud;
+import com.java.boilerplate.config.security.CTokenService;
 import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,19 +30,22 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     private final CRbacService rbacService;
     private final PasswordEncoder passwordEncoder;
     private final CAuditoriaRegistroService auditoriaRegistroService;
+    private final CTokenService tokenService;
 
     public CUsuarioService(
             EntityManager pEntityManager,
             IUsuarioRepository pUsuarioRepository,
             CRbacService pRbacService,
             PasswordEncoder pPasswordEncoder,
-            CAuditoriaRegistroService pAuditoriaRegistroService
+            CAuditoriaRegistroService pAuditoriaRegistroService,
+            CTokenService pTokenService
     ) {
         super(pEntityManager, CUsuario.class);
         this.usuarioRepository = pUsuarioRepository;
         this.rbacService = pRbacService;
         this.passwordEncoder = pPasswordEncoder;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
+        this.tokenService = pTokenService;
     }
 
     @Transactional(readOnly = true)
@@ -55,12 +62,21 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional(readOnly = true)
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario buscarPorId(Long pIdUsuario) {
         return paraRegistro(buscarEntidadePorId(pIdUsuario));
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public RRespostaConsultaRegistros<RUsuario> consultar(RConsultaRegistros pConsulta) {
+        return super.consultar(pConsulta);
+    }
+
     @Transactional
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario cadastrar(RUsuario pRequest) {
         validarEmailDisponivel(pRequest.email(), null);
 
@@ -101,7 +117,25 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     }
 
     @Transactional
+    public CUsuario vincularIdentidadeGoogle(CUsuario pUsuario, String pGoogleSubject) {
+        if (pUsuario == null || pGoogleSubject == null || pGoogleSubject.isBlank()) {
+            throw new CExceptionsSystem("Identidade do Google inválida", HttpStatus.UNAUTHORIZED);
+        }
+        if (pUsuario.getGoogleSubject() != null && !pUsuario.getGoogleSubject().equals(pGoogleSubject)) {
+            throw new CExceptionsSystem("Identidade do Google inválida", HttpStatus.UNAUTHORIZED);
+        }
+        usuarioRepository.findByGoogleSubject(pGoogleSubject)
+                .filter(pVinculado -> !pVinculado.getIdUsuario().equals(pUsuario.getIdUsuario()))
+                .ifPresent(pVinculado -> {
+                    throw new CExceptionsSystem("Identidade do Google inválida", HttpStatus.UNAUTHORIZED);
+                });
+        pUsuario.setGoogleSubject(pGoogleSubject);
+        return usuarioRepository.saveAndFlush(pUsuario);
+    }
+
+    @Transactional
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario editar(RUsuario pRequest) {
         if (pRequest.id() == null) {
             throw new CExceptionsSystem("O identificador do usuário é obrigatório para edição", HttpStatus.BAD_REQUEST);
@@ -112,20 +146,25 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario modificar(RUsuario pRequest) {
         return editar(pRequest);
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario atualizar(Long pIdUsuario, RUsuario pRequest) {
         CUsuario usuario = buscarEntidadePorId(pIdUsuario);
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
-        return paraRegistro(usuarioRepository.saveAndFlush(usuario));
+        CUsuario atualizado = usuarioRepository.saveAndFlush(usuario);
+        tokenService.revogarSessoesUsuario(pIdUsuario);
+        return paraRegistro(atualizado);
     }
 
     @Transactional
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void excluir(Long pIdUsuario) {
         if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
             throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
@@ -139,6 +178,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         CUsuario usuario = buscarEntidadePorId(pIdUsuario);
         usuario.setAtivo(false);
         usuarioRepository.save(usuario);
+        tokenService.revogarSessoesUsuario(pIdUsuario);
     }
 
     private void preencherUsuario(CUsuario pUsuario, RUsuario pRequest) {
