@@ -1,37 +1,62 @@
 package com.java.boilerplate.service.helpers;
 
+import com.java.boilerplate.config.ROtpProperties;
 import com.java.boilerplate.dto.common.RParamsSendingEmail;
-import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.model.CUsuarioOtp;
 import com.java.boilerplate.repository.IUsuarioOtpRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Map;
-import java.util.Random;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 @Service
 public class COtpService {
+    private static final String HMAC_ALGORITHM = "HmacSHA256";
+
     private final IUsuarioOtpRepository otpRepository;
     private final CSendEmailService sendEmailService;
+    private final ROtpProperties otpProperties;
+    private final COtpAttemptService otpAttemptService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
-    public COtpService(IUsuarioOtpRepository pOtpRepository, CSendEmailService pSendEmailService) {
+    public COtpService(
+            IUsuarioOtpRepository pOtpRepository,
+            CSendEmailService pSendEmailService,
+            ROtpProperties pOtpProperties,
+            COtpAttemptService pOtpAttemptService
+    ) {
         this.otpRepository = pOtpRepository;
         this.sendEmailService = pSendEmailService;
+        this.otpProperties = pOtpProperties;
+        this.otpAttemptService = pOtpAttemptService;
     }
 
     @Transactional
     public void gerarCodigo(CUsuario pUsuario) {
-        CUsuarioOtp otp = otpRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario()).orElse(new CUsuarioOtp());
-        String codigo = String.format("%06d", new Random().nextInt(1_000_000));
+        CUsuarioOtp otp = otpRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario()).orElse(null);
+        if (otp != null
+                && !Boolean.TRUE.equals(otp.getUtilizado())
+                && otp.getExpiraEm().isAfter(LocalDateTime.now())
+                && otp.getTentativas() < otpProperties.maxAttempts()) {
+            return;
+        }
+        if (otp == null) {
+            otp = new CUsuarioOtp();
+        }
+        String codigo = String.format("%06d", secureRandom.nextInt(1_000_000));
 
         otp.setUsuario(pUsuario);
-        otp.setCodigo(codigo);
-        otp.setExpiraEm(LocalDateTime.now().plusMinutes(10));
+        otp.setCodigo(gerarHash(pUsuario, codigo));
+        otp.setExpiraEm(LocalDateTime.now().plusMinutes(otpProperties.expirationMinutes()));
         otp.setUtilizado(false);
+        otp.setTentativas(0);
         otpRepository.save(otp);
 
         RParamsSendingEmail email = new RParamsSendingEmail(
@@ -44,37 +69,23 @@ public class COtpService {
         sendEmailService.sendEmail(email);
     }
 
-    @Transactional(readOnly = true)
     public void validarCodigoSemConsumir(CUsuario pUsuario, String pCodigo) {
-        CUsuarioOtp otp = buscarOtpValido(pUsuario, pCodigo);
-        if (Boolean.TRUE.equals(otp.getUtilizado())) {
-            throw new CExceptionsSystem("Código de recuperação já utilizado", HttpStatus.UNAUTHORIZED);
-        }
+        otpAttemptService.validar(pUsuario.getIdUsuario(), gerarHash(pUsuario, pCodigo), false);
     }
 
-    @Transactional
     public void validarCodigoEConsumir(CUsuario pUsuario, String pCodigo) {
-        CUsuarioOtp otp = buscarOtpValido(pUsuario, pCodigo);
-        if (Boolean.TRUE.equals(otp.getUtilizado())) {
-            throw new CExceptionsSystem("Código de recuperação já utilizado", HttpStatus.UNAUTHORIZED);
-        }
-
-        otp.setUtilizado(true);
-        otpRepository.save(otp);
+        otpAttemptService.validar(pUsuario.getIdUsuario(), gerarHash(pUsuario, pCodigo), true);
     }
 
-    private CUsuarioOtp buscarOtpValido(CUsuario pUsuario, String pCodigo) {
-        CUsuarioOtp otp = otpRepository.findByUsuario_IdUsuario(pUsuario.getIdUsuario())
-                .orElseThrow(() -> new CExceptionsSystem("Código de recuperação não encontrado", HttpStatus.UNAUTHORIZED));
-
-        if (!otp.getCodigo().equals(pCodigo)) {
-            throw new CExceptionsSystem("Código de recuperação inválido", HttpStatus.UNAUTHORIZED);
+    private String gerarHash(CUsuario pUsuario, String pCodigo) {
+        try {
+            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+            mac.init(new SecretKeySpec(otpProperties.pepper().getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
+            byte[] hash = mac.doFinal((pUsuario.getIdUsuario() + ":" + pCodigo).getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException | java.security.InvalidKeyException pException) {
+            throw new IllegalStateException("Não foi possível proteger o código de recuperação", pException);
         }
-
-        if (otp.getExpiraEm().isBefore(LocalDateTime.now())) {
-            throw new CExceptionsSystem("Código de recuperação expirado", HttpStatus.UNAUTHORIZED);
-        }
-
-        return otp;
     }
+
 }

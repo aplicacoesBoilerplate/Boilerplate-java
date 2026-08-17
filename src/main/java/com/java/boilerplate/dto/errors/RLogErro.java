@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  * @description Registro de erro do sistema exposto para consulta administrativa.
  */
 public record RLogErro(
-        Long idError,
+        Long idErro,
         String mensagem,
         String arquivo,
         String classe,
@@ -21,7 +21,7 @@ public record RLogErro(
 ) {
     public static RLogErro fromEntity(CLogErro pLogErro) {
         return new RLogErro(
-                pLogErro.getIdError(),
+                pLogErro.getIdErro(),
                 pLogErro.getMensagem(),
                 pLogErro.getArquivo(),
                 pLogErro.getClasse(),

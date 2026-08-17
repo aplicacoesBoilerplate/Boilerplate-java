@@ -1,9 +1,10 @@
 package com.java.boilerplate.controller;
 
-import com.java.boilerplate.dto.common.RRespostaPaginacao;
+import com.java.boilerplate.dto.consulta.RConsultaRegistros;
+import com.java.boilerplate.dto.consulta.RRespostaConsultaRegistros;
 import com.java.boilerplate.dto.errors.RLogErro;
-import com.java.boilerplate.dto.filtros.RParametrosPaginacao;
 import com.java.boilerplate.service.CLogErroService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +21,7 @@ public class CLogErroController {
     }
 
     @PostMapping("/consulta")
-    public ResponseEntity<RRespostaPaginacao<RLogErro>> consultar(@RequestBody(required = false) RParametrosPaginacao pParametros) {
+    public ResponseEntity<RRespostaConsultaRegistros<RLogErro>> consultar(@RequestBody(required = false) @Valid RConsultaRegistros pParametros) {
         return ResponseEntity.ok(logErroService.consultar(pParametros));
     }
 }
