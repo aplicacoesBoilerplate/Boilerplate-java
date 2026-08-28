@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+COMMIT_MESSAGE_FILE="$1"
+HEADER="$(sed -n '1p' "$COMMIT_MESSAGE_FILE")"
+
+case "$HEADER" in
+  "Merge "*|"Revert \""*)
+    exit 0
+    ;;
+esac
+
+if [ "${#HEADER}" -gt 120 ]; then
+  printf '%s\n' "A mensagem de commit não pode exceder 120 caracteres."
+  exit 1
+fi
+
+if ! printf '%s' "$HEADER" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9][a-z0-9._/-]*\))?!?: .+$' \
+  || printf '%s' "$HEADER" | grep -Eq '\.$'; then
+  printf '%s\n' "Use Conventional Commits: tipo(escopo opcional): descrição"
+  printf '%s\n' "Tipos: feat, fix, docs, style, refactor, perf, test, build, ci, chore e revert."
+  exit 1
+fi

@@ -4,6 +4,13 @@ Todas as mudanças relevantes deste projeto serão documentadas neste arquivo.
 
 O formato segue a intenção do Conventional Commits usado no Boilerplate-vue.
 
+## [Unreleased]
+
+### Changed
+
+- Padronização de qualidade com Spotless, Checkstyle, hooks Git e GitHub Actions.
+- Versionamento migrado de jgitver para Release Please.
+
 ## 0.1.0
 
 ### Features

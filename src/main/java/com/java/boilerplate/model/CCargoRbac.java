@@ -13,13 +13,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @description Entidade que representa um cargo operacional e suas regras base de RBAC.
@@ -66,6 +65,10 @@ public class CCargoRbac extends CEntidadeAuditavel {
     @OneToMany(mappedBy = "cargo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CPermissaoCargoRbac> permissoes = new ArrayList<>();
 
+    @OrderBy("idFuncionalidade ASC")
+    @OneToMany(mappedBy = "cargo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<CFuncionalidadeCargoRbac> funcionalidades = new ArrayList<>();
+
     /**
      * @description Método equivalento a um setter das permissões do cargo porém com suporte a uma lista.
      * @param pPermissoes Lista de PermissaoCargoRbac a qual o set no laço interno vai iterar.
@@ -74,7 +77,8 @@ public class CCargoRbac extends CEntidadeAuditavel {
     public void definirPermissoes(List<CPermissaoCargoRbac> pPermissoes) {
         Map<String, CPermissaoCargoRbac> permissoesRecebidas = mapearPermissoesPorChave(pPermissoes);
 
-        this.permissoes.removeIf(pPermissaoExistente -> !permissoesRecebidas.containsKey(montarChavePermissao(pPermissaoExistente)));
+        this.permissoes.removeIf(
+                pPermissaoExistente -> !permissoesRecebidas.containsKey(montarChavePermissao(pPermissaoExistente)));
 
         if (permissoesRecebidas.isEmpty()) {
             return;
@@ -94,6 +98,30 @@ public class CCargoRbac extends CEntidadeAuditavel {
 
             pPermissaoRecebida.setCargo(this);
             this.permissoes.add(pPermissaoRecebida);
+        });
+    }
+
+    public void definirFuncionalidades(List<CFuncionalidadeCargoRbac> pFuncionalidades) {
+        Map<String, CFuncionalidadeCargoRbac> recebidas = new LinkedHashMap<>();
+        if (pFuncionalidades != null) {
+            pFuncionalidades.stream()
+                    .filter(pItem -> pItem.getFuncionalidade() != null)
+                    .forEach(pItem -> recebidas.put(pItem.getFuncionalidade().trim(), pItem));
+        }
+
+        this.funcionalidades.removeIf(pItem -> !recebidas.containsKey(pItem.getFuncionalidade()));
+        Map<String, CFuncionalidadeCargoRbac> atuais = new LinkedHashMap<>();
+        this.funcionalidades.forEach(pItem -> atuais.put(pItem.getFuncionalidade(), pItem));
+
+        recebidas.forEach((pChave, pRecebida) -> {
+            CFuncionalidadeCargoRbac existente = atuais.get(pChave);
+            if (existente != null) {
+                existente.setLiberado(Boolean.TRUE.equals(pRecebida.getLiberado()));
+                return;
+            }
+            pRecebida.setFuncionalidade(pChave);
+            pRecebida.setCargo(this);
+            this.funcionalidades.add(pRecebida);
         });
     }
 

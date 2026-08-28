@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.java.boilerplate.dto.filtros.RFiltroConsulta;
 import com.java.boilerplate.dto.rbac.RCargoRbac;
+import com.java.boilerplate.dto.rbac.RFuncionalidadeCargoRbac;
 import com.java.boilerplate.dto.rbac.RPermissaoCargoRbac;
 import com.java.boilerplate.dto.rbac.RRedirecionamentoInicialRbac;
 import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
@@ -169,6 +170,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
                 pCargo.getDescricao(),
                 pCargo.getComportamentoPadrao(),
                 pCargo.getPermissoes().stream().map(RPermissaoCargoRbac::fromEntity).toList(),
+                pCargo.getFuncionalidades().stream().map(RFuncionalidadeCargoRbac::fromEntity).toList(),
                 new RRedirecionamentoInicialRbac(
                         pCargo.getRedirecionamentoPath(),
                         pCargo.getRedirecionamentoName(),

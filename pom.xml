@@ -9,7 +9,7 @@
     </parent>
     <groupId>com.java</groupId>
     <artifactId>boilerplate-java</artifactId>
-    <version>${jgitver.version}</version>
+    <version>0.1.0</version>
     <name>Boilerplate-java</name>
     <description>Boilerplate Java para APIs REST com Spring Boot, JPA, Flyway, autenticação e RBAC</description>
     <url/>
@@ -60,6 +60,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-jdbc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

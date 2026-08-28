@@ -8,7 +8,7 @@ import com.java.boilerplate.dto.auth.RLogin;
 import com.java.boilerplate.dto.auth.RLoginGoogle;
 import com.java.boilerplate.dto.auth.RRedefinicaoSenhaRecuperacao;
 import com.java.boilerplate.dto.auth.RRespostaLogin;
-import com.java.boilerplate.dto.auth.RRespostaUsuarioAutenticado;
+import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.dto.auth.RSolicitacaoAcesso;
 import com.java.boilerplate.dto.auth.RSolicitacaoRecuperacaoSenha;
 import com.java.boilerplate.dto.auth.RVerificacaoCodigoRecuperacaoSenha;
@@ -108,8 +108,8 @@ public class CAuthService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public RRespostaUsuarioAutenticado buscarUsuarioAutenticado() {
-        return new RRespostaUsuarioAutenticado(buscarUsuarioLogado().getIdUsuario());
+    public RUsuario buscarUsuarioAutenticado() {
+        return usuarioService.buscarPorId(buscarUsuarioLogado().getIdUsuario());
     }
 
     @Transactional(readOnly = true)

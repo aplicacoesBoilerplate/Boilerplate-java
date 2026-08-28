@@ -1,7 +1,6 @@
 package com.java.boilerplate.dto.errors;
 
 import com.java.boilerplate.model.CLogErro;
-
 import java.time.LocalDateTime;
 
 /**
@@ -17,8 +16,7 @@ public record RLogErro(
         Integer httpStatusCode,
         Long idUsuario,
         String usuarioReferencia,
-        LocalDateTime dataHora
-) {
+        LocalDateTime dataHora) {
     public static RLogErro fromEntity(CLogErro pLogErro) {
         return new RLogErro(
                 pLogErro.getIdErro(),
@@ -30,7 +28,6 @@ public record RLogErro(
                 pLogErro.getHttpStatusCode(),
                 pLogErro.getUsuario() == null ? null : pLogErro.getUsuario().getIdUsuario(),
                 pLogErro.getUsuarioReferencia(),
-                pLogErro.getDataHora()
-        );
+                pLogErro.getDataHora());
     }
 }

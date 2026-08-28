@@ -18,6 +18,4 @@ public record RFiltroConsulta(
         Object valor,
         LocalDateTime dataInicio,
         LocalDateTime dataFinal,
-        List<Object> valoresSelecionados
-) {
-}
+        List<Object> valoresSelecionados) {}

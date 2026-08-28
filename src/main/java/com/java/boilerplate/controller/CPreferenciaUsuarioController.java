@@ -26,12 +26,14 @@ public class CPreferenciaUsuarioController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<RPreferenciasUsuario> salvarPreferenciasUsuarioAutenticado(@RequestBody @Valid RPreferenciasUsuario pRequest) {
+    public ResponseEntity<RPreferenciasUsuario> salvarPreferenciasUsuarioAutenticado(
+            @RequestBody @Valid RPreferenciasUsuario pRequest) {
         return ResponseEntity.ok(preferenciaUsuarioService.salvarPreferenciasUsuarioAutenticado(pRequest));
     }
 
     @PutMapping("/me/item")
-    public ResponseEntity<RPreferenciaUsuario> salvarPreferenciaUsuarioAutenticado(@RequestBody @Valid RPreferenciaUsuario pRequest) {
+    public ResponseEntity<RPreferenciaUsuario> salvarPreferenciaUsuarioAutenticado(
+            @RequestBody @Valid RPreferenciaUsuario pRequest) {
         return ResponseEntity.ok(preferenciaUsuarioService.salvarPreferenciaUsuarioAutenticado(pRequest));
     }
 }

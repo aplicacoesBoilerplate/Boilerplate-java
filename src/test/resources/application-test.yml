@@ -6,6 +6,15 @@ spring:
     password:
   flyway:
     enabled: false
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: never
+      table-name: SPRING_SESSION
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-spring-session-h2.sql
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -17,6 +26,15 @@ spring:
 
 server:
   port: 0
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        name: BOILERPLATE_SESSION
+        http-only: true
+        secure: false
+        same-site: Lax
+        path: /
 
 documentacao:
   enabled: false
@@ -41,6 +59,13 @@ security:
     publicRequestsPerWindow: 30
     loginAttemptsPerWindow: 5
     maxTrackedKeys: 10000
+
+software-center:
+  base-url: http://localhost:8081
+  bff-client-id: test-bff-client
+  bff-client-secret: test-bff-secret
+  tenant-default: empresa
+  timeout: 1s
 
 app:
   frontendUrl: http://localhost:5173

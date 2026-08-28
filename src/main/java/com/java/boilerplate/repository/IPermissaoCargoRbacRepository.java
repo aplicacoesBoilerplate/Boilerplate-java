@@ -1,9 +1,8 @@
 package com.java.boilerplate.repository;
 
 import com.java.boilerplate.model.CPermissaoCargoRbac;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IPermissaoCargoRbacRepository extends IBaseRepository<CPermissaoCargoRbac> {

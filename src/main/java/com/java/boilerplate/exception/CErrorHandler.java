@@ -2,6 +2,7 @@ package com.java.boilerplate.exception;
 
 import com.java.boilerplate.config.RAppProperties;
 import com.java.boilerplate.dto.common.RErro;
+import com.java.boilerplate.integration.softwarecenter.CSoftwareCenterClientException;
 import com.java.boilerplate.model.CLogErro;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ILogErroRepository;
@@ -47,12 +48,12 @@ public class CErrorHandler {
                 .map(FieldError::getDefaultMessage)
                 .orElse("Dados inválidos");
 
-        return construirResposta(pException, mensagem, HttpStatus.BAD_REQUEST, LocalDateTime.now(ZONE_ID_BRASIL));
+        return construirResposta(pException, mensagem, HttpStatus.BAD_REQUEST, LocalDateTime.now(ZONE_ID_BRASIL), null, null);
     }
 
     @ExceptionHandler(CExceptionsSystem.class)
     public ResponseEntity<RErro> handlerExceptionsSystem(CExceptionsSystem pException) {
-        ResponseEntity<RErro> resposta = construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora());
+        ResponseEntity<RErro> resposta = construirResposta(pException, pException.getMessage(), pException.getStatus(), pException.getDataHora(), pException.getCodigo(), pException.getDados());
         if (pException.getStatus() == HttpStatus.TOO_MANY_REQUESTS && pException.getRetryAfterSeconds() != null) {
             HttpHeaders headers = new HttpHeaders();
             headers.putAll(resposta.getHeaders());
@@ -62,13 +63,18 @@ public class CErrorHandler {
         return resposta;
     }
 
+    @ExceptionHandler(CSoftwareCenterClientException.class)
+    public ResponseEntity<RErro> handlerSoftwareCenterException(CSoftwareCenterClientException pException) {
+        return construirResposta(pException, pException.getMessage(), pException.getStatus(), LocalDateTime.now(ZONE_ID_BRASIL), null, null);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<RErro> handlerAuthenticationException(AuthenticationException pException) {
         return construirResposta(
                 pException,
                 "Credenciais inválidas",
                 HttpStatus.UNAUTHORIZED,
-                LocalDateTime.now(ZONE_ID_BRASIL)
+                LocalDateTime.now(ZONE_ID_BRASIL), null, null
         );
     }
 
@@ -78,16 +84,18 @@ public class CErrorHandler {
                 pException,
                 "Dados inválidos",
                 HttpStatus.BAD_REQUEST,
-                LocalDateTime.now(ZONE_ID_BRASIL)
+                LocalDateTime.now(ZONE_ID_BRASIL), null, null
         );
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RErro> handlerException(Exception pException) {
-        return construirResposta(pException, MENSAGEM_ERRO_INTERNO, HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now(ZONE_ID_BRASIL));
+        return construirResposta(pException, MENSAGEM_ERRO_INTERNO, HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now(ZONE_ID_BRASIL), null, null);
     }
 
-    private ResponseEntity<RErro> construirResposta(Exception pException, String pMensagem, HttpStatus pStatus, LocalDateTime pDataHora) {
+    private ResponseEntity<RErro> construirResposta(
+            Exception pException, String pMensagem, HttpStatus pStatus, LocalDateTime pDataHora,
+            String pCodigo, Map<String, Object> pDados) {
         Map<String, Object> trace = criarTrace(pException);
         if (pStatus.is5xxServerError()) {
             salvarLog(pMensagem, pStatus, trace);
@@ -96,7 +104,7 @@ public class CErrorHandler {
         RErro erro = new RErro(
                 pMensagem,
                 pDataHora,
-                pStatus.value(),
+                pStatus.value(), pCodigo, pDados,
                 appProperties.deveExporTraceErro() ? trace : null
         );
 

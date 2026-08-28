@@ -19,11 +19,10 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "preferencias_usuario",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_preferencia_usuario_contexto_chave",
-                columnNames = {"id_usuario", "contexto", "chave"}
-        )
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_preferencia_usuario_contexto_chave",
+                        columnNames = {"id_usuario", "contexto", "chave"}))
 @Getter
 @Setter
 public class CPreferenciaUsuario extends CEntidadeAuditavel {

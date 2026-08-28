@@ -19,19 +19,17 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record RUsuario(
         Long id,
-        @NotBlank(message = "O campo nome é obrigatório")
-        String nome,
-        @Email(message = "Formato de e-mail inválido")
-        @NotBlank(message = "O campo e-mail é obrigatório")
+        @NotBlank(message = "O campo nome é obrigatório") String nome,
+
+        @Email(message = "Formato de e-mail inválido") @NotBlank(message = "O campo e-mail é obrigatório")
         String email,
+
         String avatar,
         String telefone,
         Boolean notificar,
         Boolean ativo,
-        @NotBlank(message = "O campo papel é obrigatório")
-        String papel,
-        RAuditoriaRegistro auditoria
-) {
+        @NotBlank(message = "O campo papel é obrigatório") String papel,
+        RAuditoriaRegistro auditoria) {
     public static RUsuario fromEntity(CUsuario pUsuario) {
         return fromEntity(pUsuario, RAuditoriaRegistro.fromEntity(pUsuario));
     }
@@ -46,7 +44,6 @@ public record RUsuario(
                 pUsuario.getNotificar(),
                 pUsuario.getAtivo(),
                 pUsuario.getPapel(),
-                pAuditoria
-        );
+                pAuditoria);
     }
 }

@@ -1,30 +1,40 @@
 # Versionamento
 
-Este projeto usa `jgitver-maven-plugin`, configurado em `.mvn/extensions.xml`, para calcular a versão Maven a partir do histórico Git.
+Este projeto usa Conventional Commits e Release Please para criar releases semânticas. O Release Please interpreta os commits enviados para `master`, abre uma Pull Request de release e, após o merge, atualiza o `pom.xml`, o `CHANGELOG.md`, cria a tag `vX.Y.Z` e publica a GitHub Release.
 
-## Fluxo Recomendado
+## Commits
 
-- Use Conventional Commits, no mesmo padrão do Boilerplate-vue.
-- Faça releases criando tags Git versionadas, por exemplo `v0.1.0`.
-- O Maven substitui `${jgitver.version}` pela versão calculada durante `mvn test`, `mvn package` e `mvn deploy`.
-- O `CHANGELOG.md` deve ser atualizado a cada release com as mudanças relevantes.
+Use o formato `tipo(escopo opcional): descrição objetiva`.
 
-## Comandos Úteis
-
-Consultar versão calculada:
-
-```powershell
-.\mvnw.cmd help:evaluate -Dexpression=project.version -q -DforceStdout
+```text
+feat(auth): adicionar login com passkey
+fix(rbac): corrigir validação de permissão
 ```
 
-Criar uma tag de release:
+Os tipos permitidos são `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` e `revert`.
+
+- `feat` incrementa a versão minor.
+- `fix` e `perf` incrementam a versão patch.
+- O marcador `!`, por exemplo `feat(api)!: remover endpoint`, registra uma mudança incompatível.
+
+## Fluxo de release
+
+1. Faça merge de commits convencionais em `master`.
+2. Revise a Pull Request criada ou atualizada pelo Release Please.
+3. Faça merge da Pull Request de release após validar a versão e o changelog.
+4. A Action cria a tag e a GitHub Release.
+
+Não crie tags ou altere manualmente a versão do `pom.xml` para uma release gerenciada pelo Release Please.
+
+## Comandos úteis
 
 ```powershell
-git tag v0.1.0
-```
+# Consulta a versão configurada no Maven.
+.\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
 
-Gerar pacote:
+# Formata o código Java.
+.\mvnw.cmd spotless:apply
 
-```powershell
-.\mvnw.cmd clean package
+# Executa testes, Checkstyle e validação de formatação.
+.\mvnw.cmd verify
 ```

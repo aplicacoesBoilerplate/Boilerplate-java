@@ -33,3 +33,13 @@ JOIN (
 ) permissoes
 WHERE cargos.papel = 'USER'
 ON DUPLICATE KEY UPDATE liberado = VALUES(liberado);
+
+INSERT INTO funcionalidades_cargo_rbac (id_cargo, funcionalidade, liberado)
+SELECT cargos.id_cargo, funcionalidades.funcionalidade, TRUE
+FROM cargos_rbac cargos
+JOIN (
+    SELECT 'exportarDados' AS funcionalidade
+    UNION ALL SELECT 'visualizarGraficos'
+) funcionalidades
+WHERE cargos.papel = 'USER'
+ON DUPLICATE KEY UPDATE liberado = VALUES(liberado);

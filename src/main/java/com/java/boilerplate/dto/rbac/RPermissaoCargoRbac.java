@@ -7,11 +7,12 @@ import jakarta.validation.constraints.NotNull;
 public record RPermissaoCargoRbac(
         @NotBlank(message = "O recurso da permissão é obrigatório")
         String recurso,
+
         @NotBlank(message = "A ação da permissão é obrigatória")
         String acao,
+
         @NotNull(message = "O status da permissão é obrigatório")
-        Boolean liberado
-) {
+        Boolean liberado) {
     public CPermissaoCargoRbac toEntity() {
         CPermissaoCargoRbac permissao = new CPermissaoCargoRbac();
         permissao.setRecurso(recurso);
