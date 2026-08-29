@@ -22,7 +22,7 @@ Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação 
 - Provisionamento administrativo de solicitações de acesso em `/auth/solicitacoes-acesso`; não há auto-registro público.
 - CRUD administrativo de usuários em `/usuarios`.
 - CRUD administrativo de cargos/permissões em `/rbac/cargos`.
-- Liveness público mínimo em `/api/v1/actuator/health-check/public`; health completo exige `ADMIN`.
+- Liveness público mínimo em `/api/v1/actuator/health-check/public`; diagnóstico SMTP e health completo exigem `ADMIN`.
 - Filtros e paginação por cursor com os operadores do frontend.
 - Migrations limpas para usuários, RBAC, OTP, refresh tokens, solicitações de acesso e logs de erro.
 
@@ -85,6 +85,7 @@ URLs locais:
 - API: `http://localhost:8080/api/v1`
 - Swagger (somente com `DOCS_ENABLED=true`): `http://localhost:8080/api/v1/doc`
 - Liveness público: `http://localhost:8080/api/v1/actuator/health-check/public`
+- Diagnóstico SMTP (Bearer com papel `ADMIN`): `http://localhost:8080/api/v1/actuator/health-check/smtp`
 - phpMyAdmin (somente quando iniciado com `--profile tools`): `http://localhost:8081`
 
 Para encerrar os containers, preserve os dados do banco:
