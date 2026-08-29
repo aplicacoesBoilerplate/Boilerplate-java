@@ -45,7 +45,7 @@ documentacao:
 tokens:
   secret: test-secret-with-enough-size-for-hmac
   issuer: boilerplate-java-test
-  accessTokenMinutes: 30
+  accessTokenMinutes: 240
   googleClientId:
 
 otp:

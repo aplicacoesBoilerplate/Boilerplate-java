@@ -127,7 +127,7 @@ documentacao:
 tokens:
   secret: ${JWT_SECRET:}
   issuer: ${JWT_ISSUER:boilerplate-java-api}
-  accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:30}
+  accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:240}
   googleClientId: ${GOOGLE_CLIENT_ID:}
 
 otp:

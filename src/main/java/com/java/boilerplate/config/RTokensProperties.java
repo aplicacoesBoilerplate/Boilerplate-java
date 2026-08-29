@@ -22,7 +22,7 @@ public record RTokensProperties(
         @NotBlank(message = "JWT_ISSUER deve ser informado")
         String issuer,
         @Min(value = 5, message = "A validade do token deve ser de ao menos 5 minutos")
-        @Max(value = 60, message = "A validade do token não pode exceder 60 minutos")
+        @Max(value = 480, message = "A validade do token não pode exceder 8 horas")
         Long accessTokenMinutes,
         String googleClientId
 ) { }
