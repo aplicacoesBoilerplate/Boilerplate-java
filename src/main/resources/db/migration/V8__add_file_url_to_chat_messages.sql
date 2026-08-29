@@ -1,1 +1,0 @@
-ALTER TABLE chat_messages ADD COLUMN file_url VARCHAR(255) COMMENT 'URL of the attached file/image';

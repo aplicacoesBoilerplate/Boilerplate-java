@@ -1,0 +1,81 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:boilerplate_java;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: never
+      table-name: SPRING_SESSION
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-spring-session-h2.sql
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  mail:
+    host: localhost
+    port: 2525
+    username: test@boilerplate.local
+    password:
+
+server:
+  port: 0
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        name: BOILERPLATE_SESSION
+        http-only: true
+        secure: false
+        same-site: Lax
+        path: /
+
+documentacao:
+  enabled: false
+  usuario: test-doc-user
+  senha: test-doc-password-secure
+  senhaHash:
+
+tokens:
+  secret: test-secret-with-enough-size-for-hmac
+  issuer: boilerplate-java-test
+  accessTokenMinutes: 30
+  googleClientId:
+
+otp:
+  pepper: test-only-otp-pepper-with-at-least-32-characters
+  expirationMinutes: 10
+  maxAttempts: 5
+
+security:
+  rate-limit:
+    windowSeconds: 60
+    publicRequestsPerWindow: 30
+    loginAttemptsPerWindow: 5
+    maxTrackedKeys: 10000
+
+software-center:
+  base-url: http://localhost:8081
+  bff-client-id: test-bff-client
+  bff-client-secret: test-bff-secret
+  tenant-default: empresa
+  timeout: 1s
+
+app:
+  frontendUrl: http://localhost:5173
+  corsAllowedOrigins: http://localhost:5173
+  exposeErrorTrace: true
+  maxPersistedErrors: 1000
+
+bootstrap:
+  admin:
+    enabled: false
+    email: admin-test@example.com
+    password: admin-test-password-secure
+    name: ADMIN TESTE

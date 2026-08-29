@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+target
+uploads
+*.iml
+.env
+.env.local
+src/main/resources/.env
+boilerplate

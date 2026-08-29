@@ -1,0 +1,14 @@
+package com.java.boilerplate.repository;
+
+import com.java.boilerplate.model.CPreferenciaUsuario;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface IPreferenciaUsuarioRepository extends IBaseRepository<CPreferenciaUsuario> {
+    List<CPreferenciaUsuario> findTop100ByUsuario_IdUsuarioOrderByContextoAscChaveAsc(Long pIdUsuario);
+    Optional<CPreferenciaUsuario> findByUsuario_IdUsuarioAndContextoAndChave(Long pIdUsuario, String pContexto, String pChave);
+    long countByUsuario_IdUsuario(Long pIdUsuario);
+}
