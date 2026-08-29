@@ -85,7 +85,7 @@ server:
 management:
   health:
     mail:
-      enabled: true
+      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:true}
   endpoints:
     web:
       path-mapping:
