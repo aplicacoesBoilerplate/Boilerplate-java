@@ -1,5 +1,7 @@
 package com.java.boilerplate.config.security;
 
+import com.java.boilerplate.model.CUsuario;
+import com.java.boilerplate.service.CRbacService;
 import java.util.List;
 import java.util.function.Supplier;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -30,14 +32,29 @@ public class CAutorizacaoRbacManager implements AuthorizationManager<RequestAuth
             new RRegraPermissao("POST", "/erros/consulta", "boilerplate.erros.read"));
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final CRbacService rbacService;
+
+    public CAutorizacaoRbacManager(CRbacService pRbacService) {
+        this.rbacService = pRbacService;
+    }
 
     @Override
     public AuthorizationDecision authorize(
             Supplier<? extends Authentication> pAuthentication, RequestAuthorizationContext pContext) {
         Authentication authentication = pAuthentication.get();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || !(authentication.getPrincipal() instanceof RPrincipalSessaoBff principal)) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return new AuthorizationDecision(false);
+        }
+
+        if (authentication.getPrincipal() instanceof CUsuario usuario) {
+            return new AuthorizationDecision(rbacService.usuarioPodeAcessarEndpoint(
+                    usuario,
+                    pContext.getRequest().getMethod(),
+                    pContext.getRequest().getServletPath()
+            ));
+        }
+
+        if (!(authentication.getPrincipal() instanceof RPrincipalSessaoBff principal)) {
             return new AuthorizationDecision(false);
         }
 

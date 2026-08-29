@@ -62,14 +62,12 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional(readOnly = true)
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario buscarPorId(Long pIdUsuario) {
         return paraRegistro(buscarEntidadePorId(pIdUsuario));
     }
 
     @Transactional(readOnly = true)
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public RRespostaConsultaRegistros<RUsuario> consultar(RConsultaRegistros pConsulta) {
         return super.consultar(pConsulta);
     }
