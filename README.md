@@ -64,19 +64,16 @@ MAX_PERSISTED_ERRORS=1000
 
 O Compose integrado inicia frontend, API e MySQL em imagens de runtime. O phpMyAdmin é opt-in. Os dados do banco ficam no volume Docker nomeado `mysql_data`, fora do worktree.
 
-Crie o arquivo de ambiente fora do repositório a partir do exemplo e defina senhas e chaves próprias:
+Crie o arquivo de ambiente local, ignorado pelo Git, a partir do exemplo e defina senhas e chaves próprias:
 
 ```powershell
-$secretsDir = Join-Path $env:USERPROFILE '.boilerplate-secrets'
-New-Item -ItemType Directory -Force -Path $secretsDir | Out-Null
-$envFile = Join-Path $secretsDir 'backend.env'
-Copy-Item .env.example $envFile
+Copy-Item .env.example src/main/resources/.env
 ```
 
 Suba todos os serviços e espere os health checks:
 
 ```powershell
-docker compose --env-file $envFile up --build --wait
+docker compose --env-file src/main/resources/.env up --build --wait
 ```
 
 URLs locais:
@@ -91,7 +88,7 @@ URLs locais:
 Para encerrar os containers, preserve os dados do banco:
 
 ```powershell
-docker compose --env-file $envFile down
+docker compose --env-file src/main/resources/.env down
 ```
 
 Remover o volume `mysql_data` apaga o banco e só deve ser feito de forma explícita, depois de um backup validado.
@@ -104,13 +101,13 @@ Para desenvolver apenas a API fora de containers, suba o banco e o phpMyAdmin:
 docker compose -f src/main/resources/db/docker-compose.yml --profile dev-tools up -d
 ```
 
-Em seguida, execute:
+Em seguida, execute sem carregar variáveis manualmente:
 
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.jvmArguments=-Xms256m -Xmx512m"
+.\mvnw.cmd spring-boot:run
 ```
 
-O `DB_USERNAME` e `DB_PASSWORD` são obrigatórios e devem usar o usuário comum criado pelo Docker; a API não deve conectar como `root`.
+O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`.
 O `DB_APP_USERNAME` e `DB_APP_PASSWORD` existem apenas para o Docker criar um usuário comum no MySQL; a imagem oficial não aceita `MYSQL_USER=root`.
 
 A documentação Swagger fica desabilitada por padrão. Para habilitá-la, defina `DOCS_ENABLED=true`; `/doc` então usa Basic Auth com usuário não público definido por `DOC_USERNAME` e senha forte definida por `DOC_PASSWORD`. A aplicação aplica BCrypt no startup; se você quiser manter um hash pronto no ambiente, informe `DOC_PASSWORD_HASH`.
