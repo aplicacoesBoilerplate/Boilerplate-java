@@ -2,6 +2,9 @@ spring:
   application:
     name: Boilerplate-java
 
+  config:
+    import: optional:file:src/main/resources/.env[.properties]
+
   # Força o uso do stack Servlet/Spring MVC, evitando autodetecção de aplicações reativas.
   main:
     web-application-type: servlet
@@ -16,8 +19,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     name: ${DB_NAME:boilerplate_java}
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:boilerplate_java}?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_unicode_ci
-    username: ${DB_USERNAME:}
-    password: ${DB_PASSWORD:}
+    username: ${DB_USERNAME:${DB_APP_USERNAME:}}
+    password: ${DB_PASSWORD:${DB_APP_PASSWORD:}}
 
     # Pool de conexões JDBC gerenciado pelo HikariCP.
     hikari:
