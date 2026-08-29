@@ -2,7 +2,6 @@ package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.config.RAcessoSwagger;
 import com.java.boilerplate.config.RDocumentacaoProperties;
-import com.java.boilerplate.service.CAuthBffService;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,7 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import static org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher.withDefaults;
@@ -82,16 +80,12 @@ public class CSecurityConfigurations {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity pHttp,
-            CookieCsrfTokenRepository pCsrfTokenRepository,
-            CAuthBffService pAuthBffService) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity pHttp) throws Exception {
         PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         return pHttp
                 .cors(Customizer.withDefaults())
-                .csrf(pCsrf -> pCsrf.csrfTokenRepository(pCsrfTokenRepository)
-                        .csrfTokenRequestHandler(new CSpaCsrfTokenRequestHandler()))
-                .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .csrf(pCsrf -> pCsrf.disable())
+                .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(pExceptions -> pExceptions.authenticationEntryPoint((pRequest, pResponse, pException) -> {
                     pResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     pResponse.setHeader("WWW-Authenticate", "Bearer");
@@ -117,7 +111,6 @@ public class CSecurityConfigurations {
                         .requestMatchers(api.matcher(HttpMethod.PUT, "/preferencias/**")).authenticated()
                         .anyRequest().access(autorizacaoRbacManager)
                 )
-                .addFilterBefore(new CSessaoBffFilter(pAuthBffService), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
