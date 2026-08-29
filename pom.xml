@@ -9,7 +9,7 @@
     </parent>
     <groupId>com.java</groupId>
     <artifactId>boilerplate-java</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <name>Boilerplate-java</name>
     <description>Boilerplate Java para APIs REST com Spring Boot, JPA, Flyway, autenticação e RBAC</description>
     <url/>
