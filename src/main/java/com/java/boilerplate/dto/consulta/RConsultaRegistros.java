@@ -16,7 +16,7 @@ import java.util.List;
  * @property {Boolean} possuiMais - Estado de paginação enviado pelo cliente.
  */
 public record RConsultaRegistros(
-        @Valid List<RFiltroConsulta> filtros,
+        List<@Valid RFiltroConsulta> filtros,
         @Pattern(regexp = "asc|desc", flags = Pattern.Flag.CASE_INSENSITIVE, message = "A ordenação deve ser asc ou desc")
         String ordenacao,
         @Min(value = 1, message = "O limite deve ser maior que zero")
