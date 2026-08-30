@@ -42,6 +42,7 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_ENABLED=true
+REDISINSIGHT_PORT=5540
 JWT_SECRET=<chave-aleatoria-com-no-minimo-32-caracteres>
 OTP_PEPPER=<outra-chave-aleatoria-com-no-minimo-32-caracteres>
 JWT_ISSUER=boilerplate-java-api
@@ -66,7 +67,7 @@ MAX_PERSISTED_ERRORS=1000
 
 ## Execução com Docker
 
-O Compose integrado inicia frontend, API e MySQL em imagens de runtime. O phpMyAdmin é opt-in. Os dados do banco ficam no volume Docker nomeado `mysql_data`, fora do worktree.
+O Compose integrado inicia frontend, API, MySQL e Redis em imagens de runtime. phpMyAdmin e Redis Insight são opt-in no profile `tools`. Os dados do banco ficam no volume Docker nomeado `mysql_data`, fora do worktree.
 
 Crie o arquivo de ambiente fora do repositório a partir do exemplo e defina senhas e chaves próprias:
 
@@ -90,6 +91,19 @@ URLs locais:
 - Swagger (somente com `DOCS_ENABLED=true`): `http://localhost:8080/api/v1/doc`
 - Liveness público: `http://localhost:8080/api/v1/actuator/health-check/public`
 - phpMyAdmin (somente quando iniciado com `--profile tools`): `http://localhost:8081`
+- Redis Insight (somente quando iniciado com `--profile tools`): `http://localhost:5540`
+
+## Inspeção do Redis
+
+O Redis não recebe conexões do navegador ou da rede externa. Para iniciar a ferramenta visual de desenvolvimento, ative o profile `tools`:
+
+```powershell
+docker compose --env-file $envFile --profile tools up --build --wait
+```
+
+Abra `http://localhost:5540` e adicione uma conexão com host `redis` e porta `6379`. Informe `REDIS_PASSWORD` se essa variável estiver configurada. O Redis Insight permite consultar chaves, valores e TTLs armazenados.
+
+Uma requisição HTTP continua chegando à API. Quando um domínio usar cache-aside, a API verifica primeiro o Redis; em cache hit, ela devolve o resultado sem consultar MySQL. Em cache miss ou falha do Redis, consulta MySQL e mantém a resposta normal. A infraestrutura desta issue ainda não armazena dados de domínio: a leitura e invalidação de preferências e permissões serão adicionadas na issue #23.
 
 Para encerrar os containers, preserve os dados do banco:
 
