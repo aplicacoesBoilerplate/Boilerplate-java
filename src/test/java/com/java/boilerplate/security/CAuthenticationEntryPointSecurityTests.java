@@ -15,6 +15,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -62,6 +64,27 @@ class CAuthenticationEntryPointSecurityTests {
         mockMvc.perform(get("/api/v1/actuator/health-check/smtp").servletPath("/api/v1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.components.mail").exists());
+    }
+
+    @Test
+    void preflightDeveAceitarOrigemEAuthorizationDaSpaLocal() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/me")
+                        .servletPath("/api/v1")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:5173")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
+    }
+
+    @Test
+    void solicitacaoDeRecuperacaoPublicaNaoDeveExigirTokenCsrf() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/recuperacao-senha/solicitar")
+                        .servletPath("/api/v1")
+                        .contentType("application/json")
+                        .content("{\"email\":\"inexistente@example.com\"}"))
+                .andExpect(status().isAccepted());
     }
 
     @TestConfiguration(proxyBeanMethods = false)

@@ -97,9 +97,10 @@ public class CDataInitializerService implements ApplicationRunner {
         List<CPermissaoCargoRbac> permissoes = new ArrayList<>(pCargo.getPermissoes());
 
         garantirPermissao(permissoes, "rotas", "Inicio", true);
-        garantirPermissao(permissoes, "rotas", "Usuarios", false);
-        garantirPermissao(permissoes, "api", "GET /usuarios/**", false);
-        garantirPermissao(permissoes, "api", "POST /usuarios/consulta", false);
+        garantirPermissao(permissoes, "rotas", "Usuarios", true);
+        garantirPermissao(permissoes, "api", "GET /usuarios/**", true);
+        garantirPermissao(permissoes, "api", "POST /usuarios/consulta", true);
+        garantirPermissao(permissoes, "api", "POST /usuarios/search", true);
 
         pCargo.definirPermissoes(permissoes);
     }
@@ -109,7 +110,7 @@ public class CDataInitializerService implements ApplicationRunner {
                 .filter(pPermissao -> pRecurso.equals(pPermissao.getRecurso()) && pAcao.equals(pPermissao.getAcao()))
                 .findFirst()
                 .ifPresentOrElse(
-                        pPermissao -> pPermissao.setLiberado(pLiberado),
+                        pPermissao -> { },
                         () -> pPermissoes.add(criarPermissao(pRecurso, pAcao, pLiberado))
                 );
     }

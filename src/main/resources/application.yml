@@ -2,6 +2,9 @@ spring:
   application:
     name: Boilerplate-java
 
+  config:
+    import: optional:file:src/main/resources/.env[.properties]
+
   # Força o uso do stack Servlet/Spring MVC, evitando autodetecção de aplicações reativas.
   main:
     web-application-type: servlet
@@ -16,8 +19,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     name: ${DB_NAME:boilerplate_java}
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:boilerplate_java}?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_unicode_ci
-    username: ${DB_USERNAME:}
-    password: ${DB_PASSWORD:}
+    username: ${DB_USERNAME:${DB_APP_USERNAME:}}
+    password: ${DB_PASSWORD:${DB_APP_PASSWORD:}}
 
     # Pool de conexões JDBC gerenciado pelo HikariCP.
     hikari:
@@ -55,12 +58,6 @@ spring:
     mapper:
       default-view-inclusion: true
 
-  session:
-    store-type: jdbc
-    jdbc:
-      initialize-schema: never
-      table-name: SPRING_SESSION
-
 # Porta HTTP da API e suporte correto a headers de proxy/reverse proxy.
 server:
   port: ${API_PORT:8080}
@@ -71,16 +68,6 @@ server:
     remoteip:
       # Vazio por padrao: nenhum proxy e confiavel fora de um perfil que o declare.
       internal-proxies: ${TRUSTED_PROXY_IP_REGEX:}
-  servlet:
-    session:
-      timeout: ${BFF_SESSION_TIMEOUT:30m}
-      cookie:
-        name: BOILERPLATE_SESSION
-        http-only: true
-        secure: ${SESSION_COOKIE_SECURE:true}
-        same-site: Lax
-        path: /
-
 # Actuator: liveness público mínimo; diagnósticos de SMTP, health completo e métricas exigem ADMIN.
 management:
   health:
@@ -143,13 +130,6 @@ security:
     publicRequestsPerWindow: ${RATE_LIMIT_PUBLIC_REQUESTS:30}
     loginAttemptsPerWindow: ${RATE_LIMIT_LOGIN_ATTEMPTS:5}
     maxTrackedKeys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
-
-software-center:
-  base-url: ${SOFTWARE_CENTER_BASE_URL:http://localhost:8081}
-  bff-client-id: ${SOFTWARE_CENTER_BFF_CLIENT_ID:}
-  bff-client-secret: ${SOFTWARE_CENTER_BFF_CLIENT_SECRET:}
-  tenant-default: ${SOFTWARE_CENTER_TENANT_DEFAULT:}
-  timeout: ${SOFTWARE_CENTER_TIMEOUT:5s}
 
 # Configurações próprias da API: URL do frontend, CORS global e exposição de trace em erros.
 app:

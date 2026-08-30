@@ -2,7 +2,6 @@ package com.java.boilerplate.exception;
 
 import com.java.boilerplate.config.RAppProperties;
 import com.java.boilerplate.dto.common.RErro;
-import com.java.boilerplate.integration.softwarecenter.CSoftwareCenterClientException;
 import com.java.boilerplate.model.CLogErro;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ILogErroRepository;
@@ -61,11 +60,6 @@ public class CErrorHandler {
             return new ResponseEntity<>(resposta.getBody(), headers, resposta.getStatusCode());
         }
         return resposta;
-    }
-
-    @ExceptionHandler(CSoftwareCenterClientException.class)
-    public ResponseEntity<RErro> handlerSoftwareCenterException(CSoftwareCenterClientException pException) {
-        return construirResposta(pException, pException.getMessage(), pException.getStatus(), LocalDateTime.now(ZONE_ID_BRASIL), null, null);
     }
 
     @ExceptionHandler(AuthenticationException.class)

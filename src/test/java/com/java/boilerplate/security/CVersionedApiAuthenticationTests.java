@@ -26,19 +26,9 @@ class CVersionedApiAuthenticationTests {
     @Test
     void loginVersionadoDeveAutenticarSemEnfraquecerOHealthPublico() throws Exception {
         HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> csrfResponse = client.send(
-                HttpRequest.newBuilder(URI.create(url("/api/v1/auth/csrf"))).GET().build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-        assertThat(csrfResponse.statusCode()).withFailMessage(csrfResponse.body()).isEqualTo(200);
-        String csrfCookie = csrfResponse.headers().firstValue("Set-Cookie").orElseThrow().split(";", 2)[0];
-        String csrfToken = csrfCookie.split("=", 2)[1];
-
         HttpResponse<String> loginResponse = client.send(
                 HttpRequest.newBuilder(URI.create(url("/api/v1/auth/token/login")))
-                        .header("Cookie", csrfCookie)
                         .header("Content-Type", "application/json")
-                        .header("X-XSRF-TOKEN", csrfToken)
                         .POST(HttpRequest.BodyPublishers.ofString("""
                                 {"identificacaoAcesso":"admin-api-versionada@example.com","senha":"senha-admin-versionada-segura"}
                                 """))
