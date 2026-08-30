@@ -58,12 +58,6 @@ spring:
     mapper:
       default-view-inclusion: true
 
-  session:
-    store-type: jdbc
-    jdbc:
-      initialize-schema: never
-      table-name: SPRING_SESSION
-
 # Porta HTTP da API e suporte correto a headers de proxy/reverse proxy.
 server:
   port: ${API_PORT:8080}
@@ -74,16 +68,6 @@ server:
     remoteip:
       # Vazio por padrao: nenhum proxy e confiavel fora de um perfil que o declare.
       internal-proxies: ${TRUSTED_PROXY_IP_REGEX:}
-  servlet:
-    session:
-      timeout: ${BFF_SESSION_TIMEOUT:30m}
-      cookie:
-        name: BOILERPLATE_SESSION
-        http-only: true
-        secure: ${SESSION_COOKIE_SECURE:true}
-        same-site: Lax
-        path: /
-
 # Actuator: liveness público mínimo; diagnósticos de SMTP, health completo e métricas exigem ADMIN.
 management:
   health:
@@ -146,13 +130,6 @@ security:
     publicRequestsPerWindow: ${RATE_LIMIT_PUBLIC_REQUESTS:30}
     loginAttemptsPerWindow: ${RATE_LIMIT_LOGIN_ATTEMPTS:5}
     maxTrackedKeys: ${RATE_LIMIT_MAX_TRACKED_KEYS:10000}
-
-software-center:
-  base-url: ${SOFTWARE_CENTER_BASE_URL:http://localhost:8081}
-  bff-client-id: ${SOFTWARE_CENTER_BFF_CLIENT_ID:}
-  bff-client-secret: ${SOFTWARE_CENTER_BFF_CLIENT_SECRET:}
-  tenant-default: ${SOFTWARE_CENTER_TENANT_DEFAULT:}
-  timeout: ${SOFTWARE_CENTER_TIMEOUT:5s}
 
 # Configurações próprias da API: URL do frontend, CORS global e exposição de trace em erros.
 app:
