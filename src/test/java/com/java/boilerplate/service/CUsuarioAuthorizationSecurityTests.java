@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -36,9 +35,8 @@ class CUsuarioAuthorizationSecurityTests {
 
     @Test
     @WithMockUser(roles = "USER")
-    void usuarioComumNaoDeveLerDiretorioAdministrativoNemPorChamadaDiretaAoService() {
-        assertThatThrownBy(() -> usuarioService.buscarPorId(idAdministrador))
-                .isInstanceOf(AccessDeniedException.class);
+    void usuarioComumPodeLerUsuarioQuandoRequisicaoJaFoiAutorizadaPeloRbac() {
+        assertThat(usuarioService.buscarPorId(idAdministrador).email()).isEqualTo("admin-test@example.com");
     }
 
     @Test

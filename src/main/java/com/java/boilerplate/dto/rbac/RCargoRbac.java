@@ -37,8 +37,8 @@ public record RCargoRbac(
         @NotNull(message = "O comportamento padrão é obrigatório")
         EComportamentoPadraoPermissao comportamentoPadrao,
 
-        @Valid List<RPermissaoCargoRbac> permissoes,
-        @Valid List<RFuncionalidadeCargoRbac> funcionalidades,
+        List<@Valid RPermissaoCargoRbac> permissoes,
+        List<@Valid RFuncionalidadeCargoRbac> funcionalidades,
         RRedirecionamentoInicialRbac redirecionamentoInicial,
         Boolean ativo,
         RAuditoriaRegistro auditoria) {
