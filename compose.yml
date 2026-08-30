@@ -23,6 +23,37 @@ services:
       retries: 20
       start_period: 20s
 
+  redis:
+    image: redis:8.4-alpine
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command:
+      - sh
+      - -c
+      - >-
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly no --requirepass "$$REDIS_PASSWORD";
+        else
+          exec redis-server --appendonly no;
+        fi
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          if [ -n "$$REDIS_PASSWORD" ]; then
+            redis-cli --no-auth-warning --pass "$$REDIS_PASSWORD" ping;
+          else
+            redis-cli ping;
+          fi
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
   api:
     build:
       context: .
@@ -41,6 +72,10 @@ services:
       DB_NAME: ${DB_NAME:-boilerplate_java}
       DB_USERNAME: ${DB_APP_USERNAME:?Defina DB_APP_USERNAME no arquivo .env}
       DB_PASSWORD: ${DB_APP_PASSWORD:?Defina DB_APP_PASSWORD no arquivo .env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_ENABLED: ${REDIS_ENABLED:-true}
       JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env}
       JWT_ISSUER: ${JWT_ISSUER:-boilerplate-java-api}
       DOCS_ENABLED: ${DOCS_ENABLED:-false}
@@ -62,6 +97,8 @@ services:
       ADMIN_BOOTSTRAP_ENABLED: ${ADMIN_BOOTSTRAP_ENABLED:-false}
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
@@ -112,5 +149,21 @@ services:
       database:
         condition: service_healthy
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    profiles: ["tools"]
+    ports:
+      - "127.0.0.1:${REDISINSIGHT_PORT:-5540}:5540"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   mysql_data:
+  redisinsight_data:
