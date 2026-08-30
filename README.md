@@ -67,38 +67,14 @@ MAX_PERSISTED_ERRORS=1000
 
 ## Execução com Docker
 
-O Compose integrado inicia frontend, API, MySQL e Redis em imagens de runtime. phpMyAdmin e Redis Insight são opt-in no profile `tools`. Os dados do banco ficam no volume Docker nomeado `mysql_data`, fora do worktree.
-
-Crie o arquivo de ambiente fora do repositório a partir do exemplo e defina senhas e chaves próprias:
-
-```powershell
-$secretsDir = Join-Path $env:USERPROFILE '.boilerplate-secrets'
-New-Item -ItemType Directory -Force -Path $secretsDir | Out-Null
-$envFile = Join-Path $secretsDir 'backend.env'
-Copy-Item .env.example $envFile
-```
-
-Suba todos os serviços e espere os health checks:
-
-```powershell
-docker compose --env-file $envFile up --build --wait
-```
-
-URLs locais:
-
-- Frontend: `http://localhost:5173`
-- API: `http://localhost:8080/api/v1`
-- Swagger (somente com `DOCS_ENABLED=true`): `http://localhost:8080/api/v1/doc`
-- Liveness público: `http://localhost:8080/api/v1/actuator/health-check/public`
-- phpMyAdmin (somente quando iniciado com `--profile tools`): `http://localhost:8081`
-- Redis Insight (somente quando iniciado com `--profile tools`): `http://localhost:5540`
+O Compose de infraestrutura fica no repositório DockerLib, em `boilerplateJwt/docker-compose.yml`. Configure o `.env` e execute os comandos a partir desse diretório. Ele inicia MySQL e Redis como serviços internos; phpMyAdmin e Redis Insight são opt-in no profile `tools`.
 
 ## Inspeção do Redis
 
-O Redis não recebe conexões do navegador ou da rede externa. Para iniciar a ferramenta visual de desenvolvimento, ative o profile `tools`:
+O Redis não recebe conexões do navegador ou da rede externa. No diretório DockerLib `boilerplateJwt`, inicie a ferramenta visual de desenvolvimento com o profile `tools`:
 
 ```powershell
-docker compose --env-file $envFile --profile tools up --build --wait
+docker compose --profile tools up --wait
 ```
 
 Abra `http://localhost:5540` e adicione uma conexão com host `redis` e porta `6379`. Informe `REDIS_PASSWORD` se essa variável estiver configurada. O Redis Insight permite consultar chaves, valores e TTLs armazenados.
