@@ -32,20 +32,18 @@ public class CPreferenciaUsuarioService {
     private final CAuthService authService;
     private final EntityManager entityManager;
     private final IRedisCache redisCache;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public CPreferenciaUsuarioService(
             IPreferenciaUsuarioRepository pPreferenciaUsuarioRepository,
             CAuthService pAuthService,
             EntityManager pEntityManager,
-            IRedisCache pRedisCache,
-            ObjectMapper pObjectMapper
+            IRedisCache pRedisCache
     ) {
         this.preferenciaUsuarioRepository = pPreferenciaUsuarioRepository;
         this.authService = pAuthService;
         this.entityManager = pEntityManager;
         this.redisCache = pRedisCache;
-        this.objectMapper = pObjectMapper;
     }
 
     @Transactional(readOnly = true)

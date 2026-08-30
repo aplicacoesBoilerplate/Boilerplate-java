@@ -37,7 +37,7 @@ class CPreferenciaUsuarioSecurityRegressionTests {
 
     @BeforeEach
     void configurar() {
-        service = new CPreferenciaUsuarioService(repository, authService, entityManager, redisCache, new ObjectMapper());
+        service = new CPreferenciaUsuarioService(repository, authService, entityManager, redisCache);
         CUsuario usuario = new CUsuario();
         usuario.setIdUsuario(10L);
         when(authService.buscarUsuarioLogado()).thenReturn(usuario);
