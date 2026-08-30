@@ -70,6 +70,6 @@ class CRbacCacheTests {
 
         assertThat(service.usuarioPodeAcessarEndpoint(usuario, "GET", "/usuarios/10")).isTrue();
 
-        verify(redisCache).salvar(org.mockito.ArgumentMatchers.eq("v1:rbac:cargo:7"), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any());
+        verify(redisCache).salvarPermanente(org.mockito.ArgumentMatchers.eq("v1:rbac:cargo:7"), org.mockito.ArgumentMatchers.anyString());
     }
 }

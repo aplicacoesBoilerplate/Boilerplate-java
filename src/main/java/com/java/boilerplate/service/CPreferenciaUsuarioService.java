@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.time.Duration;
 import java.util.Optional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -29,7 +28,6 @@ public class CPreferenciaUsuarioService {
     private static final int MAXIMO_PREFERENCIAS_POR_USUARIO = 100;
     private static final int MAXIMO_ITENS_POR_LOTE = 20;
     private static final int MAXIMO_CARACTERES_VALOR = 16_384;
-    private static final Duration TTL_CACHE_PREFERENCIAS = Duration.ofMinutes(15);
     private final IPreferenciaUsuarioRepository preferenciaUsuarioRepository;
     private final CAuthService authService;
     private final EntityManager entityManager;
@@ -61,7 +59,7 @@ public class CPreferenciaUsuarioService {
         }
 
         RPreferenciasUsuario preferencias = buscarPreferencias(usuario.getIdUsuario());
-        serializarPreferencias(preferencias).ifPresent(pValor -> redisCache.salvar(chaveCache, pValor, TTL_CACHE_PREFERENCIAS));
+        serializarPreferencias(preferencias).ifPresent(pValor -> redisCache.salvarPermanente(chaveCache, pValor));
         return preferencias;
     }
 

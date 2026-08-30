@@ -103,7 +103,9 @@ docker compose --env-file $envFile --profile tools up --build --wait
 
 Abra `http://localhost:5540` e adicione uma conexão com host `redis` e porta `6379`. Informe `REDIS_PASSWORD` se essa variável estiver configurada. O Redis Insight permite consultar chaves, valores e TTLs armazenados.
 
-Uma requisição HTTP continua chegando à API. Quando um domínio usar cache-aside, a API verifica primeiro o Redis; em cache hit, ela devolve o resultado sem consultar MySQL. Em cache miss ou falha do Redis, consulta MySQL e mantém a resposta normal. A infraestrutura desta issue ainda não armazena dados de domínio: a leitura e invalidação de preferências e permissões serão adicionadas na issue #23.
+Uma requisição HTTP continua chegando à API. Preferências autenticadas e permissões RBAC locais usam cache-aside: a API verifica primeiro o Redis; em cache hit, ela devolve o resultado sem consultar MySQL. Em cache miss ou falha do Redis, consulta MySQL e mantém a resposta normal.
+
+As chaves de preferências e permissões não expiram automaticamente. Elas permanecem no Redis até que uma escrita confirmada no MySQL invalide somente a chave afetada. Notificações para sessões já autenticadas após uma alteração de cargo pertencem a uma entrega posterior de eventos em tempo real.
 
 Para encerrar os containers, preserve os dados do banco:
 

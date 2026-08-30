@@ -16,5 +16,8 @@ public class CSemCacheRedisService implements IRedisCache {
     public void salvar(String pChave, String pValor, Duration pTtl) {}
 
     @Override
+    public void salvarPermanente(String pChave, String pValor) {}
+
+    @Override
     public void remover(String pChave) {}
 }

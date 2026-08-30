@@ -44,6 +44,16 @@ public class CRedisCacheService implements IRedisCache {
     }
 
     @Override
+    public void salvarPermanente(String pChave, String pValor) {
+        try {
+            redisTemplate.opsForValue().set(pChave, pValor);
+            registrarRecuperacao();
+        } catch (DataAccessException pException) {
+            registrarIndisponibilidade(pException);
+        }
+    }
+
+    @Override
     public void remover(String pChave) {
         try {
             redisTemplate.delete(pChave);

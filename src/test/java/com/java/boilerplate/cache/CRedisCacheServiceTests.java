@@ -42,6 +42,19 @@ class CRedisCacheServiceTests {
     }
 
     @Test
+    void salvarPermanenteArmazenaValorSemExpiracao() {
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+        ValueOperations<String, String> valueOperations = criarValueOperations();
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        IRedisCache cache = new CRedisCacheService(redisTemplate);
+
+        cache.salvarPermanente("cache:teste", "valor");
+
+        verify(valueOperations).set("cache:teste", "valor");
+    }
+
+    @Test
     void cacheDesabilitadoSempreRetornaAusencia() {
         IRedisCache cache = new CSemCacheRedisService();
 

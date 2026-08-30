@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.time.Duration;
 import java.util.Optional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -36,7 +35,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Service
 public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> implements IServiceCrud<RCargoRbac> {
     private static final String RECURSO_API = "api";
-    private static final Duration TTL_CACHE_PERMISSOES = Duration.ofMinutes(15);
 
     private final ICargoRbacRepository cargoRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
@@ -285,7 +283,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
                         .map(pPermissao -> new RPermissaoApiCache(pPermissao.getAcao(), Boolean.TRUE.equals(pPermissao.getLiberado())))
                         .toList());
         try {
-            redisCache.salvar(chaveCache, objectMapper.writeValueAsString(permissoes), TTL_CACHE_PERMISSOES);
+            redisCache.salvarPermanente(chaveCache, objectMapper.writeValueAsString(permissoes));
         } catch (JsonProcessingException pException) {
             // O banco relacional continua sendo usado quando a serializacao falha.
         }

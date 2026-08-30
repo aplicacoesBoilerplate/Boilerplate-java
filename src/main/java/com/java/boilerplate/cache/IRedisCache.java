@@ -11,5 +11,7 @@ public interface IRedisCache {
 
     void salvar(String pChave, String pValor, Duration pTtl);
 
+    void salvarPermanente(String pChave, String pValor);
+
     void remover(String pChave);
 }
