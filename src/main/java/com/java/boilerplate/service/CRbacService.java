@@ -204,6 +204,9 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         pCargo.setRedirecionamentoFiltros(escreverFiltros(redirecionamento == null ? List.of() : redirecionamento.filtros()));
 
         pCargo.definirPermissoes(normalizarPermissoes(pRequest.permissoes()));
+        pCargo.definirFuncionalidades(pRequest.funcionalidades() == null
+                ? List.of()
+                : pRequest.funcionalidades().stream().map(RFuncionalidadeCargoRbac::toEntity).toList());
     }
 
     private List<CPermissaoCargoRbac> normalizarPermissoes(List<RPermissaoCargoRbac> pPermissoes) {

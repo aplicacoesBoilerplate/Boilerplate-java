@@ -28,16 +28,21 @@ public class COpenApiConfiguration {
      */
     @Bean
     public OpenApiCustomizer healthCheckOpenApiCustomizer() {
-        return pOpenApi -> pOpenApi.path(
-                "/actuator/health-check",
-                new PathItem()
-                        .get(new Operation()
-                                .tags(List.of("Actuator"))
-                                .summary("Consultar health check")
-                                .description("Retorna o status operacional da aplicação exposto pelo Spring Actuator.")
-                                .responses(new ApiResponses()
-                                        .addApiResponse("200", criarResposta("Aplicação operacional"))
-                                        .addApiResponse("503", criarResposta("Aplicação indisponível")))));
+        return pOpenApi -> {
+            pOpenApi.path("/actuator/health-check", criarPathHealthCheck("Consultar health check", "Retorna o status operacional da aplicação exposto pelo Spring Actuator."));
+            pOpenApi.path("/actuator/health-check/smtp", criarPathHealthCheck("Consultar health SMTP", "Retorna o estado da conectividade SMTP configurada para a aplicação."));
+        };
+    }
+
+    private PathItem criarPathHealthCheck(String pResumo, String pDescricao) {
+        return new PathItem()
+                .get(new Operation()
+                        .tags(List.of("Actuator"))
+                        .summary(pResumo)
+                        .description(pDescricao)
+                        .responses(new ApiResponses()
+                                .addApiResponse("200", criarResposta("Aplicação operacional"))
+                                .addApiResponse("503", criarResposta("Aplicação indisponível"))));
     }
 
     private ApiResponse criarResposta(String pDescricao) {

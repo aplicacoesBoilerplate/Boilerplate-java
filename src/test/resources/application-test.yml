@@ -67,13 +67,6 @@ security:
     loginAttemptsPerWindow: 5
     maxTrackedKeys: 10000
 
-software-center:
-  base-url: http://localhost:8081
-  bff-client-id: test-bff-client
-  bff-client-secret: test-bff-secret
-  tenant-default: empresa
-  timeout: 1s
-
 app:
   frontendUrl: http://localhost:5173
   corsAllowedOrigins: http://localhost:5173
