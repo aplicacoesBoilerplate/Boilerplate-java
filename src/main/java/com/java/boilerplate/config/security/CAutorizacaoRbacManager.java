@@ -2,6 +2,7 @@ package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.service.CRbacService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.function.Supplier;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -29,11 +30,21 @@ public class CAutorizacaoRbacManager implements AuthorizationManager<RequestAuth
             return new AuthorizationDecision(rbacService.usuarioPodeAcessarEndpoint(
                     usuario,
                     pContext.getRequest().getMethod(),
-                    pContext.getRequest().getServletPath()
+                    caminhoDaAplicacao(pContext.getRequest())
             ));
         }
 
         return new AuthorizationDecision(false);
+    }
+
+    private String caminhoDaAplicacao(HttpServletRequest pRequest) {
+        String caminho = pRequest.getRequestURI();
+        String contextPath = pRequest.getContextPath();
+        if (contextPath != null && !contextPath.isEmpty() && caminho.startsWith(contextPath)) {
+            caminho = caminho.substring(contextPath.length());
+        }
+
+        return caminho.startsWith("/api/v1/") ? caminho.substring("/api/v1".length()) : caminho;
     }
 
 }

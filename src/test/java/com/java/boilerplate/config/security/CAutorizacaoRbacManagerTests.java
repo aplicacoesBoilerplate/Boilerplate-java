@@ -50,6 +50,23 @@ class CAutorizacaoRbacManagerTests {
         assertThat(decisao.isGranted()).isFalse();
     }
 
+    @Test
+    void deveIgnorarPrefixoDaVersaoAoConsultarPermissao() {
+        CRbacService rbacService = mock(CRbacService.class);
+        CAutorizacaoRbacManager manager = new CAutorizacaoRbacManager(rbacService);
+        CUsuario usuario = criarUsuarioUser();
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/usuarios/consulta");
+        when(rbacService.usuarioPodeAcessarEndpoint(usuario, "POST", "/usuarios/consulta")).thenReturn(true);
+
+        AuthorizationDecision decisao = manager.authorize(
+                () -> new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()),
+                new RequestAuthorizationContext(request)
+        );
+
+        assertThat(decisao.isGranted()).isTrue();
+        verify(rbacService).usuarioPodeAcessarEndpoint(usuario, "POST", "/usuarios/consulta");
+    }
+
     private CUsuario criarUsuarioUser() {
         CCargoRbac cargo = new CCargoRbac();
         cargo.setPapel("USER");
