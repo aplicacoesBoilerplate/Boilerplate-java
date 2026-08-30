@@ -154,7 +154,6 @@ public class CAuthService implements UserDetailsService {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
     public boolean solicitarAcesso(RSolicitacaoAcesso pSolicitacao) {
         limitarFluxoPublico("solicitacao-acesso", pSolicitacao.email(), rateLimitProperties.publicRequestsPerWindow());
         if (!pSolicitacao.senha().equals(pSolicitacao.confirmarSenha())) {

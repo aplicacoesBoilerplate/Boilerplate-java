@@ -3,6 +3,7 @@ package com.java.boilerplate.service;
 import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.dto.consulta.RConsultaRegistros;
 import com.java.boilerplate.dto.consulta.RRespostaConsultaRegistros;
+import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CUsuario;
@@ -133,7 +134,6 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario editar(RUsuario pRequest) {
         if (pRequest.id() == null) {
             throw new CExceptionsSystem("O identificador do usuário é obrigatório para edição", HttpStatus.BAD_REQUEST);
@@ -144,19 +144,20 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario modificar(RUsuario pRequest) {
         return editar(pRequest);
     }
 
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
     public RUsuario atualizar(Long pIdUsuario, RUsuario pRequest) {
+        validarPodeGerenciarUsuario(pIdUsuario);
         CUsuario usuario = buscarEntidadePorId(pIdUsuario);
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
         CUsuario atualizado = usuarioRepository.saveAndFlush(usuario);
-        tokenService.revogarSessoesUsuario(pIdUsuario);
+        if (!pIdUsuario.equals(resolverIdUsuarioLogado())) {
+            tokenService.revogarSessoesUsuario(pIdUsuario);
+        }
         return paraRegistro(atualizado);
     }
 
@@ -192,6 +193,27 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         pUsuario.setNotificar(Boolean.TRUE.equals(pRequest.notificar()));
         pUsuario.setAtivo(pRequest.ativo() == null || pRequest.ativo());
         pUsuario.setCargo(cargo);
+    }
+
+    private void validarPodeGerenciarUsuario(Long pIdUsuario) {
+        Long idUsuarioLogado = resolverIdUsuarioLogado();
+        if (idUsuarioLogado == null) {
+            return;
+        }
+
+        if (pIdUsuario.equals(idUsuarioLogado)) {
+            return;
+        }
+
+        CUsuario usuarioLogado = buscarEntidadePorId(idUsuarioLogado);
+        CCargoRbac cargo = usuarioLogado.getCargo();
+        boolean funcionalidadeLiberada = cargo.getFuncionalidades().stream()
+                .anyMatch(pFuncionalidade -> "gerenciarRegistrosOutros".equals(pFuncionalidade.getFuncionalidade())
+                        && Boolean.TRUE.equals(pFuncionalidade.getLiberado()));
+        boolean comportamentoPadraoLibera = cargo.getComportamentoPadrao() == EComportamentoPadraoPermissao.liberar;
+        if (!funcionalidadeLiberada && !comportamentoPadraoLibera) {
+            throw new CExceptionsSystem("Usuário não possui permissão para gerenciar registros de outros", HttpStatus.FORBIDDEN);
+        }
     }
 
     @Override
