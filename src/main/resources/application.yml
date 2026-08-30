@@ -61,6 +61,20 @@ spring:
       initialize-schema: never
       table-name: SPRING_SESSION
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:1s}
+      timeout: ${REDIS_COMMAND_TIMEOUT:1s}
+      repositories:
+        enabled: false
+
+# Redis e opcional: a API continua usando a fonte de verdade relacional quando indisponivel.
+redis:
+  enabled: ${REDIS_ENABLED:true}
+
 # Porta HTTP da API e suporte correto a headers de proxy/reverse proxy.
 server:
   port: ${API_PORT:8080}
