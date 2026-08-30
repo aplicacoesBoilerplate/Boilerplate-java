@@ -155,7 +155,9 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
         CUsuario atualizado = usuarioRepository.saveAndFlush(usuario);
-        tokenService.revogarSessoesUsuario(pIdUsuario);
+        if (!pIdUsuario.equals(resolverIdUsuarioLogado())) {
+            tokenService.revogarSessoesUsuario(pIdUsuario);
+        }
         return paraRegistro(atualizado);
     }
 
