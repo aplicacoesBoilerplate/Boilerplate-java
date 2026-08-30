@@ -41,7 +41,14 @@ services:
           exec redis-server --appendonly no;
         fi
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD-SHELL
+        - >-
+          if [ -n "$$REDIS_PASSWORD" ]; then
+            redis-cli --no-auth-warning --pass "$$REDIS_PASSWORD" ping;
+          else
+            redis-cli ping;
+          fi
       interval: 5s
       timeout: 3s
       retries: 20
