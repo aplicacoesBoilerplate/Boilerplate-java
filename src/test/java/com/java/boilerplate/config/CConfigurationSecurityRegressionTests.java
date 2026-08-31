@@ -19,6 +19,7 @@ class CConfigurationSecurityRegressionTests {
     void chaveJweInvalidaDeveSerRejeitadaAntesDaAplicacaoIniciar() {
         RTokensProperties properties = new RTokensProperties(
                 "chave-invalida",
+                "",
                 "boilerplate-java-api",
                 720L,
                 ""
@@ -27,6 +28,20 @@ class CConfigurationSecurityRegressionTests {
         assertThat(validator.validate(properties))
                 .extracting(pViolation -> pViolation.getPropertyPath().toString())
                 .contains("encryptionKeyValida", "accessTokenMinutes");
+    }
+
+    @Test
+    void segredoJwtLegadoDeveDerivarChaveJweDuranteAMigracao() {
+        RTokensProperties properties = new RTokensProperties(
+                "",
+                "test-secret-with-enough-size-for-hmac",
+                "boilerplate-java-api",
+                30L,
+                ""
+        );
+
+        assertThat(validator.validate(properties)).isEmpty();
+        assertThat(properties.encryptionKeyBytes()).hasSize(32);
     }
 
     @Test

@@ -6,6 +6,8 @@ Mantenha credenciais fora deste repositório. `TOKEN_ENCRYPTION_KEY` deve ser Ba
 
 Os tokens de acesso usam JWE com `dir` e `A256GCM`: as claims são cifradas e o banco guarda somente o hash SHA-256 do token. A troca da chave invalida todas as sessões existentes; gere e distribua a nova chave de forma coordenada.
 
+Como compatibilidade temporária, instalações que ainda possuem `JWT_SECRET` com ao menos 32 caracteres derivam dela uma chave AES-256. Migre para `TOKEN_ENCRYPTION_KEY` antes da próxima rotação de segredos.
+
 O bootstrap administrativo é desativado por padrão. Para a primeira instalação, use `ADMIN_BOOTSTRAP_ENABLED=true` junto de `ADMIN_NAME`, `ADMIN_EMAIL` e uma senha de 12 a 72 caracteres. Após confirmar a conta, volte a opção para `false` e remova a senha do ambiente.
 
 Nunca reutilize valores de `.env.example`. Arquivos `.env`, chaves, certificados, dumps e diretórios de dados de bancos não podem ficar sob a raiz do projeto. Use volumes Docker nomeados ou diretórios externos com ACL restrita. Execute antes de publicar:

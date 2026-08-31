@@ -26,6 +26,7 @@ class CGoogleOAuthSecurityRegressionTests {
     void loginDeveReutilizarVerifierInjetadoEmVezDeCriarTransportePorRequisicao() throws Exception {
         RTokensProperties properties = new RTokensProperties(
                 "test-secret-with-enough-size-for-hmac",
+                "",
                 "issuer-test",
                 30L,
                 "google-client-id"
@@ -124,6 +125,7 @@ class CGoogleOAuthSecurityRegressionTests {
     private RTokensProperties properties() {
         return new RTokensProperties(
                 "test-secret-with-enough-size-for-hmac",
+                "",
                 "issuer-test",
                 30L,
                 "google-client-id"

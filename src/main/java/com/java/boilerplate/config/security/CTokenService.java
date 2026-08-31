@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
@@ -38,7 +37,7 @@ public class CTokenService {
     public CTokenService(RTokensProperties pProperties, IRefreshTokenRepository pRefreshTokenRepository) {
         this.properties = pProperties;
         this.refreshTokenRepository = pRefreshTokenRepository;
-        this.encryptionKey = new SecretKeySpec(Base64.getDecoder().decode(pProperties.encryptionKey()), "AES");
+        this.encryptionKey = new SecretKeySpec(pProperties.encryptionKeyBytes(), "AES");
     }
 
     @Transactional
