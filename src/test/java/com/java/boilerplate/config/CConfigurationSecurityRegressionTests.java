@@ -16,9 +16,9 @@ class CConfigurationSecurityRegressionTests {
     }
 
     @Test
-    void segredoJwtCurtoDeveSerRejeitadoAntesDaAplicacaoIniciar() {
+    void chaveJweInvalidaDeveSerRejeitadaAntesDaAplicacaoIniciar() {
         RTokensProperties properties = new RTokensProperties(
-                "boilerplate-java-dev-secret-change-me",
+                "chave-invalida",
                 "boilerplate-java-api",
                 720L,
                 ""
@@ -26,7 +26,7 @@ class CConfigurationSecurityRegressionTests {
 
         assertThat(validator.validate(properties))
                 .extracting(pViolation -> pViolation.getPropertyPath().toString())
-                .contains("secret", "accessTokenMinutes");
+                .contains("encryptionKeyValida", "accessTokenMinutes");
     }
 
     @Test

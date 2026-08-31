@@ -112,9 +112,9 @@ documentacao:
   senha: ${DOC_PASSWORD:}
   senhaHash: ${DOC_PASSWORD_HASH:}
 
-# Configurações de JWT e autenticação Google.
+# Configurações do token JWE e autenticação Google.
 tokens:
-  secret: ${JWT_SECRET:}
+  encryptionKey: ${TOKEN_ENCRYPTION_KEY:}
   issuer: ${JWT_ISSUER:boilerplate-java-api}
   accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:240}
   googleClientId: ${GOOGLE_CLIENT_ID:}

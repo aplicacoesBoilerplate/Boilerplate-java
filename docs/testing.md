@@ -19,7 +19,7 @@ powershell -ExecutionPolicy Bypass -File scripts/verify-no-secrets.ps1
 docker compose config --quiet
 ```
 
-O último comando requer variáveis de banco/JWT/OTP/documentação no processo; ele deve falhar quando um segredo obrigatório estiver ausente.
+O último comando requer variáveis de banco/JWE/OTP/documentação no processo; ele deve falhar quando um segredo obrigatório estiver ausente.
 
 ## Frontend
 

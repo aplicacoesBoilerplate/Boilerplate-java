@@ -1,6 +1,6 @@
 # Boilerplate-java
 
-Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação JWT, recuperação de senha por e-mail, login com Google, solicitações de acesso, RBAC e motor de filtros compatível com o Boilerplate-vue.
+Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação JWE, recuperação de senha por e-mail, login com Google, solicitações de acesso, RBAC e motor de filtros compatível com o Boilerplate-vue.
 
 ## Stack
 
@@ -38,7 +38,7 @@ DB_PASSWORD=<senha-forte-e-exclusiva>
 DB_ROOT_PASSWORD=<outra-senha-forte-e-exclusiva>
 DB_APP_USERNAME=boilerplate_app
 DB_APP_PASSWORD=<senha-forte-e-exclusiva>
-JWT_SECRET=<chave-aleatoria-com-no-minimo-32-caracteres>
+TOKEN_ENCRYPTION_KEY=<chave-aleatoria-de-32-bytes-codificada-em-Base64>
 OTP_PEPPER=<outra-chave-aleatoria-com-no-minimo-32-caracteres>
 JWT_ISSUER=boilerplate-java-api
 DOCS_ENABLED=true
@@ -107,7 +107,7 @@ Em seguida, execute sem carregar variáveis manualmente:
 .\mvnw.cmd spring-boot:run
 ```
 
-O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`.
+O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`. `TOKEN_ENCRYPTION_KEY` deve ser a codificação Base64 de 32 bytes aleatórios para cifrar tokens JWE com A256GCM.
 O `DB_APP_USERNAME` e `DB_APP_PASSWORD` existem apenas para o Docker criar um usuário comum no MySQL; a imagem oficial não aceita `MYSQL_USER=root`.
 
 A documentação Swagger fica desabilitada por padrão. Para habilitá-la, defina `DOCS_ENABLED=true`; `/doc` então usa Basic Auth com usuário não público definido por `DOC_USERNAME` e senha forte definida por `DOC_PASSWORD`. A aplicação aplica BCrypt no startup; se você quiser manter um hash pronto no ambiente, informe `DOC_PASSWORD_HASH`.

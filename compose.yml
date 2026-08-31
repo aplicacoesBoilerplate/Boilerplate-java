@@ -41,7 +41,7 @@ services:
       DB_NAME: ${DB_NAME:-boilerplate_java}
       DB_USERNAME: ${DB_APP_USERNAME:?Defina DB_APP_USERNAME no arquivo .env}
       DB_PASSWORD: ${DB_APP_PASSWORD:?Defina DB_APP_PASSWORD no arquivo .env}
-      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?Defina TOKEN_ENCRYPTION_KEY no arquivo .env}
       JWT_ISSUER: ${JWT_ISSUER:-boilerplate-java-api}
       DOCS_ENABLED: ${DOCS_ENABLED:-false}
       DOC_USERNAME: ${DOC_USERNAME:-}
