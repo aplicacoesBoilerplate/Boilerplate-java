@@ -98,7 +98,7 @@ Remover o volume `mysql_data` apaga o banco e só deve ser feito de forma explí
 Para desenvolver apenas a API fora de containers, suba o banco e o phpMyAdmin:
 
 ```powershell
-docker compose -f src/main/resources/db/docker-compose.yml --profile dev-tools up -d
+docker compose --env-file src/main/resources/.env -f src/main/resources/db/docker-compose.yml --profile dev-tools up -d
 ```
 
 Em seguida, execute sem carregar variáveis manualmente:
