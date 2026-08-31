@@ -25,7 +25,7 @@ class CTokenSecurityRegressionTests {
 
     @Test
     void jweSemSessaoAtivaDeveSerRejeitado() {
-        RTokensProperties properties = new RTokensProperties(ENCRYPTION_KEY, "", "issuer-test", 30L, "");
+        RTokensProperties properties = new RTokensProperties(ENCRYPTION_KEY, "issuer-test", 30L, "");
         CTokenService tokenService = new CTokenService(properties, mock(IRefreshTokenRepository.class));
 
         assertThat(tokenService.validarToken(tokenService.gerarToken(usuario(10L, "admin@example.com")))).isNull();
@@ -33,7 +33,7 @@ class CTokenSecurityRegressionTests {
 
     @Test
     void tokenEmitidoDeveSerJweCriptografadoELogoutDeveRevogaLoImediatamente() throws Exception {
-        RTokensProperties properties = new RTokensProperties(ENCRYPTION_KEY, "", "issuer-test", 30L, "");
+        RTokensProperties properties = new RTokensProperties(ENCRYPTION_KEY, "issuer-test", 30L, "");
         IRefreshTokenRepository repository = mock(IRefreshTokenRepository.class);
         Map<String, CRefreshToken> sessoes = new HashMap<>();
         when(repository.findById(10L)).thenReturn(Optional.empty());
@@ -70,7 +70,7 @@ class CTokenSecurityRegressionTests {
 
     @Test
     void tokenJweAdulteradoDeveSerRejeitado() {
-        RTokensProperties properties = new RTokensProperties(ENCRYPTION_KEY, "", "issuer-test", 30L, "");
+        RTokensProperties properties = new RTokensProperties(ENCRYPTION_KEY, "issuer-test", 30L, "");
         CTokenService tokenService = new CTokenService(properties, mock(IRefreshTokenRepository.class));
         String token = tokenService.gerarToken(usuario(10L, "titular@example.com"));
         String tokenAdulterado = token.substring(0, token.length() - 1) + (token.endsWith("A") ? "B" : "A");

@@ -115,9 +115,8 @@ documentacao:
 # Configurações do token JWE e autenticação Google.
 tokens:
   encryptionKey: ${TOKEN_ENCRYPTION_KEY:}
-  legacySecret: ${JWT_SECRET:}
-  issuer: ${JWT_ISSUER:boilerplate-java-api}
-  accessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:240}
+  issuer: ${TOKEN_ISSUER:boilerplate-java-api}
+  accessTokenMinutes: ${TOKEN_ACCESS_TOKEN_MINUTES:240}
   googleClientId: ${GOOGLE_CLIENT_ID:}
 
 otp:

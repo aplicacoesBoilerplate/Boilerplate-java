@@ -40,7 +40,7 @@ DB_APP_USERNAME=boilerplate_app
 DB_APP_PASSWORD=<senha-forte-e-exclusiva>
 TOKEN_ENCRYPTION_KEY=<chave-aleatoria-de-32-bytes-codificada-em-Base64>
 OTP_PEPPER=<outra-chave-aleatoria-com-no-minimo-32-caracteres>
-JWT_ISSUER=boilerplate-java-api
+TOKEN_ISSUER=boilerplate-java-api
 DOCS_ENABLED=true
 DOC_USERNAME=seu-usuario-documentacao
 DOC_PASSWORD=<senha-com-no-minimo-12-caracteres>
@@ -107,7 +107,7 @@ Em seguida, execute sem carregar variáveis manualmente:
 .\mvnw.cmd spring-boot:run
 ```
 
-O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`. `TOKEN_ENCRYPTION_KEY` deve ser a codificação Base64 de 32 bytes aleatórios para cifrar tokens JWE com A256GCM. Durante a migração, uma `JWT_SECRET` legada de ao menos 32 caracteres é derivada em uma chave AES-256; substitua-a por `TOKEN_ENCRYPTION_KEY` assim que possível.
+O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`. `TOKEN_ENCRYPTION_KEY` deve ser a codificação Base64 de 32 bytes aleatórios para cifrar tokens JWE com A256GCM.
 O `DB_APP_USERNAME` e `DB_APP_PASSWORD` existem apenas para o Docker criar um usuário comum no MySQL; a imagem oficial não aceita `MYSQL_USER=root`.
 
 A documentação Swagger fica desabilitada por padrão. Para habilitá-la, defina `DOCS_ENABLED=true`; `/doc` então usa Basic Auth com usuário não público definido por `DOC_USERNAME` e senha forte definida por `DOC_PASSWORD`. A aplicação aplica BCrypt no startup; se você quiser manter um hash pronto no ambiente, informe `DOC_PASSWORD_HASH`.

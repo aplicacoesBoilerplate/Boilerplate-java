@@ -44,7 +44,6 @@ documentacao:
 
 tokens:
   encryptionKey: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
-  legacySecret:
   issuer: boilerplate-java-test
   accessTokenMinutes: 240
   googleClientId:
