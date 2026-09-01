@@ -121,4 +121,8 @@ No Compose integrado, a API usa o tratamento nativo de headers encaminhados apen
 
 O profile `test` usa H2 em memória e desativa Flyway para validar o contexto da aplicação sem depender de MySQL local.
 
+## Migrations Flyway
+
+Migrations versionadas em `src/main/resources/db/migration` são imutáveis após o commit. Para evoluir o schema, crie uma nova migration no formato `V<N>__descricao.sql`; nunca edite, renomeie ou remova uma migration existente. O hook `pre-commit` e a CI validam essa regra.
+
 Consulte também [SECURITY.md](SECURITY.md), [docs/testing.md](docs/testing.md) e [docs/performance-runbook.md](docs/performance-runbook.md).

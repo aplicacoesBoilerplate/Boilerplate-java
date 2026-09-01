@@ -2,4 +2,5 @@
 
 set -eu
 
+sh scripts/verify-flyway-migrations.sh --staged
 ./mvnw -B compile
