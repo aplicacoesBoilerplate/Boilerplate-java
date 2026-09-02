@@ -1,6 +1,6 @@
 # Boilerplate-java
 
-Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação JWT, recuperação de senha por e-mail, login com Google, solicitações de acesso, RBAC e motor de filtros compatível com o Boilerplate-vue.
+Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação JWE, recuperação de senha por e-mail, login com Google, solicitações de acesso, RBAC e motor de filtros compatível com o Boilerplate-vue.
 
 ## Stack
 
@@ -43,9 +43,10 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_ENABLED=true
 REDISINSIGHT_PORT=5540
+TOKEN_ENCRYPTION_KEY=<chave-aleatoria-de-32-bytes-codificada-em-Base64>
 JWT_SECRET=<chave-aleatoria-com-no-minimo-32-caracteres>
 OTP_PEPPER=<outra-chave-aleatoria-com-no-minimo-32-caracteres>
-JWT_ISSUER=boilerplate-java-api
+TOKEN_ISSUER=boilerplate-java-api
 DOCS_ENABLED=true
 DOC_USERNAME=seu-usuario-documentacao
 DOC_PASSWORD=<senha-com-no-minimo-12-caracteres>
@@ -117,7 +118,7 @@ Remover o volume `mysql_data` apaga o banco e só deve ser feito de forma explí
 Para desenvolver apenas a API fora de containers, suba o banco e o phpMyAdmin:
 
 ```powershell
-docker compose -f src/main/resources/db/docker-compose.yml --profile dev-tools up -d
+docker compose --env-file src/main/resources/.env -f src/main/resources/db/docker-compose.yml --profile dev-tools up -d
 ```
 
 Em seguida, execute sem carregar variáveis manualmente:
@@ -126,7 +127,7 @@ Em seguida, execute sem carregar variáveis manualmente:
 .\mvnw.cmd spring-boot:run
 ```
 
-O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`.
+O arquivo local ignorado `src/main/resources/.env` é carregado automaticamente pelo Spring Boot e pode usar as mesmas variáveis de banco do Compose. Para a API local, `DB_APP_USERNAME` e `DB_APP_PASSWORD` são usados como fallback de `DB_USERNAME` e `DB_PASSWORD`; a API não deve conectar como `root`. `TOKEN_ENCRYPTION_KEY` deve ser a codificação Base64 de 32 bytes aleatórios para cifrar tokens JWE com A256GCM.
 O `DB_APP_USERNAME` e `DB_APP_PASSWORD` existem apenas para o Docker criar um usuário comum no MySQL; a imagem oficial não aceita `MYSQL_USER=root`.
 
 A documentação Swagger fica desabilitada por padrão. Para habilitá-la, defina `DOCS_ENABLED=true`; `/doc` então usa Basic Auth com usuário não público definido por `DOC_USERNAME` e senha forte definida por `DOC_PASSWORD`. A aplicação aplica BCrypt no startup; se você quiser manter um hash pronto no ambiente, informe `DOC_PASSWORD_HASH`.
@@ -139,5 +140,9 @@ No Compose integrado, a API usa o tratamento nativo de headers encaminhados apen
 ```
 
 O profile `test` usa H2 em memória e desativa Flyway para validar o contexto da aplicação sem depender de MySQL local.
+
+## Migrations Flyway
+
+Migrations versionadas em `src/main/resources/db/migration` são imutáveis após o commit. Para evoluir o schema, crie uma nova migration no formato `V<N>__descricao.sql`; nunca edite, renomeie ou remova uma migration existente. O hook `pre-commit` e a CI validam essa regra.
 
 Consulte também [SECURITY.md](SECURITY.md), [docs/testing.md](docs/testing.md) e [docs/performance-runbook.md](docs/performance-runbook.md).
