@@ -1,5 +1,8 @@
 package com.java.boilerplate.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.java.boilerplate.cache.IRedisCache;
 import com.java.boilerplate.dto.preferencias.RPreferenciaUsuario;
 import com.java.boilerplate.dto.preferencias.RPreferenciasUsuario;
 import com.java.boilerplate.model.CPreferenciaUsuario;
@@ -16,6 +19,9 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class CPreferenciaUsuarioService {
@@ -25,22 +31,39 @@ public class CPreferenciaUsuarioService {
     private final IPreferenciaUsuarioRepository preferenciaUsuarioRepository;
     private final CAuthService authService;
     private final EntityManager entityManager;
+    private final IRedisCache redisCache;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public CPreferenciaUsuarioService(
             IPreferenciaUsuarioRepository pPreferenciaUsuarioRepository,
             CAuthService pAuthService,
-            EntityManager pEntityManager
+            EntityManager pEntityManager,
+            IRedisCache pRedisCache
     ) {
         this.preferenciaUsuarioRepository = pPreferenciaUsuarioRepository;
         this.authService = pAuthService;
         this.entityManager = pEntityManager;
+        this.redisCache = pRedisCache;
     }
 
     @Transactional(readOnly = true)
     public RPreferenciasUsuario buscarPreferenciasUsuarioAutenticado() {
         CUsuario usuario = authService.buscarUsuarioLogado();
+        String chaveCache = chaveCache(usuario.getIdUsuario());
+        Optional<RPreferenciasUsuario> preferenciasEmCache = redisCache.obter(chaveCache)
+                .flatMap(this::desserializarPreferencias);
+        if (preferenciasEmCache.isPresent()) {
+            return preferenciasEmCache.get();
+        }
+
+        RPreferenciasUsuario preferencias = buscarPreferencias(usuario.getIdUsuario());
+        serializarPreferencias(preferencias).ifPresent(pValor -> redisCache.salvarPermanente(chaveCache, pValor));
+        return preferencias;
+    }
+
+    private RPreferenciasUsuario buscarPreferencias(Long pIdUsuario) {
         List<RPreferenciaUsuario> preferencias = preferenciaUsuarioRepository
-                .findTop100ByUsuario_IdUsuarioOrderByContextoAscChaveAsc(usuario.getIdUsuario())
+                .findTop100ByUsuario_IdUsuarioOrderByContextoAscChaveAsc(pIdUsuario)
                 .stream()
                 .map(RPreferenciaUsuario::fromEntity)
                 .toList();
@@ -89,13 +112,16 @@ public class CPreferenciaUsuarioService {
         }).toList();
         preferenciaUsuarioRepository.saveAll(atualizadas);
 
-        return buscarPreferenciasUsuarioAutenticado();
+        invalidarAposCommit(chaveCache(usuario.getIdUsuario()));
+        return buscarPreferencias(usuario.getIdUsuario());
     }
 
     @Transactional
     public RPreferenciaUsuario salvarPreferenciaUsuarioAutenticado(RPreferenciaUsuario pRequest) {
         CUsuario usuario = authService.buscarUsuarioLogado();
-        return RPreferenciaUsuario.fromEntity(salvarPreferencia(usuario, pRequest));
+        RPreferenciaUsuario preferencia = RPreferenciaUsuario.fromEntity(salvarPreferencia(usuario, pRequest));
+        invalidarAposCommit(chaveCache(usuario.getIdUsuario()));
+        return preferencia;
     }
 
     private CPreferenciaUsuario salvarPreferencia(CUsuario pUsuario, RPreferenciaUsuario pRequest) {
@@ -121,6 +147,39 @@ public class CPreferenciaUsuarioService {
 
     private String chave(String pContexto, String pChave) {
         return pContexto + "\u0000" + pChave;
+    }
+
+    private String chaveCache(Long pIdUsuario) {
+        return "v1:preferencias:usuario:" + pIdUsuario;
+    }
+
+    private Optional<RPreferenciasUsuario> desserializarPreferencias(String pValor) {
+        try {
+            return Optional.of(objectMapper.readValue(pValor, RPreferenciasUsuario.class));
+        } catch (JsonProcessingException pException) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<String> serializarPreferencias(RPreferenciasUsuario pPreferencias) {
+        try {
+            return Optional.of(objectMapper.writeValueAsString(pPreferencias));
+        } catch (JsonProcessingException pException) {
+            return Optional.empty();
+        }
+    }
+
+    private void invalidarAposCommit(String pChaveCache) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            redisCache.remover(pChaveCache);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                redisCache.remover(pChaveCache);
+            }
+        });
     }
 
     private void validarPreferencia(RPreferenciaUsuario pRequest) {

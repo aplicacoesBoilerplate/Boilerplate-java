@@ -3,6 +3,7 @@ package com.java.boilerplate.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.java.boilerplate.cache.IRedisCache;
 import com.java.boilerplate.dto.filtros.RFiltroConsulta;
 import com.java.boilerplate.dto.rbac.RCargoRbac;
 import com.java.boilerplate.dto.rbac.RFuncionalidadeCargoRbac;
@@ -27,6 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> implements IServiceCrud<RCargoRbac> {
@@ -34,17 +38,20 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
     private final ICargoRbacRepository cargoRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
+    private final IRedisCache redisCache;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
     public CRbacService(
             EntityManager pEntityManager,
             ICargoRbacRepository pCargoRepository,
-            CAuditoriaRegistroService pAuditoriaRegistroService
+            CAuditoriaRegistroService pAuditoriaRegistroService,
+            IRedisCache pRedisCache
     ) {
         super(pEntityManager, CCargoRbac.class);
         this.cargoRepository = pCargoRepository;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
+        this.redisCache = pRedisCache;
     }
 
     @Transactional(readOnly = true)
@@ -83,7 +90,9 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
         CCargoRbac cargo = new CCargoRbac();
         preencherCargo(cargo, pRequest);
-        return paraRegistro(cargoRepository.save(cargo));
+        CCargoRbac salvo = cargoRepository.save(cargo);
+        invalidarAposCommit(salvo.getIdCargo());
+        return paraRegistro(salvo);
     }
 
     @Transactional
@@ -123,6 +132,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
             throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser excluídos", HttpStatus.BAD_REQUEST);
         }
         cargoRepository.delete(cargo);
+        invalidarAposCommit(pIdCargo);
     }
 
     @Transactional(readOnly = true)
@@ -131,18 +141,17 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
             return false;
         }
 
-        CCargoRbac cargo = cargoRepository.findByIdWithPermissoes(pUsuario.getCargo().getIdCargo())
-                .orElseThrow(() -> new CExceptionsSystem("Cargo não encontrado", HttpStatus.NOT_FOUND));
-        List<CPermissaoCargoRbac> permissoesApi = cargo.getPermissoes().stream()
-                .filter(pPermissao -> RECURSO_API.equals(pPermissao.getRecurso()))
-                .toList();
-        Boolean decisaoExplicita = resolverPermissaoExplicita(permissoesApi, pMetodoHttp, pCaminho);
+        RPermissoesCargoCache permissoes = obterPermissoes(pUsuario.getCargo().getIdCargo());
+        if (!permissoes.ativo()) {
+            return false;
+        }
+        Boolean decisaoExplicita = resolverPermissaoExplicitaCache(permissoes.permissoes(), pMetodoHttp, pCaminho);
 
         if (decisaoExplicita != null) {
             return decisaoExplicita;
         }
 
-        return cargo.getComportamentoPadrao() == EComportamentoPadraoPermissao.liberar;
+        return permissoes.comportamentoPadrao() == EComportamentoPadraoPermissao.liberar;
     }
 
     @Override
@@ -248,6 +257,70 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         return permissaoLiberada;
     }
 
+    private Boolean resolverPermissaoExplicitaCache(List<RPermissaoApiCache> pPermissoes, String pMetodoHttp, String pCaminho) {
+        Boolean permissaoLiberada = null;
+        for (RPermissaoApiCache permissao : pPermissoes) {
+            if (!acaoApiCombina(permissao.acao(), pMetodoHttp, pCaminho)) {
+                continue;
+            }
+            if (!permissao.liberado()) {
+                return false;
+            }
+            permissaoLiberada = true;
+        }
+        return permissaoLiberada;
+    }
+
+    private RPermissoesCargoCache obterPermissoes(Long pIdCargo) {
+        String chaveCache = chaveCache(pIdCargo);
+        Optional<RPermissoesCargoCache> permissoesEmCache = redisCache.obter(chaveCache).flatMap(this::desserializarPermissoes);
+        if (permissoesEmCache.isPresent()) {
+            return permissoesEmCache.get();
+        }
+        CCargoRbac cargo = cargoRepository.findByIdWithPermissoes(pIdCargo)
+                .orElseThrow(() -> new CExceptionsSystem("Cargo não encontrado", HttpStatus.NOT_FOUND));
+        RPermissoesCargoCache permissoes = new RPermissoesCargoCache(
+                Boolean.TRUE.equals(cargo.getAtivo()),
+                cargo.getComportamentoPadrao(),
+                cargo.getPermissoes().stream().filter(pPermissao -> RECURSO_API.equals(pPermissao.getRecurso()))
+                        .map(pPermissao -> new RPermissaoApiCache(pPermissao.getAcao(), Boolean.TRUE.equals(pPermissao.getLiberado())))
+                        .toList());
+        try {
+            redisCache.salvarPermanente(chaveCache, objectMapper.writeValueAsString(permissoes));
+        } catch (JsonProcessingException pException) {
+            // O banco relacional continua sendo usado quando a serializacao falha.
+        }
+        return permissoes;
+    }
+
+    private Optional<RPermissoesCargoCache> desserializarPermissoes(String pValor) {
+        try {
+            return Optional.of(objectMapper.readValue(pValor, RPermissoesCargoCache.class));
+        } catch (JsonProcessingException pException) {
+            return Optional.empty();
+        }
+    }
+
+    private void invalidarAposCommit(Long pIdCargo) {
+        if (pIdCargo == null) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            redisCache.remover(chaveCache(pIdCargo));
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                redisCache.remover(chaveCache(pIdCargo));
+            }
+        });
+    }
+
+    private String chaveCache(Long pIdCargo) {
+        return "v1:rbac:cargo:" + pIdCargo;
+    }
+
     private boolean acaoApiCombina(String pAcao, String pMetodoHttp, String pCaminho) {
         if (pAcao == null || !pAcao.contains(" ")) {
             return false;
@@ -279,4 +352,8 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
             return List.of();
         }
     }
+
+    private record RPermissaoApiCache(String acao, boolean liberado) {}
+
+    private record RPermissoesCargoCache(boolean ativo, EComportamentoPadraoPermissao comportamentoPadrao, List<RPermissaoApiCache> permissoes) {}
 }

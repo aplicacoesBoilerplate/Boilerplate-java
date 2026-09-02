@@ -38,6 +38,11 @@ DB_PASSWORD=<senha-forte-e-exclusiva>
 DB_ROOT_PASSWORD=<outra-senha-forte-e-exclusiva>
 DB_APP_USERNAME=boilerplate_app
 DB_APP_PASSWORD=<senha-forte-e-exclusiva>
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_ENABLED=true
+REDISINSIGHT_PORT=5540
 JWT_SECRET=<chave-aleatoria-com-no-minimo-32-caracteres>
 OTP_PEPPER=<outra-chave-aleatoria-com-no-minimo-32-caracteres>
 JWT_ISSUER=boilerplate-java-api
@@ -62,7 +67,7 @@ MAX_PERSISTED_ERRORS=1000
 
 ## Execução com Docker
 
-O Compose integrado inicia frontend, API e MySQL em imagens de runtime. O phpMyAdmin é opt-in. Os dados do banco ficam no volume Docker nomeado `mysql_data`, fora do worktree.
+O Compose de infraestrutura fica no repositório DockerLib, em `boilerplateJwt/docker-compose.yml`. Configure o `.env` e execute os comandos a partir desse diretório. Ele inicia MySQL e Redis como serviços internos; phpMyAdmin e Redis Insight são opt-in no profile `tools`.
 
 Crie o arquivo de ambiente local, ignorado pelo Git, a partir do exemplo e defina senhas e chaves próprias:
 
@@ -70,7 +75,7 @@ Crie o arquivo de ambiente local, ignorado pelo Git, a partir do exemplo e defin
 Copy-Item .env.example src/main/resources/.env
 ```
 
-Suba todos os serviços e espere os health checks:
+Inicie a infraestrutura pelo Compose configurado para o ambiente local:
 
 ```powershell
 docker compose --env-file src/main/resources/.env up --build --wait
@@ -84,6 +89,20 @@ URLs locais:
 - Liveness público: `http://localhost:8080/api/v1/actuator/health-check/public`
 - Diagnóstico SMTP (Bearer com papel `ADMIN`): `http://localhost:8080/api/v1/actuator/health-check/smtp`
 - phpMyAdmin (somente quando iniciado com `--profile tools`): `http://localhost:8081`
+
+## Inspeção do Redis
+
+O Redis não recebe conexões do navegador ou da rede externa. No diretório DockerLib `boilerplateJwt`, inicie a ferramenta visual de desenvolvimento com o profile `tools`:
+
+```powershell
+docker compose --profile tools up --wait
+```
+
+Abra `http://localhost:5540` e adicione uma conexão com host `redis` e porta `6379`. Informe `REDIS_PASSWORD` se essa variável estiver configurada. O Redis Insight permite consultar chaves, valores e TTLs armazenados.
+
+Uma requisição HTTP continua chegando à API. Preferências autenticadas e permissões RBAC locais usam cache-aside: a API verifica primeiro o Redis; em cache hit, ela devolve o resultado sem consultar MySQL. Em cache miss ou falha do Redis, consulta MySQL e mantém a resposta normal.
+
+As chaves de preferências e permissões não expiram automaticamente. Elas permanecem no Redis até que uma escrita confirmada no MySQL invalide somente a chave afetada. Notificações para sessões já autenticadas após uma alteração de cargo pertencem a uma entrega posterior de eventos em tempo real.
 
 Para encerrar os containers, preserve os dados do banco:
 
