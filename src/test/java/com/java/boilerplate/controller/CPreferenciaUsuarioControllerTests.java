@@ -1,0 +1,92 @@
+package com.java.boilerplate.controller;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ActiveProfiles("test")
+@SpringBootTest(properties = {
+        "bootstrap.admin.enabled=true",
+        "bootstrap.admin.email=admin-preferencias@example.com",
+        "bootstrap.admin.password=senha-admin-preferencias-segura",
+        "bootstrap.admin.name=ADMIN PREFERENCIAS"
+})
+@AutoConfigureMockMvc
+class CPreferenciaUsuarioControllerTests {
+    @Autowired
+    private MockMvc mockMvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private String token;
+
+    @BeforeEach
+    void autenticar() throws Exception {
+        MvcResult resultadoLogin = mockMvc.perform(post("/api/v1/auth/token/login")
+                        .servletPath("/api/v1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"identificacaoAcesso":"admin-preferencias@example.com","senha":"senha-admin-preferencias-segura"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode resposta = objectMapper.readTree(resultadoLogin.getResponse().getContentAsString());
+        token = resposta.required("tokenJWT").asText();
+    }
+
+    @Test
+    void deveRemoverPelaRotaVersionadaComParametrosEAceitarRepeticao() throws Exception {
+        executarRemocao("filters", "usuarios")
+                .andExpect(status().isNoContent())
+                .andExpect(header().doesNotExist(HttpHeaders.CONTENT_TYPE));
+
+        executarRemocao("filters", "usuarios")
+                .andExpect(status().isNoContent())
+                .andExpect(header().doesNotExist(HttpHeaders.CONTENT_TYPE));
+    }
+
+    @Test
+    void parametrosAusentesOuInvalidosDevemRetornarBadRequest() throws Exception {
+        mockMvc.perform(delete("/api/v1/preferencias/me/item")
+                        .servletPath("/api/v1")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("chave", "usuarios"))
+                .andExpect(status().isBadRequest());
+
+        executarRemocao(" ", "usuarios")
+                .andExpect(status().isBadRequest());
+
+        executarRemocao("x".repeat(121), "usuarios")
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rotaDeveExigirAutenticacaoBearer() throws Exception {
+        mockMvc.perform(delete("/api/v1/preferencias/me/item")
+                        .servletPath("/api/v1")
+                        .param("contexto", "filters")
+                        .param("chave", "usuarios"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions executarRemocao(String pContexto, String pChave) throws Exception {
+        return mockMvc.perform(delete("/api/v1/preferencias/me/item")
+                .servletPath("/api/v1")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .param("contexto", pContexto)
+                .param("chave", pChave));
+    }
+}

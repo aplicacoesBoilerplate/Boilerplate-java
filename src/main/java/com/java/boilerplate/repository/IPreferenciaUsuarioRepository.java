@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface IPreferenciaUsuarioRepository extends IBaseRepository<CPreferenciaUsuario> {
     List<CPreferenciaUsuario> findTop100ByUsuario_IdUsuarioOrderByContextoAscChaveAsc(Long pIdUsuario);
     Optional<CPreferenciaUsuario> findByUsuario_IdUsuarioAndContextoAndChave(Long pIdUsuario, String pContexto, String pChave);
+    long deleteByUsuario_IdUsuarioAndContextoAndChave(Long pIdUsuario, String pContexto, String pChave);
     long countByUsuario_IdUsuario(Long pIdUsuario);
 }

@@ -124,6 +124,14 @@ public class CPreferenciaUsuarioService {
         return preferencia;
     }
 
+    @Transactional
+    public void removerPreferenciaUsuarioAutenticado(String pContexto, String pChave) {
+        validarContextoEChave(pContexto, pChave);
+        CUsuario usuario = authService.buscarUsuarioLogado();
+        preferenciaUsuarioRepository.deleteByUsuario_IdUsuarioAndContextoAndChave(usuario.getIdUsuario(), pContexto, pChave);
+        invalidarAposCommit(chaveCache(usuario.getIdUsuario()));
+    }
+
     private CPreferenciaUsuario salvarPreferencia(CUsuario pUsuario, RPreferenciaUsuario pRequest) {
         validarPreferencia(pRequest);
         var preferenciaExistente = preferenciaUsuarioRepository
@@ -183,18 +191,24 @@ public class CPreferenciaUsuarioService {
     }
 
     private void validarPreferencia(RPreferenciaUsuario pRequest) {
-        if (pRequest == null
-                || pRequest.contexto() == null
-                || pRequest.contexto().isBlank()
-                || pRequest.contexto().length() > 120
-                || pRequest.chave() == null
-                || pRequest.chave().isBlank()
-                || pRequest.chave().length() > 120) {
+        if (pRequest == null) {
             throw new CExceptionsSystem("Contexto e chave devem possuir entre 1 e 120 caracteres", HttpStatus.BAD_REQUEST);
         }
+        validarContextoEChave(pRequest.contexto(), pRequest.chave());
         if (pRequest.valorJson() == null || pRequest.valorJson().isBlank()
                 || pRequest.valorJson().length() > MAXIMO_CARACTERES_VALOR) {
             throw new CExceptionsSystem("O valor da preferência aceita no máximo 16384 caracteres", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void validarContextoEChave(String pContexto, String pChave) {
+        if (pContexto == null
+                || pContexto.isBlank()
+                || pContexto.length() > 120
+                || pChave == null
+                || pChave.isBlank()
+                || pChave.length() > 120) {
+            throw new CExceptionsSystem("Contexto e chave devem possuir entre 1 e 120 caracteres", HttpStatus.BAD_REQUEST);
         }
     }
 }
