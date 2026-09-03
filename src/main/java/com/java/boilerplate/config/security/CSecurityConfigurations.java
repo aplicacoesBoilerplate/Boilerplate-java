@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import static org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher.withDefaults;
@@ -49,7 +50,11 @@ public class CSecurityConfigurations {
     @Bean
     @Order(1)
     @ConditionalOnProperty(prefix = "documentacao", name = "enabled", havingValue = "true")
-    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity pHttp, PasswordEncoder pPasswordEncoder) throws Exception {
+    public SecurityFilterChain swaggerSecurityFilterChain(
+            HttpSecurity pHttp,
+            PasswordEncoder pPasswordEncoder,
+            CApiRateLimitSecurityFilter pApiRateLimitSecurityFilter
+    ) throws Exception {
         RAcessoSwagger usuarioDoc = resolveAcessoDocumentacao(pPasswordEncoder);
         PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         UserDetails admin = User.builder()
@@ -71,6 +76,7 @@ public class CSecurityConfigurations {
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(pAuth -> pAuth.anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
+                .addFilterBefore(pApiRateLimitSecurityFilter, BasicAuthenticationFilter.class)
                 .exceptionHandling(pEx -> pEx.authenticationEntryPoint((pRequest, pResponse, pAuthException) -> {
                     pResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     pResponse.setHeader("WWW-Authenticate", "Basic realm=\"Swagger\"");

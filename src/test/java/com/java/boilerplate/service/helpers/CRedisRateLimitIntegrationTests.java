@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,6 +42,7 @@ class CRedisRateLimitIntegrationTests {
         CountDownLatch inicio = new CountDownLatch(1);
         CountDownLatch fim = new CountDownLatch(10);
         ConcurrentLinkedQueue<String> sucessos = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Throwable> falhasInesperadas = new ConcurrentLinkedQueue<>();
 
         for (int indice = 0; indice < 10; indice++) {
             String sujeito = indice % 2 == 0 ? "user:a" : "user:b";
@@ -52,8 +54,8 @@ class CRedisRateLimitIntegrationTests {
                     sucessos.add(sujeito);
                 } catch (CExceptionsSystem ignored) {
                     // Rejeição esperada após esgotamento das cotas compartilhadas.
-                } catch (InterruptedException pException) {
-                    Thread.currentThread().interrupt();
+                } catch (Throwable pException) {
+                    falhasInesperadas.add(pException);
                 } finally {
                     fim.countDown();
                 }
@@ -61,9 +63,10 @@ class CRedisRateLimitIntegrationTests {
             thread.start();
         }
         inicio.countDown();
-        fim.await();
+        assertThat(fim.await(10, TimeUnit.SECONDS)).isTrue();
 
-        assertThat(sucessos).hasSizeLessThanOrEqualTo(5);
+        assertThat(falhasInesperadas).isEmpty();
+        assertThat(sucessos).hasSize(5);
         assertThat(sucessos.stream().filter("user:a"::equals).count()).isLessThanOrEqualTo(3);
         assertThat(sucessos.stream().filter("user:b"::equals).count()).isLessThanOrEqualTo(3);
     }

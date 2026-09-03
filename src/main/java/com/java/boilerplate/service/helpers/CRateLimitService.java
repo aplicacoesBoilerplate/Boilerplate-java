@@ -52,7 +52,7 @@ public class CRateLimitService {
      * Avalia e confirma todos os limites como uma unica decisao. Um pedido
      * rejeitado por IP ou identidade nao drena o contador global.
      */
-    public synchronized void consumirTodos(List<RLimite> pLimites) {
+    public void consumirTodos(List<RLimite> pLimites) {
         if (redisBackend != null) {
             try {
                 redisBackend.consumirTodos(pLimites);
@@ -63,6 +63,10 @@ public class CRateLimitService {
                 // Redis é opcional: falhas transitórias seguem para a proteção local limitada.
             }
         }
+        consumirTodosLocal(pLimites);
+    }
+
+    private synchronized void consumirTodosLocal(List<RLimite> pLimites) {
         if (pLimites == null || pLimites.isEmpty()) {
             throw new IllegalArgumentException("Ao menos um limite deve ser informado");
         }
@@ -110,6 +114,13 @@ public class CRateLimitService {
 
     public void limpar(String pEscopo, String pIdentificador) {
         janelas.remove(chave(pEscopo, pIdentificador));
+        if (redisBackend != null) {
+            try {
+                redisBackend.limpar(pEscopo, pIdentificador);
+            } catch (RuntimeException pException) {
+                // A limpeza local continua válida quando Redis está temporariamente indisponível.
+            }
+        }
     }
 
     private String normalizar(String pIdentificador) {

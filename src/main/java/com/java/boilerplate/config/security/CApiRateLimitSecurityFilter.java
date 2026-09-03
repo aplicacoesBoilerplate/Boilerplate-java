@@ -16,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.ArrayList;
 
 /** Aplica uma única quota global e uma quota por sujeito a cada request da API. */
 public class CApiRateLimitSecurityFilter extends OncePerRequestFilter {
@@ -29,7 +30,9 @@ public class CApiRateLimitSecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest pRequest) {
-        return !pRequest.getRequestURI().startsWith("/api/v1/");
+        String caminhoSemContexto = removerPrefixo(pRequest.getRequestURI(), pRequest.getContextPath());
+        return !"/api/v1".equals(pRequest.getServletPath())
+                && !caminhoSemContexto.startsWith("/api/v1/");
     }
 
     @Override
@@ -42,7 +45,7 @@ public class CApiRateLimitSecurityFilter extends OncePerRequestFilter {
             try {
                 Duration janela = Duration.ofSeconds(properties.windowSeconds());
                 boolean autenticado = usuarioAutenticado() != null;
-                rateLimitService.consumirTodos(List.of(
+                List<CRateLimitService.RLimite> limites = new ArrayList<>(List.of(
                         new CRateLimitService.RLimite(
                                 "api:global", "global", properties.globalRequestsPerWindow(), janela),
                         new CRateLimitService.RLimite(
@@ -50,6 +53,11 @@ public class CApiRateLimitSecurityFilter extends OncePerRequestFilter {
                                 autenticado ? properties.authenticatedRequestsPerWindow() : properties.publicRequestsPerWindow(),
                                 janela)
                 ));
+                if (documentacaoBasic(pRequest)) {
+                    limites.add(new CRateLimitService.RLimite(
+                            "documentacao-basic", pRequest.getRemoteAddr(), properties.loginAttemptsPerWindow(), janela));
+                }
+                rateLimitService.consumirTodos(limites);
             } catch (CExceptionsSystem pException) {
                 escreverErro(pResponse, pException);
                 return;
@@ -72,10 +80,31 @@ public class CApiRateLimitSecurityFilter extends OncePerRequestFilter {
     private boolean healthLoopbackIsento(HttpServletRequest pRequest) {
         boolean metodoLiveness = "GET".equalsIgnoreCase(pRequest.getMethod()) || "HEAD".equalsIgnoreCase(pRequest.getMethod());
         return metodoLiveness
-                && "/api/v1/actuator/health-check/public".equals(pRequest.getRequestURI())
+                && "/actuator/health-check/public".equals(caminhoDaAplicacao(pRequest))
                 && ("127.0.0.1".equals(pRequest.getRemoteAddr())
                 || "::1".equals(pRequest.getRemoteAddr())
                 || "0:0:0:0:0:0:0:1".equals(pRequest.getRemoteAddr()));
+    }
+
+    private boolean documentacaoBasic(HttpServletRequest pRequest) {
+        String caminho = caminhoDaAplicacao(pRequest);
+        String autorizacao = pRequest.getHeader("Authorization");
+        return (caminho.equals("/doc") || caminho.startsWith("/doc/")
+                || caminho.equals("/swagger-ui") || caminho.startsWith("/swagger-ui/")
+                || caminho.equals("/v3/api-docs") || caminho.startsWith("/v3/api-docs/")
+                || caminho.equals("/webjars") || caminho.startsWith("/webjars/"))
+                && autorizacao != null
+                && autorizacao.regionMatches(true, 0, "Basic ", 0, "Basic ".length());
+    }
+
+    private String caminhoDaAplicacao(HttpServletRequest pRequest) {
+        String caminho = removerPrefixo(removerPrefixo(pRequest.getRequestURI(), pRequest.getContextPath()), pRequest.getServletPath());
+        return caminho.startsWith("/api/v1/") ? caminho.substring("/api/v1".length()) : caminho;
+    }
+
+    private String removerPrefixo(String pCaminho, String pPrefixo) {
+        return pPrefixo != null && !pPrefixo.isEmpty() && pCaminho.startsWith(pPrefixo)
+                ? pCaminho.substring(pPrefixo.length()) : pCaminho;
     }
 
     private void escreverErro(HttpServletResponse pResponse, CExceptionsSystem pException) throws IOException {

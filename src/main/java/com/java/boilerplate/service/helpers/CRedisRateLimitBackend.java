@@ -36,15 +36,26 @@ public class CRedisRateLimitBackend {
 
         Object[] argumentosDoScript = argumentos.toArray(String[]::new);
         Long bloqueioMillis = redisTemplate.execute(RATE_LIMIT_SCRIPT, chaves, argumentosDoScript);
-        if (bloqueioMillis != null && bloqueioMillis > 0) {
+        if (bloqueioMillis == null) {
+            throw new IllegalStateException("Redis não retornou resultado para o rate limit");
+        }
+        if (bloqueioMillis > 0) {
             long retryAfter = Math.max(1, (bloqueioMillis + 999) / 1_000);
             throw new CExceptionsSystem(MENSAGEM_LIMITE, HttpStatus.TOO_MANY_REQUESTS, Math.toIntExact(retryAfter));
         }
     }
 
     String chave(CRateLimitService.RLimite pLimite) {
-        return "boilerplate:rate-limit:{api}:" + CHashUtil.gerarSha256(pLimite.escopo())
-                + ":" + CHashUtil.gerarSha256(normalizar(pLimite.identificador()));
+        return chave(pLimite.escopo(), pLimite.identificador());
+    }
+
+    public void limpar(String pEscopo, String pIdentificador) {
+        redisTemplate.delete(chave(pEscopo, pIdentificador));
+    }
+
+    private String chave(String pEscopo, String pIdentificador) {
+        return "boilerplate:rate-limit:{api}:" + CHashUtil.gerarSha256(pEscopo)
+                + ":" + CHashUtil.gerarSha256(normalizar(pIdentificador));
     }
 
     private void validar(List<CRateLimitService.RLimite> pLimites) {

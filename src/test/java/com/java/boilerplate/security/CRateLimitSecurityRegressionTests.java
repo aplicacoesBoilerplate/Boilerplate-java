@@ -4,6 +4,7 @@ import com.java.boilerplate.exception.CExceptionsSystem;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.List;
 import com.java.boilerplate.service.helpers.CRateLimitService;
@@ -12,6 +13,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CRateLimitSecurityRegressionTests {
+    @Test
+    void caminhoRedisSaudavelNaoDeveSerializarChamadasNoServico() throws Exception {
+        int modificadores = CRateLimitService.class
+                .getMethod("consumirTodos", List.class)
+                .getModifiers();
+
+        assertThat(Modifier.isSynchronized(modificadores)).isFalse();
+    }
+
     @Test
     void pedidoBloqueadoPorIpNaoDeveConsumirQuotaGlobal() {
         CRateLimitService limiter = new CRateLimitService(100);
