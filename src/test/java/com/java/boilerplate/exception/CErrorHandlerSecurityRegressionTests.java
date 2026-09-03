@@ -17,6 +17,7 @@ import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -86,6 +87,30 @@ class CErrorHandlerSecurityRegressionTests {
         );
 
         assertThat(response.getHeaders().getFirst("Retry-After")).isEqualTo("60");
+        verify(logErroRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void proibicaoDeveSerGenericaESemTraceMesmoQuandoExposicaoEstaAtiva() {
+        errorHandler = new CErrorHandler(
+                logErroRepository,
+                new RAppProperties("http://localhost", "http://localhost", true, 1000)
+        );
+
+        ResponseEntity<RErro> response = errorHandler.handlerExceptionsSystem(
+                new CExceptionsSystem(
+                        "Registro 42 criado por autor@example.com",
+                        HttpStatus.FORBIDDEN,
+                        "REGISTRO_ALHEIO",
+                        Map.of("id", 42L, "papel", "ADMIN"))
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().mensagem()).isEqualTo("Operação não autorizada");
+        assertThat(response.getBody().codigo()).isNull();
+        assertThat(response.getBody().dados()).isNull();
+        assertThat(response.getBody().trace()).isNull();
         verify(logErroRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 

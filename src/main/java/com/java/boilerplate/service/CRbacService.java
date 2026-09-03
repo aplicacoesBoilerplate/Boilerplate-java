@@ -39,6 +39,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     private final ICargoRbacRepository cargoRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final IRedisCache redisCache;
+    private final CAutorizacaoAutoriaService autorizacaoAutoriaService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
@@ -46,12 +47,14 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
             EntityManager pEntityManager,
             ICargoRbacRepository pCargoRepository,
             CAuditoriaRegistroService pAuditoriaRegistroService,
-            IRedisCache pRedisCache
+            IRedisCache pRedisCache,
+            CAutorizacaoAutoriaService pAutorizacaoAutoriaService
     ) {
         super(pEntityManager, CCargoRbac.class);
         this.cargoRepository = pCargoRepository;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
         this.redisCache = pRedisCache;
+        this.autorizacaoAutoriaService = pAutorizacaoAutoriaService;
     }
 
     @Transactional(readOnly = true)
@@ -113,7 +116,9 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
     @Transactional
     public RCargoRbac atualizar(Long pIdCargo, RCargoRbac pRequest) {
-        CCargoRbac cargo = buscarEntidadePorId(pIdCargo);
+        CCargoRbac cargo = autorizacaoAutoriaService.autorizarGerenciamento(
+                cargoRepository.findById(pIdCargo),
+                () -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
         cargoRepository.findByPapel(pRequest.papel())
                 .filter(pCargo -> !pCargo.getIdCargo().equals(pIdCargo))
                 .ifPresent(pCargo -> {
@@ -127,7 +132,9 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     @Transactional
     @Override
     public void excluir(Long pIdCargo) {
-        CCargoRbac cargo = buscarEntidadePorId(pIdCargo);
+        CCargoRbac cargo = autorizacaoAutoriaService.autorizarGerenciamento(
+                cargoRepository.findById(pIdCargo),
+                () -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
         if ("ADMIN".equals(cargo.getPapel()) || "USER".equals(cargo.getPapel())) {
             throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser excluídos", HttpStatus.BAD_REQUEST);
         }
