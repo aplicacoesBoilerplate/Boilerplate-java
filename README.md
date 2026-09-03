@@ -22,9 +22,32 @@ Backend Java para projetos futuros com Spring Boot, JPA, Flyway, autenticação 
 - Provisionamento administrativo de solicitações de acesso em `/auth/solicitacoes-acesso`; não há auto-registro público.
 - CRUD administrativo de usuários em `/usuarios`.
 - CRUD administrativo de cargos/permissões em `/rbac/cargos`.
+- Manifesto versionado dos endpoints RBAC em `GET /rbac/manifesto`, disponível para usuários autenticados.
 - Liveness público mínimo em `/api/v1/actuator/health-check/public`; diagnóstico SMTP e health completo exigem `ADMIN`.
 - Filtros e paginação por cursor com os operadores do frontend.
 - Migrations limpas para usuários, RBAC, OTP, refresh tokens, solicitações de acesso e logs de erro.
+
+## Manifesto RBAC
+
+`GET /api/v1/rbac/manifesto` exige Bearer válido e exporta somente métodos marcados com `@EndpointRbac`. O contrato agrupa os endpoints por recurso e ação, normaliza parâmetros de rota para o padrão Ant `/**` já persistido nas permissões e mantém ordem determinística:
+
+```json
+{
+  "versaoContrato": 1,
+  "recursos": {
+    "Usuarios": {
+      "acoes": {
+        "consultar": [
+          { "metodo": "GET", "path": "/usuarios/**" },
+          { "metodo": "POST", "path": "/usuarios/consulta" }
+        ]
+      }
+    }
+  }
+}
+```
+
+Os métodos aceitos no manifesto são `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. Um endpoint anotado sem método, path ou recurso explícito interrompe a construção do manifesto para evitar publicar um contrato incompleto.
 
 ## Variáveis Principais
 

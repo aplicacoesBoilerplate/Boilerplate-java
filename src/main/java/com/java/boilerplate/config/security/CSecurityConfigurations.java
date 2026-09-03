@@ -113,6 +113,7 @@ public class CSecurityConfigurations {
                         .requestMatchers(api.matcher(HttpMethod.POST, "/auth/cadastro"), api.matcher(HttpMethod.POST, "/auth/solicitacoes-acesso")).permitAll()
                         .requestMatchers(api.matcher(HttpMethod.POST, "/auth/recuperacao-senha/**")).permitAll()
                         .requestMatchers(api.matcher(HttpMethod.GET, "/auth/me"), api.matcher(HttpMethod.GET, "/auth/me/cargo")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.GET, "/rbac/manifesto")).authenticated()
                         .requestMatchers(api.matcher(HttpMethod.POST, "/auth/logout")).authenticated()
                         .requestMatchers(api.matcher(HttpMethod.PUT, "/auth/senha")).authenticated()
                         .requestMatchers(api.matcher(HttpMethod.POST, "/auth/senha/confirmar")).authenticated()
