@@ -41,7 +41,35 @@ public record RCargoRbac(
         List<@Valid RFuncionalidadeCargoRbac> funcionalidades,
         RRedirecionamentoInicialRbac redirecionamentoInicial,
         Boolean ativo,
+        Boolean destinadoClienteFinal,
         RAuditoriaRegistro auditoria) {
+    public RCargoRbac(
+            Long pId,
+            String pPapel,
+            String pNome,
+            String pIcone,
+            String pDescricao,
+            EComportamentoPadraoPermissao pComportamentoPadrao,
+            List<RPermissaoCargoRbac> pPermissoes,
+            List<RFuncionalidadeCargoRbac> pFuncionalidades,
+            RRedirecionamentoInicialRbac pRedirecionamentoInicial,
+            Boolean pAtivo,
+            RAuditoriaRegistro pAuditoria) {
+        this(
+                pId,
+                pPapel,
+                pNome,
+                pIcone,
+                pDescricao,
+                pComportamentoPadrao,
+                pPermissoes,
+                pFuncionalidades,
+                pRedirecionamentoInicial,
+                pAtivo,
+                null,
+                pAuditoria);
+    }
+
     public static RCargoRbac fromEntity(CCargoRbac pCargo) {
         return fromEntity(pCargo, RAuditoriaRegistro.fromEntity(pCargo));
     }
@@ -63,6 +91,7 @@ public record RCargoRbac(
                 new RRedirecionamentoInicialRbac(
                         pCargo.getRedirecionamentoPath(), pCargo.getRedirecionamentoName(), List.of()),
                 pCargo.getAtivo(),
+                pCargo.getDestinadoClienteFinal(),
                 pAuditoria);
     }
 }

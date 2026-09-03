@@ -82,6 +82,7 @@ public class CDataInitializerService implements ApplicationRunner {
         cargo.setRedirecionamentoName(pName);
         cargo.setRedirecionamentoFiltros("[]");
         cargo.setAtivo(true);
+        cargo.setDestinadoClienteFinal("USER".equals(pPapel));
         return cargo;
     }
 
