@@ -1,7 +1,6 @@
 package com.java.boilerplate.config.security;
 
 import com.java.boilerplate.config.RRateLimitProperties;
-import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.service.helpers.CRateLimitService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
@@ -18,8 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
 import java.util.Set;
 
 @Component
@@ -69,54 +66,6 @@ public class CPublicRequestSecurityFilter extends OncePerRequestFilter {
             return;
         }
 
-        boolean probeInterno = probeHealthPublico && enderecoLoopback(pRequest.getRemoteAddr());
-        if (rotaPublica && !probeInterno) {
-            try {
-                Duration janela = Duration.ofSeconds(properties.windowSeconds());
-                String escopo = "http-publico:" + caminho;
-                rateLimitService.consumirTodos(List.of(
-                        new CRateLimitService.RLimite(
-                                escopo + ":ip",
-                                pRequest.getRemoteAddr(),
-                                properties.publicRequestsPerWindow(),
-                                janela
-                        ),
-                        new CRateLimitService.RLimite(
-                                escopo + ":global",
-                                "global",
-                                properties.publicRequestsPerWindow() * 10,
-                                janela
-                        )
-                ));
-            } catch (CExceptionsSystem pException) {
-                escreverErro(pResponse, pException.getStatus(), pException.getMessage(), pException.getRetryAfterSeconds());
-                return;
-            }
-        }
-
-        if (autenticacaoDocumentacao) {
-            try {
-                Duration janela = Duration.ofSeconds(properties.windowSeconds());
-                rateLimitService.consumirTodos(List.of(
-                        new CRateLimitService.RLimite(
-                                "documentacao-basic:ip",
-                                pRequest.getRemoteAddr(),
-                                properties.loginAttemptsPerWindow(),
-                                janela
-                        ),
-                        new CRateLimitService.RLimite(
-                                "documentacao-basic:global",
-                                "global",
-                                properties.loginAttemptsPerWindow() * 10,
-                                janela
-                        )
-                ));
-            } catch (CExceptionsSystem pException) {
-                escreverErro(pResponse, pException.getStatus(), pException.getMessage(), pException.getRetryAfterSeconds());
-                return;
-            }
-        }
-
         if (!metodoComCorpo) {
             pFilterChain.doFilter(pRequest, pResponse);
             return;
@@ -134,12 +83,6 @@ public class CPublicRequestSecurityFilter extends OncePerRequestFilter {
         }
 
         pFilterChain.doFilter(new CBodyRequestWrapper(pRequest, body), pResponse);
-    }
-
-    private boolean enderecoLoopback(String pEndereco) {
-        return "127.0.0.1".equals(pEndereco)
-                || "::1".equals(pEndereco)
-                || "0:0:0:0:0:0:0:1".equals(pEndereco);
     }
 
     private String caminhoDaAplicacao(HttpServletRequest pRequest) {
@@ -161,9 +104,6 @@ public class CPublicRequestSecurityFilter extends OncePerRequestFilter {
         pResponse.setStatus(pStatus.value());
         pResponse.setContentType("application/json");
         pResponse.setCharacterEncoding("UTF-8");
-        if (pRetryAfter != null) {
-            pResponse.setHeader("Retry-After", String.valueOf(pRetryAfter));
-        }
         pResponse.getWriter().write("{\"mensagem\":\"" + pMensagem + "\",\"status\":" + pStatus.value() + "}");
     }
 

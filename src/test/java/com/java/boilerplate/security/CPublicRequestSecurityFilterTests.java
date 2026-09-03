@@ -1,8 +1,9 @@
 package com.java.boilerplate.security;
 
-import com.java.boilerplate.config.RRateLimitProperties;
 import com.java.boilerplate.config.security.CPublicRequestSecurityFilter;
 import com.java.boilerplate.service.helpers.CRateLimitService;
+import com.java.boilerplate.service.helpers.CAtivacaoTokenService;
+import com.java.boilerplate.config.RAtivacaoProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -16,16 +17,16 @@ class CPublicRequestSecurityFilterTests {
     private final RRateLimitProperties properties = new RRateLimitProperties(60, 1, 1, 10_000);
     private final CPublicRequestSecurityFilter filter = new CPublicRequestSecurityFilter(
             new CRateLimitService(100),
-            properties
+            properties,
+            new CAtivacaoTokenService(new RAtivacaoProperties(
+                    "test-only-activation-pepper-with-at-least-32-characters", 60))
     );
 
     @Test
     void corpoPublicoAcimaDe64KiBDeveSerRejeitadoAntesDoMvc() throws Exception {
-        MockHttpServletRequest request = requestLogin("x".repeat(64 * 1024 + 1), "127.0.0.1");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
-
-        filter.doFilter(request, response, chain);
+        filter.doFilter(request("POST", "/auth/login", "x".repeat(64 * 1024 + 1)), response, chain);
 
         assertThat(response.getStatus()).isEqualTo(413);
         assertThat(chain.getRequest()).isNull();
@@ -33,73 +34,18 @@ class CPublicRequestSecurityFilterTests {
 
     @Test
     void corpoAutenticadoAcimaDe64KiBTambemDeveSerRejeitadoAntesDoMvc() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/preferencias/me");
-        request.setContentType("application/json");
-        request.setContent("x".repeat(64 * 1024 + 1).getBytes(StandardCharsets.UTF_8));
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
-
-        filter.doFilter(request, response, chain);
+        filter.doFilter(request("PUT", "/preferencias/me", "x".repeat(64 * 1024 + 1)), response, chain);
 
         assertThat(response.getStatus()).isEqualTo(413);
         assertThat(chain.getRequest()).isNull();
     }
 
     @Test
-    void excessoPorIpDeveRetornar429ComRetryAfter() throws Exception {
-        MockHttpServletResponse primeiraResposta = new MockHttpServletResponse();
-        filter.doFilter(requestLogin("{}", "127.0.0.2"), primeiraResposta, new MockFilterChain());
-
-        MockHttpServletResponse segundaResposta = new MockHttpServletResponse();
-        MockFilterChain segundaChain = new MockFilterChain();
-        filter.doFilter(requestLogin("{}", "127.0.0.2"), segundaResposta, segundaChain);
-
-        assertThat(segundaResposta.getStatus()).isEqualTo(429);
-        assertThat(segundaResposta.getHeader("Retry-After")).isNotBlank();
-        assertThat(segundaChain.getRequest()).isNull();
-    }
-
-    @Test
-    void autenticacaoBasicDaDocumentacaoDeveTerLimiteAntesDoBcrypt() throws Exception {
-        MockHttpServletRequest primeira = new MockHttpServletRequest("GET", "/doc");
-        primeira.setRemoteAddr("127.0.0.3");
-        primeira.addHeader("Authorization", "Basic credencial-invalida");
-        filter.doFilter(primeira, new MockHttpServletResponse(), new MockFilterChain());
-
-        MockHttpServletRequest segunda = new MockHttpServletRequest("GET", "/doc");
-        segunda.setRemoteAddr("127.0.0.3");
-        segunda.addHeader("Authorization", "Basic credencial-invalida");
-        MockHttpServletResponse resposta = new MockHttpServletResponse();
+    void naoDeveManterContadorRateLimitDuplicado() throws Exception {
         MockFilterChain chain = new MockFilterChain();
-        filter.doFilter(segunda, resposta, chain);
-
-        assertThat(resposta.getStatus()).isEqualTo(429);
-        assertThat(resposta.getHeader("Retry-After")).isNotBlank();
-        assertThat(chain.getRequest()).isNull();
-    }
-
-    @Test
-    void healthPublicoDeveTerLimitePorIpAntesDoActuator() throws Exception {
-        MockHttpServletRequest primeira = new MockHttpServletRequest("GET", "/actuator/health-check/public");
-        primeira.setRemoteAddr("203.0.113.4");
-        filter.doFilter(primeira, new MockHttpServletResponse(), new MockFilterChain());
-
-        MockHttpServletRequest segunda = new MockHttpServletRequest("GET", "/actuator/health-check/public");
-        segunda.setRemoteAddr("203.0.113.4");
-        MockHttpServletResponse resposta = new MockHttpServletResponse();
-        MockFilterChain chain = new MockFilterChain();
-        filter.doFilter(segunda, resposta, chain);
-
-        assertThat(resposta.getStatus()).isEqualTo(429);
-        assertThat(resposta.getHeader("Retry-After")).isNotBlank();
-        assertThat(chain.getRequest()).isNull();
-    }
-
-    @Test
-    void headDoHealthPublicoTambemDeveConsumirLimite() throws Exception {
-        MockHttpServletRequest primeira = new MockHttpServletRequest("HEAD", "/actuator/health-check/public");
-        primeira.setRemoteAddr("203.0.113.5");
-        filter.doFilter(primeira, new MockHttpServletResponse(), new MockFilterChain());
+        filter.doFilter(request("POST", "/auth/login", "{}"), new MockHttpServletResponse(), chain);
 
         MockHttpServletRequest segunda = new MockHttpServletRequest("HEAD", "/actuator/health-check/public");
         segunda.setRemoteAddr("203.0.113.5");
@@ -161,6 +107,27 @@ class CPublicRequestSecurityFilterTests {
         assertThat(segundaResposta.getStatus()).isEqualTo(429);
         assertThat(segundaResposta.getHeader("Retry-After")).isNotBlank();
         assertThat(segundaChain.getRequest()).isNull();
+    }
+
+    @Test
+    void primeiroAcessoDeveLimitarMesmoTokenPorDigestSemUsarTokenComoChave() throws Exception {
+        MockHttpServletRequest primeira = new MockHttpServletRequest("PUT", "/auth/primeiro-acesso/senha");
+        primeira.setRemoteAddr("203.0.113.10");
+        primeira.setContentType("application/json");
+        primeira.setContent("{\"token\":\"segredo-que-nao-pode-ser-chave\",\"senha\":\"senha-segura\",\"confirmarSenha\":\"senha-segura\"}".getBytes(StandardCharsets.UTF_8));
+        filter.doFilter(primeira, new MockHttpServletResponse(), new MockFilterChain());
+
+        MockHttpServletRequest segunda = new MockHttpServletRequest("PUT", "/auth/primeiro-acesso/senha");
+        segunda.setRemoteAddr("203.0.113.11");
+        segunda.setContentType("application/json");
+        segunda.setContent("{\"token\":\"segredo-que-nao-pode-ser-chave\",\"senha\":\"senha-segura\",\"confirmarSenha\":\"senha-segura\"}".getBytes(StandardCharsets.UTF_8));
+        MockHttpServletResponse resposta = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(segunda, resposta, chain);
+
+        assertThat(resposta.getStatus()).isEqualTo(429);
+        assertThat(chain.getRequest()).isNull();
     }
 
     private MockHttpServletRequest requestLogin(String pBody, String pIp) {

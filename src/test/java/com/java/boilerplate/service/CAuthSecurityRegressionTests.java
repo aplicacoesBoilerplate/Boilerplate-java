@@ -65,7 +65,8 @@ class CAuthSecurityRegressionTests {
                 recoveryService,
                 solicitacaoAcessoRepository,
                 rateLimitService,
-                new RRateLimitProperties(60, 30, 5, 10_000)
+                new RRateLimitProperties(60, 30, 5, 10_000),
+                ativacaoPrimeiroAcessoService
         );
     }
 

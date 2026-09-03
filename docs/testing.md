@@ -12,6 +12,13 @@ A suíte atual contém 51 testes. As regressões incluem o contrato Bearer 401, 
 
 Os testes usam H2, bootstrap administrativo desligado e segredos exclusivos do perfil `test`. Não execute dois comandos Maven simultâneos no mesmo worktree, pois ambos escrevem em `target`.
 
+Os testes de concorrência do rate limit usam Redis real somente quando `REDIS_INTEGRATION_ENABLED=true`; fora da CI eles são exibidos como `skipped`, sem substituir Redis por fake em memória. Para executá-los localmente, inicie Redis em `localhost:6379` e rode:
+
+```powershell
+$env:REDIS_INTEGRATION_ENABLED='true'
+.\mvnw.cmd -ntp "-Dtest=CRedisRateLimitIntegrationTests" test
+```
+
 Valide também configuração e ausência de arquivos sensíveis:
 
 ```powershell

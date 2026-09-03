@@ -5,6 +5,7 @@ import com.java.boilerplate.config.RDocumentacaoProperties;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -80,7 +81,10 @@ public class CSecurityConfigurations {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity pHttp) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity pHttp,
+            CApiRateLimitSecurityFilter pApiRateLimitSecurityFilter
+    ) throws Exception {
         PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         return pHttp
                 .cors(Customizer.withDefaults())
@@ -112,7 +116,25 @@ public class CSecurityConfigurations {
                         .anyRequest().access(autorizacaoRbacManager)
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(pApiRateLimitSecurityFilter, CSecurityFilter.class)
                 .build();
+    }
+
+    @Bean
+    public CApiRateLimitSecurityFilter apiRateLimitSecurityFilter(
+            com.java.boilerplate.service.helpers.CRateLimitService pRateLimitService,
+            com.java.boilerplate.config.RRateLimitProperties pRateLimitProperties
+    ) {
+        return new CApiRateLimitSecurityFilter(pRateLimitService, pRateLimitProperties);
+    }
+
+    @Bean
+    public FilterRegistrationBean<CApiRateLimitSecurityFilter> apiRateLimitSecurityFilterRegistration(
+            CApiRateLimitSecurityFilter pFilter
+    ) {
+        FilterRegistrationBean<CApiRateLimitSecurityFilter> registration = new FilterRegistrationBean<>(pFilter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
