@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aplicacoesboilerplate.github.io/schemas/monitoramento-evento-v1.schema.json",
+  "title": "Evento de monitoramento v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "eventId",
+    "eventType",
+    "occurredAt",
+    "deploymentRef",
+    "tenantRef",
+    "correlationId",
+    "severity",
+    "producer",
+    "data"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "enum": [
+        "monitoramento.sessao.estado",
+        "monitoramento.erro.registrado"
+      ]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deploymentRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "tenantRef": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "severity": {
+      "enum": [
+        "INFO",
+        "ERROR",
+        "CRITICAL"
+      ]
+    },
+    "producer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "eventType": {
+            "const": "monitoramento.sessao.estado"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "severity": {
+            "const": "INFO"
+          },
+          "data": {
+            "$ref": "#/$defs/sessionState"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventType": {
+            "const": "monitoramento.erro.registrado"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "severity": {
+            "enum": [
+              "ERROR",
+              "CRITICAL"
+            ]
+          },
+          "data": {
+            "$ref": "#/$defs/errorRecorded"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sessionState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionId",
+        "state",
+        "changedAt",
+        "stateVersion"
+      ],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "enum": [
+            "OPEN",
+            "CLOSED"
+          ]
+        },
+        "changedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "stateVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "errorRecorded": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "errorId",
+        "code",
+        "httpStatus",
+        "summary"
+      ],
+      "properties": {
+        "errorId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "httpStatus": {
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 599
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}
