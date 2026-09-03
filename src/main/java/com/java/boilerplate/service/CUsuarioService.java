@@ -153,6 +153,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         CUsuario usuario = autorizacaoAutoriaService.autorizarGerenciamento(
                 usuarioRepository.findById(pIdUsuario),
                 () -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        validarDesativacaoProtegida(pIdUsuario, pRequest.ativo());
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
         CUsuario atualizado = usuarioRepository.saveAndFlush(usuario);
@@ -166,10 +167,6 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     @Override
     public void excluir(Long pIdUsuario) {
         Long idUsuarioAutenticado = autorizacaoAutoriaService.resolverIdUsuarioAutenticado();
-        if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
-            throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
-        }
-
         if (pIdUsuario != null && pIdUsuario.equals(idUsuarioAutenticado)) {
             throw new CExceptionsSystem("O usuário autenticado não pode remover a própria conta", HttpStatus.BAD_REQUEST);
         }
@@ -177,9 +174,24 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         CUsuario usuario = autorizacaoAutoriaService.autorizarGerenciamento(
                 usuarioRepository.findById(pIdUsuario),
                 () -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
+            throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
+        }
         usuario.setAtivo(false);
         usuarioRepository.save(usuario);
         tokenService.revogarSessoesUsuario(pIdUsuario);
+    }
+
+    private void validarDesativacaoProtegida(Long pIdUsuario, Boolean pAtivo) {
+        if (!Boolean.FALSE.equals(pAtivo)) {
+            return;
+        }
+        if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
+            throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
+        }
+        if (pIdUsuario != null && pIdUsuario.equals(autorizacaoAutoriaService.resolverIdUsuarioAutenticado())) {
+            throw new CExceptionsSystem("O usuário autenticado não pode remover a própria conta", HttpStatus.BAD_REQUEST);
+        }
     }
 
     private void preencherUsuario(CUsuario pUsuario, RUsuario pRequest) {

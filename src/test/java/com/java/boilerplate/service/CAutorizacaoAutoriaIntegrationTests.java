@@ -15,6 +15,7 @@ import com.java.boilerplate.model.CFuncionalidadeCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
 import com.java.boilerplate.repository.IUsuarioRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,6 +48,9 @@ class CAutorizacaoAutoriaIntegrationTests {
 
     @Autowired
     private ICargoRbacRepository cargoRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @AfterEach
     void limparContextoDeSeguranca() {
@@ -282,13 +286,111 @@ class CAutorizacaoAutoriaIntegrationTests {
 
     @Test
     void protecoesDeRootAutoexclusaoECargosPadraoSaoPreservadas() {
-        CUsuario gestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        CUsuario candidatoGestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        criarOuBuscarUsuarioRaiz(candidatoGestor.getCargo());
+        CUsuario gestor = candidatoGestor.getIdUsuario().equals(1L)
+                ? criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true)
+                : candidatoGestor;
         autenticar(gestor);
 
         assertBadRequest(() -> usuarioService.excluir(1L));
         assertBadRequest(() -> usuarioService.excluir(gestor.getIdUsuario()));
         assertBadRequest(() -> rbacService.excluir(cargoRepository.findByPapel("ADMIN").orElseThrow().getIdCargo()));
         assertBadRequest(() -> rbacService.excluir(cargoRepository.findByPapel("USER").orElseThrow().getIdCargo()));
+    }
+
+    @Test
+    void putNaoPodeDesativarUsuarioRaiz() {
+        CUsuario candidatoGestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        CUsuario usuarioRaiz = criarOuBuscarUsuarioRaiz(candidatoGestor.getCargo());
+        CUsuario gestor = candidatoGestor.getIdUsuario().equals(1L)
+                ? criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true)
+                : candidatoGestor;
+        autenticar(gestor);
+
+        assertBadRequest(() -> usuarioService.editar(requisicaoUsuarioComAtivo(
+                usuarioRaiz, "Raiz alterado", false)));
+
+        assertThat(usuarioRepository.findById(1L).orElseThrow().getAtivo()).isTrue();
+    }
+
+    @Test
+    void patchNaoPodeDesativarProprioAtorGlobal() {
+        CUsuario candidatoGestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        criarOuBuscarUsuarioRaiz(candidatoGestor.getCargo());
+        CUsuario gestor = candidatoGestor.getIdUsuario().equals(1L)
+                ? criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true)
+                : candidatoGestor;
+        autenticar(gestor);
+
+        assertBadRequest(() -> usuarioService.modificar(requisicaoUsuarioComAtivo(
+                gestor, "Gestor alterado", false)));
+
+        assertThat(usuarioRepository.findById(gestor.getIdUsuario()).orElseThrow().getAtivo()).isTrue();
+    }
+
+    @Test
+    void atorGlobalPodeAtualizarProprioNomeSemSeDesativar() {
+        CUsuario gestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        autenticar(gestor);
+
+        RUsuario resposta = usuarioService.modificar(requisicaoUsuarioComAtivo(
+                gestor, "Gestor atualizado", true));
+
+        assertThat(resposta.nome()).isEqualTo("Gestor atualizado");
+        assertThat(resposta.ativo()).isTrue();
+    }
+
+    @Test
+    void cargoAdminNaoPodeSerRenomeadoAntesDaExclusao() {
+        CUsuario gestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        CCargoRbac cargoAdmin = cargoRepository.findByPapel("ADMIN").orElseThrow();
+        autenticar(gestor);
+
+        assertBadRequest(() -> rbacService.editar(requisicaoCargoComPapel(
+                cargoAdmin, "ADMIN_RENOMEADO")));
+
+        assertThat(cargoRepository.findById(cargoAdmin.getIdCargo()).orElseThrow().getPapel()).isEqualTo("ADMIN");
+    }
+
+    @Test
+    void cargoUserNaoPodeSerRenomeadoAntesDaExclusao() {
+        CUsuario gestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        CCargoRbac cargoUser = cargoRepository.findByPapel("USER").orElseThrow();
+        autenticar(gestor);
+
+        assertBadRequest(() -> rbacService.modificar(requisicaoCargoComPapel(
+                cargoUser, "USER_RENOMEADO")));
+
+        assertThat(cargoRepository.findById(cargoUser.getIdCargo()).orElseThrow().getPapel()).isEqualTo("USER");
+    }
+
+    @Test
+    void cargoCustomizadoPodeSerRenomeadoEExcluido() {
+        CUsuario gestor = criarAtor(EComportamentoPadraoPermissao.bloquear, FUNCIONALIDADE_GLOBAL, true);
+        CCargoRbac cargo = criarCargoCriadoPor(gestor, "CUSTOM_RENAME");
+        autenticar(gestor);
+
+        RCargoRbac atualizado = rbacService.editar(requisicaoCargoComPapel(cargo, "CUSTOM_RENAMED"));
+        rbacService.excluir(cargo.getIdCargo());
+
+        assertThat(atualizado.papel()).isEqualTo("CUSTOM_RENAMED");
+        assertThat(cargoRepository.findById(cargo.getIdCargo())).isEmpty();
+    }
+
+    @Test
+    void deleteDeRootSemPermissaoEhIndistinguivelDeTerceiroEInexistente() {
+        CUsuario ator = criarAtor(EComportamentoPadraoPermissao.bloquear, null, null);
+        CUsuario outroAutor = criarAtor(EComportamentoPadraoPermissao.bloquear, null, null);
+        CUsuario usuarioTerceiro = criarUsuarioCriadoPor(outroAutor, ator.getCargo());
+        autenticar(ator);
+
+        CExceptionsSystem root = capturarNegado(() -> usuarioService.excluir(1L));
+        CExceptionsSystem terceiro = capturarNegado(() -> usuarioService.excluir(usuarioTerceiro.getIdUsuario()));
+        CExceptionsSystem inexistente = capturarNegado(() -> usuarioService.excluir(Long.MAX_VALUE));
+
+        assertThat(root.getMessage()).isEqualTo(terceiro.getMessage()).isEqualTo(inexistente.getMessage());
+        assertThat(root.getStatus()).isEqualTo(terceiro.getStatus()).isEqualTo(inexistente.getStatus());
     }
 
     @Test
@@ -406,6 +508,25 @@ class CAutorizacaoAutoriaIntegrationTests {
         return usuarioRepository.saveAndFlush(usuario);
     }
 
+    private CUsuario criarOuBuscarUsuarioRaiz(CCargoRbac pCargo) {
+        CUsuario existente = usuarioRepository.findById(1L).orElse(null);
+        if (existente != null) {
+            return existente;
+        }
+        entityManager.createNativeQuery("""
+                        INSERT INTO usuarios (
+                            id_usuario, nome, email, senha, notificar, ativo, id_cargo, criado_em
+                        ) VALUES (
+                            1, 'Usuario raiz', 'root-test@example.com', 'senha-codificada', false, true, :idCargo, CURRENT_TIMESTAMP
+                        )
+                        """)
+                .setParameter("idCargo", pCargo.getIdCargo())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+        return usuarioRepository.findById(1L).orElseThrow();
+    }
+
     private CUsuario criarUsuarioCriadoPor(CUsuario pAutor, CCargoRbac pCargo) {
         autenticar(pAutor);
         CUsuario usuario = criarUsuario(pCargo);
@@ -460,6 +581,19 @@ class CAutorizacaoAutoriaIntegrationTests {
                 pAuditoria);
     }
 
+    private RUsuario requisicaoUsuarioComAtivo(CUsuario pUsuario, String pNome, Boolean pAtivo) {
+        return new RUsuario(
+                pUsuario.getIdUsuario(),
+                pNome,
+                pUsuario.getEmail(),
+                pUsuario.getAvatar(),
+                pUsuario.getTelefone(),
+                pUsuario.getNotificar(),
+                pAtivo,
+                pUsuario.getPapel(),
+                null);
+    }
+
     private RCargoRbac requisicaoCargo(
             CCargoRbac pCargo, String pNome, RAuditoriaRegistro pAuditoria) {
         return new RCargoRbac(
@@ -474,6 +608,21 @@ class CAutorizacaoAutoriaIntegrationTests {
                 new RRedirecionamentoInicialRbac("/", null, List.of()),
                 pCargo.getAtivo(),
                 pAuditoria);
+    }
+
+    private RCargoRbac requisicaoCargoComPapel(CCargoRbac pCargo, String pPapel) {
+        return new RCargoRbac(
+                pCargo.getIdCargo(),
+                pPapel,
+                pCargo.getNome(),
+                pCargo.getIcone(),
+                pCargo.getDescricao(),
+                pCargo.getComportamentoPadrao(),
+                pCargo.getPermissoes().stream().map(com.java.boilerplate.dto.rbac.RPermissaoCargoRbac::fromEntity).toList(),
+                pCargo.getFuncionalidades().stream().map(RFuncionalidadeCargoRbac::fromEntity).toList(),
+                new RRedirecionamentoInicialRbac("/", null, List.of()),
+                pCargo.getAtivo(),
+                null);
     }
 
     private void assertNegado(Runnable pOperacao) {

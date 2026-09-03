@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -70,6 +71,16 @@ public class CErrorHandler {
                 pException,
                 "Credenciais inválidas",
                 HttpStatus.UNAUTHORIZED,
+                LocalDateTime.now(ZONE_ID_BRASIL), null, null
+        );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<RErro> handlerAccessDeniedException(AccessDeniedException pException) {
+        return construirResposta(
+                pException,
+                MENSAGEM_ACESSO_NEGADO,
+                HttpStatus.FORBIDDEN,
                 LocalDateTime.now(ZONE_ID_BRASIL), null, null
         );
     }

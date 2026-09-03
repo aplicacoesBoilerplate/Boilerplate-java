@@ -35,6 +35,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Service
 public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> implements IServiceCrud<RCargoRbac> {
     private static final String RECURSO_API = "api";
+    private static final Set<String> CARGOS_PADRAO = Set.of("ADMIN", "USER");
 
     private final ICargoRbacRepository cargoRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
@@ -119,6 +120,10 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         CCargoRbac cargo = autorizacaoAutoriaService.autorizarGerenciamento(
                 cargoRepository.findById(pIdCargo),
                 () -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
+        if (CARGOS_PADRAO.contains(cargo.getPapel())
+                && !cargo.getPapel().equals(normalizarPapel(pRequest.papel()))) {
+            throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser renomeados", HttpStatus.BAD_REQUEST);
+        }
         cargoRepository.findByPapel(pRequest.papel())
                 .filter(pCargo -> !pCargo.getIdCargo().equals(pIdCargo))
                 .ifPresent(pCargo -> {
@@ -126,7 +131,9 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
                 });
 
         preencherCargo(cargo, pRequest);
-        return paraRegistro(cargoRepository.save(cargo));
+        CCargoRbac atualizado = cargoRepository.save(cargo);
+        invalidarAposCommit(atualizado.getIdCargo());
+        return paraRegistro(atualizado);
     }
 
     @Transactional
@@ -135,7 +142,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         CCargoRbac cargo = autorizacaoAutoriaService.autorizarGerenciamento(
                 cargoRepository.findById(pIdCargo),
                 () -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
-        if ("ADMIN".equals(cargo.getPapel()) || "USER".equals(cargo.getPapel())) {
+        if (CARGOS_PADRAO.contains(cargo.getPapel())) {
             throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser excluídos", HttpStatus.BAD_REQUEST);
         }
         cargoRepository.delete(cargo);
