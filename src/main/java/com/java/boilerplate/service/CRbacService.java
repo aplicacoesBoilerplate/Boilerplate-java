@@ -16,6 +16,7 @@ import com.java.boilerplate.model.CFuncionalidadeCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
+import com.java.boilerplate.repository.IUsuarioRepository;
 import com.java.boilerplate.service.base.CBaseConsultaService;
 import com.java.boilerplate.service.base.IServiceCrud;
 import jakarta.persistence.EntityManager;
@@ -41,6 +42,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     private static final Set<String> CARGOS_PADRAO = Set.of("ADMIN", "USER");
 
     private final ICargoRbacRepository cargoRepository;
+    private final IUsuarioRepository usuarioRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final IRedisCache redisCache;
     private final CAutorizacaoAutoriaService autorizacaoAutoriaService;
@@ -50,12 +52,14 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     public CRbacService(
             EntityManager pEntityManager,
             ICargoRbacRepository pCargoRepository,
+            IUsuarioRepository pUsuarioRepository,
             CAuditoriaRegistroService pAuditoriaRegistroService,
             IRedisCache pRedisCache,
             CAutorizacaoAutoriaService pAutorizacaoAutoriaService
     ) {
         super(pEntityManager, CCargoRbac.class);
         this.cargoRepository = pCargoRepository;
+        this.usuarioRepository = pUsuarioRepository;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
         this.redisCache = pRedisCache;
         this.autorizacaoAutoriaService = pAutorizacaoAutoriaService;
@@ -162,11 +166,12 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
     @Transactional(readOnly = true)
     public boolean usuarioPodeAcessarEndpoint(CUsuario pUsuario, String pMetodoHttp, String pCaminho) {
-        if (pUsuario == null || pUsuario.getCargo() == null || !Boolean.TRUE.equals(pUsuario.getCargo().getAtivo())) {
+        CUsuario usuarioAtual = obterUsuarioAtualAtivo(pUsuario);
+        if (usuarioAtual == null) {
             return false;
         }
 
-        RPermissoesCargoCache permissoes = obterPermissoes(pUsuario.getCargo().getIdCargo());
+        RPermissoesCargoCache permissoes = obterPermissoes(usuarioAtual.getCargo().getIdCargo());
         if (!permissoes.ativo()) {
             return false;
         }
@@ -177,6 +182,17 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         }
 
         return permissoes.comportamentoPadrao() == EComportamentoPadraoPermissao.liberar;
+    }
+
+    private CUsuario obterUsuarioAtualAtivo(CUsuario pUsuario) {
+        if (pUsuario == null || pUsuario.getIdUsuario() == null) {
+            return null;
+        }
+        return usuarioRepository.findById(pUsuario.getIdUsuario())
+                .filter(pUsuarioAtual -> Boolean.TRUE.equals(pUsuarioAtual.getAtivo()))
+                .filter(pUsuarioAtual -> pUsuarioAtual.getCargo() != null
+                        && Boolean.TRUE.equals(pUsuarioAtual.getCargo().getAtivo()))
+                .orElse(null);
     }
 
     @Override
