@@ -12,6 +12,7 @@ import com.java.boilerplate.dto.rbac.RRedirecionamentoInicialRbac;
 import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
+import com.java.boilerplate.model.CFuncionalidadeCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
@@ -35,6 +36,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Service
 public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> implements IServiceCrud<RCargoRbac> {
     private static final String RECURSO_API = "api";
+    private static final String FUNCIONALIDADE_GERENCIAR_REGISTROS = "gerenciarRegistros";
+    private static final String ALIAS_GERENCIAR_REGISTROS = "gerenciarRegistrosOutros";
     private static final Set<String> CARGOS_PADRAO = Set.of("ADMIN", "USER");
 
     private final ICargoRbacRepository cargoRepository;
@@ -218,9 +221,38 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         pCargo.setRedirecionamentoFiltros(escreverFiltros(redirecionamento == null ? List.of() : redirecionamento.filtros()));
 
         pCargo.definirPermissoes(normalizarPermissoes(pRequest.permissoes()));
-        pCargo.definirFuncionalidades(pRequest.funcionalidades() == null
-                ? List.of()
-                : pRequest.funcionalidades().stream().map(RFuncionalidadeCargoRbac::toEntity).toList());
+        pCargo.definirFuncionalidades(normalizarFuncionalidades(pRequest.funcionalidades()));
+    }
+
+    private List<CFuncionalidadeCargoRbac> normalizarFuncionalidades(
+            List<RFuncionalidadeCargoRbac> pFuncionalidades) {
+        if (pFuncionalidades == null) {
+            return List.of();
+        }
+
+        boolean possuiValorCanonicoExplicito = pFuncionalidades.stream()
+                .anyMatch(pItem -> FUNCIONALIDADE_GERENCIAR_REGISTROS.equals(
+                        normalizarNomeFuncionalidade(pItem.funcionalidade())));
+
+        return pFuncionalidades.stream()
+                .filter(pItem -> !possuiValorCanonicoExplicito
+                        || !ALIAS_GERENCIAR_REGISTROS.equals(
+                                normalizarNomeFuncionalidade(pItem.funcionalidade())))
+                .map(pItem -> new RFuncionalidadeCargoRbac(
+                        normalizarNomeFuncionalidadePersistida(pItem.funcionalidade()),
+                        pItem.liberado()).toEntity())
+                .toList();
+    }
+
+    private String normalizarNomeFuncionalidadePersistida(String pFuncionalidade) {
+        String funcionalidade = normalizarNomeFuncionalidade(pFuncionalidade);
+        return ALIAS_GERENCIAR_REGISTROS.equals(funcionalidade)
+                ? FUNCIONALIDADE_GERENCIAR_REGISTROS
+                : funcionalidade;
+    }
+
+    private String normalizarNomeFuncionalidade(String pFuncionalidade) {
+        return pFuncionalidade == null ? null : pFuncionalidade.trim();
     }
 
     private List<CPermissaoCargoRbac> normalizarPermissoes(List<RPermissaoCargoRbac> pPermissoes) {

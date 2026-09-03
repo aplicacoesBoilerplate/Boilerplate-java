@@ -10,6 +10,9 @@ public record RFuncionalidadeCargoRbac(
 
         @NotNull(message = "O status da funcionalidade é obrigatório")
         Boolean liberado) {
+    private static final String FUNCIONALIDADE_GERENCIAR_REGISTROS = "gerenciarRegistros";
+    private static final String ALIAS_GERENCIAR_REGISTROS = "gerenciarRegistrosOutros";
+
     public CFuncionalidadeCargoRbac toEntity() {
         CFuncionalidadeCargoRbac entidade = new CFuncionalidadeCargoRbac();
         entidade.setFuncionalidade(funcionalidade);
@@ -18,6 +21,10 @@ public record RFuncionalidadeCargoRbac(
     }
 
     public static RFuncionalidadeCargoRbac fromEntity(CFuncionalidadeCargoRbac pFuncionalidade) {
-        return new RFuncionalidadeCargoRbac(pFuncionalidade.getFuncionalidade(), pFuncionalidade.getLiberado());
+        String funcionalidadeExterna = FUNCIONALIDADE_GERENCIAR_REGISTROS.equals(
+                pFuncionalidade.getFuncionalidade())
+                ? ALIAS_GERENCIAR_REGISTROS
+                : pFuncionalidade.getFuncionalidade();
+        return new RFuncionalidadeCargoRbac(funcionalidadeExterna, pFuncionalidade.getLiberado());
     }
 }
