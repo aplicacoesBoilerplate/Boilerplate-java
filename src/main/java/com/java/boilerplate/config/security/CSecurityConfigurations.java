@@ -108,6 +108,7 @@ public class CSecurityConfigurations {
                         .requestMatchers(api.matcher(HttpMethod.POST, "/auth/senha/confirmar")).authenticated()
                         .requestMatchers(api.matcher(HttpMethod.GET, "/preferencias/**")).authenticated()
                         .requestMatchers(api.matcher(HttpMethod.PUT, "/preferencias/**")).authenticated()
+                        .requestMatchers(api.matcher(HttpMethod.DELETE, "/preferencias/**")).authenticated()
                         .anyRequest().access(autorizacaoRbacManager)
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

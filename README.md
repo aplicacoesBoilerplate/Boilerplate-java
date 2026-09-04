@@ -105,6 +105,20 @@ Uma requisição HTTP continua chegando à API. Preferências autenticadas e per
 
 As chaves de preferências e permissões não expiram automaticamente. Elas permanecem no Redis até que uma escrita confirmada no MySQL invalide somente a chave afetada. Notificações para sessões já autenticadas após uma alteração de cargo pertencem a uma entrega posterior de eventos em tempo real.
 
+## Remover uma preferência no frontend
+
+Para limpar uma preferência persistida — por exemplo, filtros em `filters/<contexto>` — o frontend deve chamar `DELETE /api/v1/preferencias/me/item?contexto=<contexto>&chave=<chave>` com o mesmo token Bearer usado nas demais preferências. A resposta é sempre `204 No Content` quando `contexto` e `chave` são válidos, inclusive quando a preferência já foi removida; não envie nem aceite identificador de usuário, pois a operação usa exclusivamente o usuário autenticado.
+
+```javascript
+await fetch(`${apiUrl}/preferencias/me/item?${new URLSearchParams({
+  contexto: 'filters',
+  chave: contexto,
+})}`, {
+  method: 'DELETE',
+  headers: { Authorization: `Bearer ${token}` },
+});
+```
+
 Para encerrar os containers, preserve os dados do banco:
 
 ```powershell
