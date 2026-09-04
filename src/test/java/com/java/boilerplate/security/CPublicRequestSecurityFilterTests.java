@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CPublicRequestSecurityFilterTests {
-    private final RRateLimitProperties properties = new RRateLimitProperties(60, 1, 1, 100);
+    private final RRateLimitProperties properties = new RRateLimitProperties(60, 1, 1, 10_000);
     private final CPublicRequestSecurityFilter filter = new CPublicRequestSecurityFilter(
             new CRateLimitService(100),
             properties

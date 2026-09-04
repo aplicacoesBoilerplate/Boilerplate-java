@@ -30,6 +30,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final CTokenService tokenService;
     private final CAutorizacaoAutoriaService autorizacaoAutoriaService;
+    private final CAtivacaoPrimeiroAcessoService ativacaoPrimeiroAcessoService;
 
     public CUsuarioService(
             EntityManager pEntityManager,
@@ -38,7 +39,8 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
             PasswordEncoder pPasswordEncoder,
             CAuditoriaRegistroService pAuditoriaRegistroService,
             CTokenService pTokenService,
-            CAutorizacaoAutoriaService pAutorizacaoAutoriaService
+            CAutorizacaoAutoriaService pAutorizacaoAutoriaService,
+            CAtivacaoPrimeiroAcessoService pAtivacaoPrimeiroAcessoService
     ) {
         super(pEntityManager, CUsuario.class);
         this.usuarioRepository = pUsuarioRepository;
@@ -47,6 +49,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         this.auditoriaRegistroService = pAuditoriaRegistroService;
         this.tokenService = pTokenService;
         this.autorizacaoAutoriaService = pAutorizacaoAutoriaService;
+        this.ativacaoPrimeiroAcessoService = pAtivacaoPrimeiroAcessoService;
     }
 
     @Transactional(readOnly = true)
@@ -187,6 +190,18 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         usuario.setAtivo(false);
         usuarioRepository.save(usuario);
         tokenService.revogarSessoesUsuario(pIdUsuario);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void reenviarAtivacao(Long pIdUsuario) {
+        CUsuario usuario = usuarioRepository.findById(pIdUsuario)
+                .orElseThrow(() -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        autorizacaoAutoriaService.autorizarGerenciamentoUsuario(usuario);
+        if (Boolean.TRUE.equals(usuario.getAtivo())) {
+            throw new CExceptionsSystem("A conta já está ativa", HttpStatus.BAD_REQUEST);
+        }
+        ativacaoPrimeiroAcessoService.emitir(usuario);
     }
 
     private void validarDesativacaoProtegida(Long pIdUsuario, Boolean pAtivo) {

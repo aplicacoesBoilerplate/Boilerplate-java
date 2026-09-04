@@ -60,6 +60,10 @@ otp:
   expirationMinutes: 10
   maxAttempts: 5
 
+ativacao:
+  pepper: test-only-ativacao-pepper-with-at-least-32-characters
+  expirationMinutes: 1440
+
 security:
   rate-limit:
     windowSeconds: 60
