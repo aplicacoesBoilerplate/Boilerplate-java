@@ -67,8 +67,7 @@ class CAuthSecurityRegressionTests {
                 recoveryService,
                 solicitacaoAcessoRepository,
                 rateLimitService,
-                new RRateLimitProperties(60, 30, 5, 10_000),
-                ativacaoPrimeiroAcessoService
+                new RRateLimitProperties(60, 30, 5, 10, 5, 10_000)
         );
     }
 
@@ -184,8 +183,7 @@ class CAuthSecurityRegressionTests {
         CAuthService servicoComLimiterLocal = new CAuthService(
                 authenticationManager, passwordEncoder, tokenService, usuarioService, rbacService,
                 googleOAuthService, otpService, recoveryService, solicitacaoAcessoRepository,
-                new CRateLimitService(100), new RRateLimitProperties(60, 100, 30, 30, 1, 10_000),
-                ativacaoPrimeiroAcessoService
+                new CRateLimitService(100), new RRateLimitProperties(60, 100, 30, 30, 1, 10_000)
         );
 
         assertThatCode(() -> {
