@@ -15,12 +15,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class CErrorHandlerSecurityRegressionTests {
@@ -90,6 +100,58 @@ class CErrorHandlerSecurityRegressionTests {
     }
 
     @Test
+    void proibicaoDeveSerGenericaESemTraceMesmoQuandoExposicaoEstaAtiva() {
+        errorHandler = new CErrorHandler(
+                logErroRepository,
+                new RAppProperties("http://localhost", "http://localhost", true, 1000)
+        );
+
+        ResponseEntity<RErro> response = errorHandler.handlerExceptionsSystem(
+                new CExceptionsSystem(
+                        "Registro 42 criado por autor@example.com",
+                        HttpStatus.FORBIDDEN,
+                        "REGISTRO_ALHEIO",
+                        Map.of("id", 42L, "papel", "ADMIN"))
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().mensagem()).isEqualTo("Operação não autorizada");
+        assertThat(response.getBody().codigo()).isNull();
+        assertThat(response.getBody().dados()).isNull();
+        assertThat(response.getBody().trace()).isNull();
+        verify(logErroRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void accessDeniedDoSpringSecurityDeveRetornar403Sanitizado() throws Exception {
+        MockMvc mockMvc = criarMockMvcComExposicaoDeTrace();
+
+        mockMvc.perform(get("/negado/access-denied"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensagem").value("Operação não autorizada"))
+                .andExpect(jsonPath("$.codigo").doesNotExist())
+                .andExpect(jsonPath("$.dados").doesNotExist())
+                .andExpect(jsonPath("$.trace").doesNotExist());
+
+        verify(logErroRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void authorizationDeniedDoPreAuthorizeDeveRetornar403Sanitizado() throws Exception {
+        MockMvc mockMvc = criarMockMvcComExposicaoDeTrace();
+
+        mockMvc.perform(get("/negado/authorization-denied"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensagem").value("Operação não autorizada"))
+                .andExpect(jsonPath("$.codigo").doesNotExist())
+                .andExpect(jsonPath("$.dados").doesNotExist())
+                .andExpect(jsonPath("$.trace").doesNotExist());
+
+        verify(logErroRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void persistenciaDeErrosDeveRemoverRegistrosQueExcedemORetencao() {
         org.mockito.Mockito.when(logErroRepository.count()).thenReturn(1001L);
         CLogErro antigo = new CLogErro();
@@ -99,5 +161,27 @@ class CErrorHandlerSecurityRegressionTests {
         errorHandler.handlerException(new RuntimeException("falha interna"));
 
         verify(logErroRepository).deleteAllInBatch(List.of(antigo));
+    }
+
+    private MockMvc criarMockMvcComExposicaoDeTrace() {
+        errorHandler = new CErrorHandler(
+                logErroRepository,
+                new RAppProperties("http://localhost", "http://localhost", true, 1000));
+        return MockMvcBuilders.standaloneSetup(new CNegacaoController())
+                .setControllerAdvice(errorHandler)
+                .build();
+    }
+
+    @RestController
+    private static class CNegacaoController {
+        @GetMapping("/negado/access-denied")
+        void accessDenied() {
+            throw new AccessDeniedException("detalhe sensível de autorização");
+        }
+
+        @GetMapping("/negado/authorization-denied")
+        void authorizationDenied() {
+            throw new AuthorizationDeniedException("detalhe sensível do @PreAuthorize");
+        }
     }
 }

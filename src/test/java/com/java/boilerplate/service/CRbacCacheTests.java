@@ -30,13 +30,16 @@ class CRbacCacheTests {
     private CAuditoriaRegistroService auditoriaRegistroService;
     @Mock
     private IRedisCache redisCache;
+    @Mock
+    private CAutorizacaoAutoriaService autorizacaoAutoriaService;
 
     private CRbacService service;
     private CUsuario usuario;
 
     @BeforeEach
     void configurar() {
-        service = new CRbacService(entityManager, cargoRepository, auditoriaRegistroService, redisCache);
+        service = new CRbacService(
+                entityManager, cargoRepository, auditoriaRegistroService, redisCache, autorizacaoAutoriaService);
         CCargoRbac cargo = new CCargoRbac();
         cargo.setIdCargo(7L);
         cargo.setAtivo(true);

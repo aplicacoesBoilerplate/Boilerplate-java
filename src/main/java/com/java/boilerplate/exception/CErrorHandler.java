@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -30,6 +31,7 @@ import java.util.Map;
 public class CErrorHandler {
     private static final ZoneId ZONE_ID_BRASIL = ZoneId.of("America/Sao_Paulo");
     private static final String MENSAGEM_ERRO_INTERNO = "Erro interno ao processar a solicitação";
+    private static final String MENSAGEM_ACESSO_NEGADO = "Operação não autorizada";
 
     private final ILogErroRepository logErroRepository;
     private final RAppProperties appProperties;
@@ -73,6 +75,16 @@ public class CErrorHandler {
         );
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<RErro> handlerAccessDeniedException(AccessDeniedException pException) {
+        return construirResposta(
+                pException,
+                MENSAGEM_ACESSO_NEGADO,
+                HttpStatus.FORBIDDEN,
+                LocalDateTime.now(ZONE_ID_BRASIL), null, null
+        );
+    }
+
     @ExceptionHandler({
             HttpMessageNotReadableException.class,
             MethodArgumentTypeMismatchException.class,
@@ -96,15 +108,16 @@ public class CErrorHandler {
             Exception pException, String pMensagem, HttpStatus pStatus, LocalDateTime pDataHora,
             String pCodigo, Map<String, Object> pDados) {
         Map<String, Object> trace = criarTrace(pException);
+        boolean acessoNegado = pStatus == HttpStatus.FORBIDDEN;
         if (pStatus.is5xxServerError()) {
             salvarLog(pMensagem, pStatus, trace);
         }
 
         RErro erro = new RErro(
-                pMensagem,
+                acessoNegado ? MENSAGEM_ACESSO_NEGADO : pMensagem,
                 pDataHora,
-                pStatus.value(), pCodigo, pDados,
-                appProperties.deveExporTraceErro() ? trace : null
+                pStatus.value(), acessoNegado ? null : pCodigo, acessoNegado ? null : pDados,
+                !acessoNegado && appProperties.deveExporTraceErro() ? trace : null
         );
 
         return new ResponseEntity<>(erro, pStatus);

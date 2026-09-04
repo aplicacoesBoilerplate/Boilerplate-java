@@ -3,7 +3,6 @@ package com.java.boilerplate.service;
 import com.java.boilerplate.dto.usuarios.RUsuario;
 import com.java.boilerplate.dto.consulta.RConsultaRegistros;
 import com.java.boilerplate.dto.consulta.RRespostaConsultaRegistros;
-import com.java.boilerplate.enums.EComportamentoPadraoPermissao;
 import com.java.boilerplate.exception.CExceptionsSystem;
 import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CUsuario;
@@ -13,8 +12,6 @@ import com.java.boilerplate.service.base.IServiceCrud;
 import com.java.boilerplate.config.security.CTokenService;
 import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -32,6 +29,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     private final PasswordEncoder passwordEncoder;
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final CTokenService tokenService;
+    private final CAutorizacaoAutoriaService autorizacaoAutoriaService;
 
     public CUsuarioService(
             EntityManager pEntityManager,
@@ -39,7 +37,8 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
             CRbacService pRbacService,
             PasswordEncoder pPasswordEncoder,
             CAuditoriaRegistroService pAuditoriaRegistroService,
-            CTokenService pTokenService
+            CTokenService pTokenService,
+            CAutorizacaoAutoriaService pAutorizacaoAutoriaService
     ) {
         super(pEntityManager, CUsuario.class);
         this.usuarioRepository = pUsuarioRepository;
@@ -47,6 +46,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         this.passwordEncoder = pPasswordEncoder;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
         this.tokenService = pTokenService;
+        this.autorizacaoAutoriaService = pAutorizacaoAutoriaService;
     }
 
     @Transactional(readOnly = true)
@@ -150,12 +150,14 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional
     public RUsuario atualizar(Long pIdUsuario, RUsuario pRequest) {
-        validarPodeGerenciarUsuario(pIdUsuario);
-        CUsuario usuario = buscarEntidadePorId(pIdUsuario);
+        CUsuario usuario = autorizacaoAutoriaService.autorizarGerenciamento(
+                usuarioRepository.findById(pIdUsuario),
+                () -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        validarDesativacaoProtegida(pIdUsuario, pRequest.ativo());
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
         preencherUsuario(usuario, pRequest);
         CUsuario atualizado = usuarioRepository.saveAndFlush(usuario);
-        if (!pIdUsuario.equals(resolverIdUsuarioLogado())) {
+        if (!pIdUsuario.equals(autorizacaoAutoriaService.resolverIdUsuarioAutenticado())) {
             tokenService.revogarSessoesUsuario(pIdUsuario);
         }
         return paraRegistro(atualizado);
@@ -163,21 +165,33 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
 
     @Transactional
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public void excluir(Long pIdUsuario) {
-        if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
-            throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
-        }
-
-        Long idUsuarioLogado = resolverIdUsuarioLogado();
-        if (pIdUsuario != null && pIdUsuario.equals(idUsuarioLogado)) {
+        Long idUsuarioAutenticado = autorizacaoAutoriaService.resolverIdUsuarioAutenticado();
+        if (pIdUsuario != null && pIdUsuario.equals(idUsuarioAutenticado)) {
             throw new CExceptionsSystem("O usuário autenticado não pode remover a própria conta", HttpStatus.BAD_REQUEST);
         }
 
-        CUsuario usuario = buscarEntidadePorId(pIdUsuario);
+        CUsuario usuario = autorizacaoAutoriaService.autorizarGerenciamento(
+                usuarioRepository.findById(pIdUsuario),
+                () -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
+            throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
+        }
         usuario.setAtivo(false);
         usuarioRepository.save(usuario);
         tokenService.revogarSessoesUsuario(pIdUsuario);
+    }
+
+    private void validarDesativacaoProtegida(Long pIdUsuario, Boolean pAtivo) {
+        if (!Boolean.FALSE.equals(pAtivo)) {
+            return;
+        }
+        if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
+            throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
+        }
+        if (pIdUsuario != null && pIdUsuario.equals(autorizacaoAutoriaService.resolverIdUsuarioAutenticado())) {
+            throw new CExceptionsSystem("O usuário autenticado não pode remover a própria conta", HttpStatus.BAD_REQUEST);
+        }
     }
 
     private void preencherUsuario(CUsuario pUsuario, RUsuario pRequest) {
@@ -193,27 +207,6 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         pUsuario.setNotificar(Boolean.TRUE.equals(pRequest.notificar()));
         pUsuario.setAtivo(pRequest.ativo() == null || pRequest.ativo());
         pUsuario.setCargo(cargo);
-    }
-
-    private void validarPodeGerenciarUsuario(Long pIdUsuario) {
-        Long idUsuarioLogado = resolverIdUsuarioLogado();
-        if (idUsuarioLogado == null) {
-            return;
-        }
-
-        if (pIdUsuario.equals(idUsuarioLogado)) {
-            return;
-        }
-
-        CUsuario usuarioLogado = buscarEntidadePorId(idUsuarioLogado);
-        CCargoRbac cargo = usuarioLogado.getCargo();
-        boolean funcionalidadeLiberada = cargo.getFuncionalidades().stream()
-                .anyMatch(pFuncionalidade -> "gerenciarRegistrosOutros".equals(pFuncionalidade.getFuncionalidade())
-                        && Boolean.TRUE.equals(pFuncionalidade.getLiberado()));
-        boolean comportamentoPadraoLibera = cargo.getComportamentoPadrao() == EComportamentoPadraoPermissao.liberar;
-        if (!funcionalidadeLiberada && !comportamentoPadraoLibera) {
-            throw new CExceptionsSystem("Usuário não possui permissão para gerenciar registros de outros", HttpStatus.FORBIDDEN);
-        }
     }
 
     @Override
@@ -259,12 +252,4 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
                 });
     }
 
-    private Long resolverIdUsuarioLogado() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof CUsuario usuario) {
-            return usuario.getIdUsuario();
-        }
-
-        return null;
-    }
 }
