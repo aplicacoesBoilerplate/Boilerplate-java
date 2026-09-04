@@ -30,6 +30,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final CTokenService tokenService;
     private final CAutorizacaoAutoriaService autorizacaoAutoriaService;
+    private final CAtivacaoPrimeiroAcessoService ativacaoPrimeiroAcessoService;
 
     public CUsuarioService(
             EntityManager pEntityManager,
@@ -38,7 +39,8 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
             PasswordEncoder pPasswordEncoder,
             CAuditoriaRegistroService pAuditoriaRegistroService,
             CTokenService pTokenService,
-            CAutorizacaoAutoriaService pAutorizacaoAutoriaService
+            CAutorizacaoAutoriaService pAutorizacaoAutoriaService,
+            CAtivacaoPrimeiroAcessoService pAtivacaoPrimeiroAcessoService
     ) {
         super(pEntityManager, CUsuario.class);
         this.usuarioRepository = pUsuarioRepository;
@@ -47,6 +49,7 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         this.auditoriaRegistroService = pAuditoriaRegistroService;
         this.tokenService = pTokenService;
         this.autorizacaoAutoriaService = pAutorizacaoAutoriaService;
+        this.ativacaoPrimeiroAcessoService = pAtivacaoPrimeiroAcessoService;
     }
 
     @Transactional(readOnly = true)
@@ -77,10 +80,13 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public RUsuario cadastrar(RUsuario pRequest) {
+        autorizacaoAutoriaService.autorizarGerenciamentoUsuario(null);
         validarEmailDisponivel(pRequest.email(), null);
 
         CUsuario usuario = new CUsuario();
-        preencherUsuario(usuario, pRequest);
+        CCargoRbac cargo = resolverCargoAtivo(pRequest.papel());
+        autorizacaoAutoriaService.autorizarAtribuicaoCargo(cargo);
+        preencherUsuario(usuario, pRequest, cargo);
         usuario.setSenha(passwordEncoder.encode(UUID.randomUUID().toString()));
         return paraRegistro(usuarioRepository.saveAndFlush(usuario));
     }
@@ -153,9 +159,12 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         CUsuario usuario = autorizacaoAutoriaService.autorizarGerenciamento(
                 usuarioRepository.findById(pIdUsuario),
                 () -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        autorizacaoAutoriaService.autorizarGerenciamentoUsuario(usuario);
         validarDesativacaoProtegida(pIdUsuario, pRequest.ativo());
         validarEmailDisponivel(pRequest.email(), pIdUsuario);
-        preencherUsuario(usuario, pRequest);
+        CCargoRbac cargo = resolverCargoAtivo(pRequest.papel());
+        autorizacaoAutoriaService.autorizarAtribuicaoCargo(cargo);
+        preencherUsuario(usuario, pRequest, cargo);
         CUsuario atualizado = usuarioRepository.saveAndFlush(usuario);
         if (!pIdUsuario.equals(autorizacaoAutoriaService.resolverIdUsuarioAutenticado())) {
             tokenService.revogarSessoesUsuario(pIdUsuario);
@@ -174,12 +183,25 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         CUsuario usuario = autorizacaoAutoriaService.autorizarGerenciamento(
                 usuarioRepository.findById(pIdUsuario),
                 () -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        autorizacaoAutoriaService.autorizarGerenciamentoUsuario(usuario);
         if (ID_USUARIO_RAIZ.equals(pIdUsuario)) {
             throw new CExceptionsSystem("O usuário raiz da aplicação não pode ser removido", HttpStatus.BAD_REQUEST);
         }
         usuario.setAtivo(false);
         usuarioRepository.save(usuario);
         tokenService.revogarSessoesUsuario(pIdUsuario);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void reenviarAtivacao(Long pIdUsuario) {
+        CUsuario usuario = usuarioRepository.findById(pIdUsuario)
+                .orElseThrow(() -> new CExceptionsSystem("Usuário não encontrado para o ID: " + pIdUsuario, HttpStatus.NOT_FOUND));
+        autorizacaoAutoriaService.autorizarGerenciamentoUsuario(usuario);
+        if (Boolean.TRUE.equals(usuario.getAtivo())) {
+            throw new CExceptionsSystem("A conta já está ativa", HttpStatus.BAD_REQUEST);
+        }
+        ativacaoPrimeiroAcessoService.emitir(usuario);
     }
 
     private void validarDesativacaoProtegida(Long pIdUsuario, Boolean pAtivo) {
@@ -194,19 +216,22 @@ public class CUsuarioService extends CBaseConsultaService<CUsuario, RUsuario> im
         }
     }
 
-    private void preencherUsuario(CUsuario pUsuario, RUsuario pRequest) {
-        CCargoRbac cargo = rbacService.buscarEntidadePorPapel(pRequest.papel());
-        if (!Boolean.TRUE.equals(cargo.getAtivo())) {
-            throw new CExceptionsSystem("O cargo informado está inativo", HttpStatus.BAD_REQUEST);
-        }
-
+    private void preencherUsuario(CUsuario pUsuario, RUsuario pRequest, CCargoRbac pCargo) {
         pUsuario.setNome(pRequest.nome());
         pUsuario.setEmail(pRequest.email().toLowerCase());
         pUsuario.setAvatar(pRequest.avatar());
         pUsuario.setTelefone(pRequest.telefone());
         pUsuario.setNotificar(Boolean.TRUE.equals(pRequest.notificar()));
         pUsuario.setAtivo(pRequest.ativo() == null || pRequest.ativo());
-        pUsuario.setCargo(cargo);
+        pUsuario.setCargo(pCargo);
+    }
+
+    private CCargoRbac resolverCargoAtivo(String pPapel) {
+        CCargoRbac cargo = rbacService.buscarEntidadePorPapel(pPapel);
+        if (!Boolean.TRUE.equals(cargo.getAtivo())) {
+            throw new CExceptionsSystem("O cargo informado está inativo", HttpStatus.BAD_REQUEST);
+        }
+        return cargo;
     }
 
     @Override

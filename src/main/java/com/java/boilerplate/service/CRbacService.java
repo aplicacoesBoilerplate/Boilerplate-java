@@ -16,6 +16,7 @@ import com.java.boilerplate.model.CFuncionalidadeCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
+import com.java.boilerplate.repository.IUsuarioRepository;
 import com.java.boilerplate.service.base.CBaseConsultaService;
 import com.java.boilerplate.service.base.IServiceCrud;
 import jakarta.persistence.EntityManager;
@@ -41,6 +42,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     private static final Set<String> CARGOS_PADRAO = Set.of("ADMIN", "USER");
 
     private final ICargoRbacRepository cargoRepository;
+    private final IUsuarioRepository usuarioRepository;
     private final CAuditoriaRegistroService auditoriaRegistroService;
     private final IRedisCache redisCache;
     private final CAutorizacaoAutoriaService autorizacaoAutoriaService;
@@ -50,12 +52,14 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     public CRbacService(
             EntityManager pEntityManager,
             ICargoRbacRepository pCargoRepository,
+            IUsuarioRepository pUsuarioRepository,
             CAuditoriaRegistroService pAuditoriaRegistroService,
             IRedisCache pRedisCache,
             CAutorizacaoAutoriaService pAutorizacaoAutoriaService
     ) {
         super(pEntityManager, CCargoRbac.class);
         this.cargoRepository = pCargoRepository;
+        this.usuarioRepository = pUsuarioRepository;
         this.auditoriaRegistroService = pAuditoriaRegistroService;
         this.redisCache = pRedisCache;
         this.autorizacaoAutoriaService = pAutorizacaoAutoriaService;
@@ -87,6 +91,8 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
     @Transactional
     @Override
     public RCargoRbac cadastrar(RCargoRbac pRequest) {
+        boolean destinadoClienteFinal = resolverDestinoClienteFinal(null, pRequest);
+        autorizacaoAutoriaService.autorizarCriacaoCargo(destinadoClienteFinal);
         if (pRequest.id() != null) {
             throw new CExceptionsSystem("Um novo cargo não pode possuir identificador", HttpStatus.BAD_REQUEST);
         }
@@ -95,6 +101,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
             throw new CExceptionsSystem("Já existe um cargo com o papel informado", HttpStatus.CONFLICT);
         }
 
+        validarConfiguracaoCargoFinal(pRequest, destinadoClienteFinal);
         CCargoRbac cargo = new CCargoRbac();
         preencherCargo(cargo, pRequest);
         CCargoRbac salvo = cargoRepository.save(cargo);
@@ -123,6 +130,8 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         CCargoRbac cargo = autorizacaoAutoriaService.autorizarGerenciamento(
                 cargoRepository.findById(pIdCargo),
                 () -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
+        boolean destinadoClienteFinal = resolverDestinoClienteFinal(cargo, pRequest);
+        autorizacaoAutoriaService.autorizarGerenciamentoCargo(cargo, destinadoClienteFinal);
         if (CARGOS_PADRAO.contains(cargo.getPapel())
                 && !cargo.getPapel().equals(normalizarPapel(pRequest.papel()))) {
             throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser renomeados", HttpStatus.BAD_REQUEST);
@@ -133,6 +142,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
                     throw new CExceptionsSystem("Já existe um cargo com o papel informado", HttpStatus.CONFLICT);
                 });
 
+        validarConfiguracaoCargoFinal(pRequest, destinadoClienteFinal);
         preencherCargo(cargo, pRequest);
         CCargoRbac atualizado = cargoRepository.save(cargo);
         invalidarAposCommit(atualizado.getIdCargo());
@@ -145,6 +155,8 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         CCargoRbac cargo = autorizacaoAutoriaService.autorizarGerenciamento(
                 cargoRepository.findById(pIdCargo),
                 () -> new CExceptionsSystem("Cargo não encontrado para o ID: " + pIdCargo, HttpStatus.NOT_FOUND));
+        autorizacaoAutoriaService.autorizarGerenciamentoCargo(
+                cargo, Boolean.TRUE.equals(cargo.getDestinadoClienteFinal()));
         if (CARGOS_PADRAO.contains(cargo.getPapel())) {
             throw new CExceptionsSystem("Os cargos padrão ADMIN e USER não podem ser excluídos", HttpStatus.BAD_REQUEST);
         }
@@ -154,11 +166,12 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
     @Transactional(readOnly = true)
     public boolean usuarioPodeAcessarEndpoint(CUsuario pUsuario, String pMetodoHttp, String pCaminho) {
-        if (pUsuario == null || pUsuario.getCargo() == null || !Boolean.TRUE.equals(pUsuario.getCargo().getAtivo())) {
+        CUsuario usuarioAtual = obterUsuarioAtualAtivo(pUsuario);
+        if (usuarioAtual == null) {
             return false;
         }
 
-        RPermissoesCargoCache permissoes = obterPermissoes(pUsuario.getCargo().getIdCargo());
+        RPermissoesCargoCache permissoes = obterPermissoes(usuarioAtual.getCargo().getIdCargo());
         if (!permissoes.ativo()) {
             return false;
         }
@@ -169,6 +182,17 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         }
 
         return permissoes.comportamentoPadrao() == EComportamentoPadraoPermissao.liberar;
+    }
+
+    private CUsuario obterUsuarioAtualAtivo(CUsuario pUsuario) {
+        if (pUsuario == null || pUsuario.getIdUsuario() == null) {
+            return null;
+        }
+        return usuarioRepository.findById(pUsuario.getIdUsuario())
+                .filter(pUsuarioAtual -> Boolean.TRUE.equals(pUsuarioAtual.getAtivo()))
+                .filter(pUsuarioAtual -> pUsuarioAtual.getCargo() != null
+                        && Boolean.TRUE.equals(pUsuarioAtual.getCargo().getAtivo()))
+                .orElse(null);
     }
 
     @Override
@@ -203,6 +227,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
                         lerFiltros(pCargo.getRedirecionamentoFiltros())
                 ),
                 pCargo.getAtivo(),
+                pCargo.getDestinadoClienteFinal(),
                 auditoriaRegistroService.montar(pCargo)
         );
     }
@@ -214,6 +239,7 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
         pCargo.setDescricao(pRequest.descricao());
         pCargo.setComportamentoPadrao(pRequest.comportamentoPadrao() == null ? EComportamentoPadraoPermissao.bloquear : pRequest.comportamentoPadrao());
         pCargo.setAtivo(pRequest.ativo() == null || pRequest.ativo());
+        pCargo.setDestinadoClienteFinal(resolverDestinoClienteFinal(pCargo, pRequest));
 
         RRedirecionamentoInicialRbac redirecionamento = pRequest.redirecionamentoInicial();
         pCargo.setRedirecionamentoPath(redirecionamento == null || redirecionamento.path() == null || redirecionamento.path().isBlank() ? "/" : redirecionamento.path());
@@ -222,6 +248,54 @@ public class CRbacService extends CBaseConsultaService<CCargoRbac, RCargoRbac> i
 
         pCargo.definirPermissoes(normalizarPermissoes(pRequest.permissoes()));
         pCargo.definirFuncionalidades(normalizarFuncionalidades(pRequest.funcionalidades()));
+    }
+
+    private boolean resolverDestinoClienteFinal(CCargoRbac pCargoAtual, RCargoRbac pRequest) {
+        if (pRequest.destinadoClienteFinal() != null) {
+            return pRequest.destinadoClienteFinal();
+        }
+        return pCargoAtual == null || Boolean.TRUE.equals(pCargoAtual.getDestinadoClienteFinal());
+    }
+
+    private void validarConfiguracaoCargoFinal(RCargoRbac pRequest, boolean pDestinadoClienteFinal) {
+        if (!pDestinadoClienteFinal) {
+            return;
+        }
+        if (pRequest.comportamentoPadrao() == EComportamentoPadraoPermissao.liberar) {
+            throw new CExceptionsSystem("Cargo de Cliente Final deve bloquear por padrão", HttpStatus.BAD_REQUEST);
+        }
+        if (normalizarFuncionalidades(pRequest.funcionalidades()).stream()
+                .anyMatch(pFuncionalidade -> FUNCIONALIDADE_GERENCIAR_REGISTROS.equals(pFuncionalidade.getFuncionalidade())
+                        && Boolean.TRUE.equals(pFuncionalidade.getLiberado()))) {
+            throw new CExceptionsSystem("Cargo de Cliente Final não pode gerenciar registros", HttpStatus.BAD_REQUEST);
+        }
+        if (normalizarPermissoes(pRequest.permissoes()).stream()
+                .anyMatch(this::ehPermissaoMutavelDeGestaoLiberada)) {
+            throw new CExceptionsSystem("Cargo de Cliente Final não pode receber permissões mutáveis de gestão", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private boolean ehPermissaoMutavelDeGestaoLiberada(CPermissaoCargoRbac pPermissao) {
+        if (!RECURSO_API.equals(pPermissao.getRecurso()) || !Boolean.TRUE.equals(pPermissao.getLiberado())) {
+            return false;
+        }
+        return concedeAcessoAoEndpoint(pPermissao.getAcao(), "POST", "/usuarios")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "PUT", "/usuarios")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "PATCH", "/usuarios")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "DELETE", "/usuarios/1")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "POST", "/rbac/cargos")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "PUT", "/rbac/cargos")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "PATCH", "/rbac/cargos")
+                || concedeAcessoAoEndpoint(pPermissao.getAcao(), "DELETE", "/rbac/cargos/1");
+    }
+
+    private boolean concedeAcessoAoEndpoint(String pAcao, String pMetodo, String pEndpoint) {
+        if (pAcao == null || !pAcao.contains(" ")) {
+            return false;
+        }
+        String[] partes = pAcao.trim().split("\\s+", 2);
+        return partes.length == 2 && partes[0].equalsIgnoreCase(pMetodo)
+                && antPathMatcher.match(partes[1], pEndpoint);
     }
 
     private List<CFuncionalidadeCargoRbac> normalizarFuncionalidades(

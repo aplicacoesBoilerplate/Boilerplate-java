@@ -118,28 +118,22 @@ class CRbacFuncionalidadeCompatibilityTests {
 
     private CUsuario criarEAutenticarAtor() {
         SecurityContextHolder.clearContext();
-        long sequencia = SEQUENCIA.incrementAndGet();
-        CCargoRbac cargo = new CCargoRbac();
-        cargo.setPapel("ATOR_COMPAT_" + sequencia);
-        cargo.setNome("Ator de compatibilidade");
-        cargo.setIcone("mdi-account");
-        cargo.setDescricao("Cargo do ator");
-        cargo.setComportamentoPadrao(EComportamentoPadraoPermissao.bloquear);
-        cargo.setRedirecionamentoPath("/");
-        cargo.setRedirecionamentoFiltros("[]");
-        cargo.setAtivo(true);
-        cargo = cargoRepository.saveAndFlush(cargo);
+        CUsuario raiz = usuarioRepository.findById(1L).orElseGet(this::criarRaiz);
+        autenticar(raiz);
+        return raiz;
+    }
 
-        CUsuario ator = new CUsuario();
-        ator.setNome("Ator " + sequencia);
-        ator.setEmail("ator-compat-" + sequencia + "@example.com");
-        ator.setSenha("senha-codificada");
-        ator.setCargo(cargo);
-        ator.setAtivo(true);
-        ator.setNotificar(false);
-        ator = usuarioRepository.saveAndFlush(ator);
-        autenticar(ator);
-        return ator;
+    private CUsuario criarRaiz() {
+        CCargoRbac cargoAdmin = cargoRepository.findByPapel("ADMIN").orElseThrow();
+        entityManager.createNativeQuery("""
+                        INSERT INTO usuarios (id_usuario, nome, email, senha, notificar, ativo, id_cargo, criado_em)
+                        VALUES (1, 'Raiz', 'root-compat@example.com', 'senha-codificada', false, true, :idCargo, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter("idCargo", cargoAdmin.getIdCargo())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+        return usuarioRepository.findById(1L).orElseThrow();
     }
 
     private void autenticar(CUsuario pUsuario) {
@@ -161,6 +155,7 @@ class CRbacFuncionalidadeCompatibilityTests {
                 pFuncionalidades,
                 new RRedirecionamentoInicialRbac("/", null, List.of()),
                 true,
+                false,
                 null);
     }
 

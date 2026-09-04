@@ -45,7 +45,7 @@ class CUsuarioAuthorizationSecurityTests {
                 "Administrador do teste",
                 "admin-test@example.com",
                 "admin-test-password-secure",
-                "ADMIN",
+                "USER",
                 true
         ).getIdUsuario();
         gestorGlobal = usuarioService.criarUsuarioSistema(

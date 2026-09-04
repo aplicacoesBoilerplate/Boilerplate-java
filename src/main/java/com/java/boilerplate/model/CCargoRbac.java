@@ -61,6 +61,9 @@ public class CCargoRbac extends CEntidadeAuditavel {
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 
+    @Column(name = "destinado_cliente_final", nullable = false)
+    private Boolean destinadoClienteFinal = true;
+
     @OrderBy("idPermissao ASC")
     @OneToMany(mappedBy = "cargo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CPermissaoCargoRbac> permissoes = new ArrayList<>();

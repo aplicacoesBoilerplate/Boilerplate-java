@@ -13,6 +13,7 @@ import com.java.boilerplate.model.CCargoRbac;
 import com.java.boilerplate.model.CPermissaoCargoRbac;
 import com.java.boilerplate.model.CUsuario;
 import com.java.boilerplate.repository.ICargoRbacRepository;
+import com.java.boilerplate.repository.IUsuarioRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.util.HashMap;
@@ -37,6 +38,8 @@ class CRbacUpdateCacheSecurityTests {
     @Mock
     private ICargoRbacRepository cargoRepository;
     @Mock
+    private IUsuarioRepository usuarioRepository;
+    @Mock
     private CAuditoriaRegistroService auditoriaRegistroService;
     @Mock
     private CAutorizacaoAutoriaService autorizacaoAutoriaService;
@@ -50,11 +53,14 @@ class CRbacUpdateCacheSecurityTests {
     void configurar() {
         cache = new CCacheMemoria();
         service = new CRbacService(
-                entityManager, cargoRepository, auditoriaRegistroService, cache, autorizacaoAutoriaService);
+                entityManager, cargoRepository, usuarioRepository, auditoriaRegistroService, cache, autorizacaoAutoriaService);
         cargo = criarCargoComPermissao(true);
         usuario = new CUsuario();
+        usuario.setIdUsuario(9L);
+        usuario.setAtivo(true);
         usuario.setCargo(cargo);
 
+        when(usuarioRepository.findById(9L)).thenReturn(Optional.of(usuario));
         when(cargoRepository.findByIdWithPermissoes(7L)).thenReturn(Optional.of(cargo));
         when(cargoRepository.findById(7L)).thenReturn(Optional.of(cargo));
         when(cargoRepository.findByPapel("GESTOR")).thenReturn(Optional.of(cargo));
