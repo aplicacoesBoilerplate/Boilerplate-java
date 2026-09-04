@@ -148,6 +148,8 @@ await fetch(`${apiUrl}/preferencias/me/item?${new URLSearchParams({
 });
 ```
 
+O contrato v1 para o futuro transporte Redis Pub/Sub do canal de monitoramento está em [`docs/eventos-redis-monitoramento-v1.md`](docs/eventos-redis-monitoramento-v1.md). Pub/Sub é efêmero e não substitui MySQL, cache ou mensageria durável.
+
 ## Rate limit distribuído
 
 Cada chamada a `/api/v1` consome, em uma única decisão atômica no Redis, a quota global e uma quota por sujeito. Usuários autenticados são identificados pelo ID já validado pelo bearer; para requisições anônimas é usada apenas a origem remota. As chaves Redis usam hash SHA-256 e a hash-tag `{api}`, portanto não armazenam IP, ID, token ou credencial em texto puro e permanecem elegíveis para o mesmo slot de Redis Cluster.
