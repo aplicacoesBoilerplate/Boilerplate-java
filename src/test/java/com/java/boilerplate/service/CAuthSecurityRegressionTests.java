@@ -4,6 +4,7 @@ import com.java.boilerplate.config.security.CTokenService;
 import com.java.boilerplate.config.RRateLimitProperties;
 import com.java.boilerplate.dto.auth.RAlteracaoSenha;
 import com.java.boilerplate.dto.auth.RConfirmacaoSenha;
+import com.java.boilerplate.dto.auth.RLogin;
 import com.java.boilerplate.dto.auth.RRedefinicaoSenhaRecuperacao;
 import com.java.boilerplate.dto.auth.RSolicitacaoRecuperacaoSenha;
 import com.java.boilerplate.model.CUsuario;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class CAuthSecurityRegressionTests {
@@ -65,7 +67,8 @@ class CAuthSecurityRegressionTests {
                 recoveryService,
                 solicitacaoAcessoRepository,
                 rateLimitService,
-                new RRateLimitProperties(60, 30, 5, 10_000)
+                new RRateLimitProperties(60, 30, 5, 10_000),
+                ativacaoPrimeiroAcessoService
         );
     }
 
@@ -158,6 +161,39 @@ class CAuthSecurityRegressionTests {
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()
         );
+    }
+
+    @Test
+    void loginBemSucedidoDeveLimparALimiteDeIdentidade() {
+        CUsuario usuario = usuario(50L, "login@example.com", "senha-atual");
+        when(authenticationManager.authenticate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()));
+        when(tokenService.gerarToken(usuario)).thenReturn("token");
+
+        authService.login(new RLogin("login@example.com", "senha-atual"));
+
+        verify(rateLimitService).limpar("login:identidade", "login@example.com");
+    }
+
+    @Test
+    void loginBemSucedidoDevePermitirNovaJanelaDaMesmaIdentidade() {
+        CUsuario usuario = usuario(51L, "nova-janela@example.com", "senha-atual");
+        when(authenticationManager.authenticate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()));
+        when(tokenService.gerarToken(usuario)).thenReturn("token");
+        CAuthService servicoComLimiterLocal = new CAuthService(
+                authenticationManager, passwordEncoder, tokenService, usuarioService, rbacService,
+                googleOAuthService, otpService, recoveryService, solicitacaoAcessoRepository,
+                new CRateLimitService(100), new RRateLimitProperties(60, 100, 30, 30, 1, 10_000),
+                ativacaoPrimeiroAcessoService
+        );
+
+        assertThatCode(() -> {
+            servicoComLimiterLocal.login(new RLogin("nova-janela@example.com", "senha-atual"));
+            servicoComLimiterLocal.login(new RLogin("nova-janela@example.com", "senha-atual"));
+        }).doesNotThrowAnyException();
+
+        verify(authenticationManager, times(2)).authenticate(org.mockito.ArgumentMatchers.any());
     }
 
     private CUsuario usuario(Long pId, String pEmail, String pSenha) {

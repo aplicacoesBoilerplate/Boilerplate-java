@@ -5,6 +5,7 @@ import com.java.boilerplate.config.RDocumentacaoProperties;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -23,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import static org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher.withDefaults;
@@ -48,7 +50,11 @@ public class CSecurityConfigurations {
     @Bean
     @Order(1)
     @ConditionalOnProperty(prefix = "documentacao", name = "enabled", havingValue = "true")
-    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity pHttp, PasswordEncoder pPasswordEncoder) throws Exception {
+    public SecurityFilterChain swaggerSecurityFilterChain(
+            HttpSecurity pHttp,
+            PasswordEncoder pPasswordEncoder,
+            CApiRateLimitSecurityFilter pApiRateLimitSecurityFilter
+    ) throws Exception {
         RAcessoSwagger usuarioDoc = resolveAcessoDocumentacao(pPasswordEncoder);
         PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         UserDetails admin = User.builder()
@@ -70,6 +76,7 @@ public class CSecurityConfigurations {
                 .sessionManagement(pSession -> pSession.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(pAuth -> pAuth.anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
+                .addFilterBefore(pApiRateLimitSecurityFilter, BasicAuthenticationFilter.class)
                 .exceptionHandling(pEx -> pEx.authenticationEntryPoint((pRequest, pResponse, pAuthException) -> {
                     pResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     pResponse.setHeader("WWW-Authenticate", "Basic realm=\"Swagger\"");
@@ -80,7 +87,10 @@ public class CSecurityConfigurations {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity pHttp) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity pHttp,
+            CApiRateLimitSecurityFilter pApiRateLimitSecurityFilter
+    ) throws Exception {
         PathPatternRequestMatcher.Builder api = withDefaults().basePath("/api/v1");
         return pHttp
                 .cors(Customizer.withDefaults())
@@ -112,7 +122,25 @@ public class CSecurityConfigurations {
                         .anyRequest().access(autorizacaoRbacManager)
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(pApiRateLimitSecurityFilter, CSecurityFilter.class)
                 .build();
+    }
+
+    @Bean
+    public CApiRateLimitSecurityFilter apiRateLimitSecurityFilter(
+            com.java.boilerplate.service.helpers.CRateLimitService pRateLimitService,
+            com.java.boilerplate.config.RRateLimitProperties pRateLimitProperties
+    ) {
+        return new CApiRateLimitSecurityFilter(pRateLimitService, pRateLimitProperties);
+    }
+
+    @Bean
+    public FilterRegistrationBean<CApiRateLimitSecurityFilter> apiRateLimitSecurityFilterRegistration(
+            CApiRateLimitSecurityFilter pFilter
+    ) {
+        FilterRegistrationBean<CApiRateLimitSecurityFilter> registration = new FilterRegistrationBean<>(pFilter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

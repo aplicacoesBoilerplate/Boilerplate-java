@@ -67,6 +67,8 @@ ativacao:
 security:
   rate-limit:
     windowSeconds: 60
+    globalRequestsPerWindow: 1000
+    authenticatedRequestsPerWindow: 100
     publicRequestsPerWindow: 30
     loginAttemptsPerWindow: 5
     maxTrackedKeys: 10000

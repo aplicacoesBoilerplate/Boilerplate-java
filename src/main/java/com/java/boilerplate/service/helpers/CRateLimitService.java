@@ -2,7 +2,10 @@ package com.java.boilerplate.service.helpers;
 
 import com.java.boilerplate.config.RRateLimitProperties;
 import com.java.boilerplate.exception.CExceptionsSystem;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -21,14 +24,24 @@ public class CRateLimitService {
 
     private final Map<String, CJanela> janelas = new ConcurrentHashMap<>();
     private final int maxTrackedKeys;
+    private final CRedisRateLimitBackend redisBackend;
 
     @Autowired
-    public CRateLimitService(RRateLimitProperties pProperties) {
-        this(pProperties.maxTrackedKeys());
+    public CRateLimitService(
+            RRateLimitProperties pProperties,
+            ObjectProvider<StringRedisTemplate> pRedisTemplate,
+            @Value("${redis.enabled:true}") boolean pRedisEnabled
+    ) {
+        this(pProperties.maxTrackedKeys(), pRedisEnabled ? pRedisTemplate.getIfAvailable() : null);
     }
 
     public CRateLimitService(int pMaxTrackedKeys) {
+        this(pMaxTrackedKeys, null);
+    }
+
+    CRateLimitService(int pMaxTrackedKeys, StringRedisTemplate pRedisTemplate) {
         this.maxTrackedKeys = pMaxTrackedKeys;
+        this.redisBackend = pRedisTemplate == null ? null : new CRedisRateLimitBackend(pRedisTemplate);
     }
 
     public void consumir(String pEscopo, String pIdentificador, int pLimite, Duration pJanela) {
@@ -39,7 +52,21 @@ public class CRateLimitService {
      * Avalia e confirma todos os limites como uma unica decisao. Um pedido
      * rejeitado por IP ou identidade nao drena o contador global.
      */
-    public synchronized void consumirTodos(List<RLimite> pLimites) {
+    public void consumirTodos(List<RLimite> pLimites) {
+        if (redisBackend != null) {
+            try {
+                redisBackend.consumirTodos(pLimites);
+                return;
+            } catch (CExceptionsSystem pException) {
+                throw pException;
+            } catch (RuntimeException pException) {
+                // Redis é opcional: falhas transitórias seguem para a proteção local limitada.
+            }
+        }
+        consumirTodosLocal(pLimites);
+    }
+
+    private synchronized void consumirTodosLocal(List<RLimite> pLimites) {
         if (pLimites == null || pLimites.isEmpty()) {
             throw new IllegalArgumentException("Ao menos um limite deve ser informado");
         }
@@ -87,6 +114,13 @@ public class CRateLimitService {
 
     public void limpar(String pEscopo, String pIdentificador) {
         janelas.remove(chave(pEscopo, pIdentificador));
+        if (redisBackend != null) {
+            try {
+                redisBackend.limpar(pEscopo, pIdentificador);
+            } catch (RuntimeException pException) {
+                // A limpeza local continua válida quando Redis está temporariamente indisponível.
+            }
+        }
     }
 
     private String normalizar(String pIdentificador) {
@@ -94,7 +128,8 @@ public class CRateLimitService {
     }
 
     private CExceptionsSystem limiteExcedido(Instant pAgora, Instant pExpiraEm) {
-        long segundos = Math.max(1, Duration.between(pAgora, pExpiraEm).toSeconds());
+        long millis = Math.max(1, Duration.between(pAgora, pExpiraEm).toMillis());
+        long segundos = Math.max(1, (millis + 999) / 1_000);
         return new CExceptionsSystem(MENSAGEM_LIMITE, HttpStatus.TOO_MANY_REQUESTS, Math.toIntExact(segundos));
     }
 

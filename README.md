@@ -42,6 +42,12 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_ENABLED=true
+RATE_LIMIT_WINDOW_SECONDS=60
+RATE_LIMIT_GLOBAL_REQUESTS=1000
+RATE_LIMIT_AUTHENTICATED_REQUESTS=100
+RATE_LIMIT_PUBLIC_REQUESTS=30
+RATE_LIMIT_LOGIN_ATTEMPTS=5
+RATE_LIMIT_MAX_TRACKED_KEYS=10000
 REDISINSIGHT_PORT=5540
 TOKEN_ENCRYPTION_KEY=<chave-aleatoria-de-32-bytes-codificada-em-Base64>
 JWT_SECRET=<chave-aleatoria-com-no-minimo-32-caracteres>
@@ -118,6 +124,14 @@ await fetch(`${apiUrl}/preferencias/me/item?${new URLSearchParams({
   headers: { Authorization: `Bearer ${token}` },
 });
 ```
+
+## Rate limit distribuído
+
+Cada chamada a `/api/v1` consome, em uma única decisão atômica no Redis, a quota global e uma quota por sujeito. Usuários autenticados são identificados pelo ID já validado pelo bearer; para requisições anônimas é usada apenas a origem remota. As chaves Redis usam hash SHA-256 e a hash-tag `{api}`, portanto não armazenam IP, ID, token ou credencial em texto puro e permanecem elegíveis para o mesmo slot de Redis Cluster.
+
+A janela fixa começa na primeira requisição e é configurada por `RATE_LIMIT_WINDOW_SECONDS`. As quotas independentes são `RATE_LIMIT_GLOBAL_REQUESTS`, `RATE_LIMIT_AUTHENTICATED_REQUESTS` e `RATE_LIMIT_PUBLIC_REQUESTS`; os limites de login e demais fluxos de identidade continuam como controles adicionais no serviço. Ao exceder qualquer quota, a API devolve `429` com `Retry-After` em segundos arredondados para cima. Somente `GET` e `HEAD` do health público originados em loopback são isentos.
+
+Se Redis estiver temporariamente indisponível, a API usa o fallback local limitado por `RATE_LIMIT_MAX_TRACKED_KEYS`, com expiração. Chaves já rastreadas continuam limitadas; quando a capacidade local se esgota, somente novos sujeitos são rejeitados. Ao Redis retornar, a decisão volta automaticamente ao script atômico sem migrar contadores locais.
 
 Para encerrar os containers, preserve os dados do banco:
 
